@@ -63,8 +63,14 @@
                     <Button Content="Close All"
                             Style="{StaticResource ToolbarButton}"
                             Command="{Binding CloseAllCommand}"
-                            Margin="0,0,16,0"
+                            Margin="0,0,4,0"
                             ToolTip="Close all players and their sessions" />
+
+                    <Button Content="? Help"
+                            Style="{StaticResource ToolbarButton}"
+                            Click="OnOpenHelp"
+                            Margin="0,0,16,0"
+                            ToolTip="Open GDD Manual" />
 
                     <TextBlock Text="URL:"
                                Foreground="{StaticResource TextSecondaryBrush}"

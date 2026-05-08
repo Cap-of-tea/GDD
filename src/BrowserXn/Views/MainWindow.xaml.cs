@@ -35,6 +35,12 @@ public partial class MainWindow : Window
         MascotImage.Opacity = 0.1;
     }
 
+    private void OnOpenHelp(object sender, RoutedEventArgs e)
+    {
+        var help = new HelpWindow { Owner = this };
+        help.Show();
+    }
+
     private void OnOpenPresetMenu(object sender, RoutedEventArgs e)
     {
         if (DataContext is not MainViewModel vm) return;

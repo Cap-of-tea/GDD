@@ -70,6 +70,7 @@ public partial class App : Application
         EmulationTools.Register(registry, mainVm, deviceService, locationService, networkService, cdpService);
         StateTools.Register(registry, mainVm, notificationService);
         DiagnosticsTools.Register(registry, mainVm, consoleService, networkMonitorService, cdpService);
+        HelpTools.Register(registry);
     }
 
     private void StartMcpServer()
