@@ -1,0 +1,21 @@
+<UserControl x:Class="GDD.Views.BrowserCellControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Border x:Name="ThumbnailArea"
+            Background="{StaticResource BackgroundBrush}"
+            MouseLeftButtonDown="OnThumbnailClicked"
+            Cursor="Hand">
+        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center"
+                    x:Name="PlaceholderText">
+            <TextBlock Text="{Binding PlayerName}"
+                       Foreground="{StaticResource TextSecondaryBrush}"
+                       FontSize="14" FontWeight="SemiBold"
+                       HorizontalAlignment="Center" />
+            <TextBlock Text="{Binding StatusText}"
+                       Foreground="{StaticResource TextSecondaryBrush}"
+                       FontSize="11"
+                       HorizontalAlignment="Center"
+                       Margin="0,4,0,0" />
+        </StackPanel>
+    </Border>
+</UserControl>

@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "additionalDirectories": [
+      "c:\\VS\\BrowserXn"
+    ],
+    "allow": [
+      "mcp__browserxn__browserxn_list_windows"
+    ]
+  }
+}

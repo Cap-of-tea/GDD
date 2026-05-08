@@ -1,0 +1,43 @@
+## .NET / Visual Studio
+bin/
+obj/
+*.user
+*.suo
+*.cache
+*.vs/
+.vs/
+*.DotSettings.user
+
+## Build
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+build/
+publish/
+
+## NuGet
+*.nupkg
+**/packages/*
+
+## Logs
+logs/
+*.log
+
+## WebView2 user data
+WebView2Data*/
+
+## IDE
+.idea/
+*.swp
+*~
+
+## OS
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+## Sensitive
+appsettings.*.json
+!appsettings.json
+*.env
