@@ -1,275 +1,333 @@
-# GDD‑Web — план переноса в веб‑интерфейс с локальным запуском браузеров
+# GDD‑Web — план реализации (React + Go + Rust)
 
-> Этот документ — самодостаточный контекст для старта реализации в любом новом
-> чате. Описывает текущее состояние GDD, архитектурное решение для веб‑версии
-> и две параллельно реализуемые backend‑стратегии: **CLI‑агент** (системный
-> Chrome через CDP) и **Docker** (Chromium в контейнерах). Обе подключаются
-> через общий контракт `IBrowserEngine` и переключаются в настройках.
+> Самодостаточный контекст для старта реализации в новом чате. GDD‑Web —
+> это веб‑приложение для multi‑user QA‑тестирования и оркестрации
+> браузерных сессий. Браузеры запускаются **на машине пользователя** через
+> локальный Rust‑агент, не в облаке. Поддерживаются два backend'а
+> одновременно: системный Chrome через CDP и Chromium в Docker‑контейнерах.
+>
+> Стек:
+> - **Frontend** — React + TypeScript (видеостена, управление, MCP‑консоль).
+> - **Cloud backend** — Go (аккаунты, проекты, пресеты, история, лицензии,
+>   телеметрия, webhooks).
+> - **Local agent** — Rust CLI (HTTP/WS на localhost, CDP мост, Docker
+>   оркестрация, MCP сервер).
 
 ---
 
-## 1. Что такое GDD сейчас
+## 1. Текущее состояние (GDD на .NET, исходный продукт)
 
-**GDD** (`src/BrowserXn/`, namespace `GDD`, AssemblyName `GDD.exe`) —
-Windows WPF‑приложение на .NET 8 для одновременного запуска и оркестрации
-нескольких изолированных браузерных инстансов («players») в одной
-видеостене. Заточено под QA / multi‑user тестирование, в том числе Telegram
-Mini Apps. Управляется как из UI, так и AI‑агентом через встроенный
-**MCP‑сервер**.
+В `src/BrowserXn/` лежит **существующий desktop GDD** на WPF + .NET 8 +
+WebView2. Он остаётся работоспособным как Windows‑desktop версия и
+**служит референсом для портирования бизнес‑логики в Rust**, но напрямую
+повторно не используется в GDD‑Web.
 
-### 1.1. Ключевые подсистемы
+### 1.1. Что портируется из C# в Rust (логика, не код)
 
-| Папка / файл | Назначение |
-|---|---|
-| `src/BrowserXn/App.xaml.cs` | Точка входа. Поднимает `IHost` (Generic Host), Serilog, регистрирует MCP‑тулы, стартует MCP‑сервер, открывает `MainWindow`. |
-| `Abstractions/IBrowserEngine.cs` | Контракт для браузерного движка (есть, надо расширить). |
-| `Abstractions/IBrowserEngineFactory.cs` | Фабрика движков по `playerId` + `userDataFolder`. |
-| `Engines/WebView2Engine.cs` | Текущая реализация — Microsoft Edge WebView2 со своим `UserDataFolder`. |
-| `Mcp/McpServer.cs` | HTTP‑сервер на `HttpListener`, поддерживает Streamable HTTP (`POST /mcp`) и SSE (`GET /sse` + `POST /message`). Маршалит вызовы тулов в UI Dispatcher. |
-| `Mcp/McpToolRegistry.cs` | Реестр зарегистрированных тулов. |
-| `Mcp/Tools/` | 9 групп MCP‑тулов: `PlayerTools`, `NavigationTools`, `InteractionTools`, `ReadTools`, `ExecutionTools`, `AuthTools`, `EmulationTools`, `StateTools`, `DiagnosticsTools`. |
-| `Services/CdpService.cs` | Прямые CDP‑команды поверх WebView2. |
-| `Services/QuickAuthService.cs` | Регистрация/логин N тестовых пользователей (`player{N}@gdd.test`) через бэкенд. |
-| `Services/TokenInjectionService.cs` | Инжект auth‑токенов в WebView storage. |
-| `Services/TelegramInitDataService.cs`, `TelegramInjectionService.cs` | Подделка Telegram WebApp `initData` под BotToken. |
-| `Services/DeviceEmulationService.cs` | CDP `Emulation.setDeviceMetricsOverride`, user‑agent, touch. |
-| `Services/LocationEmulationService.cs` | CDP `Emulation.setGeolocationOverride`. |
-| `Services/NetworkEmulationService.cs` | CDP `Network.emulateNetworkConditions`. |
-| `Services/ConsoleInterceptionService.cs` | Перехват `console.*` через CDP. |
-| `Services/NotificationInterceptionService.cs` | Перехват push/notification API. |
-| `Services/NetworkMonitoringService.cs` | Перехват сетевых запросов. |
-| `Models/AppConfig.cs` | Конфиг (`FrontendUrl`, `BackendUrl`, `BotToken`, `McpPort=9700`, `DataFolderRoot`). |
-| `Views/MainWindow.xaml` + `VideoWallPanel.cs` | Видеостена N ячеек, тулбар (Add Player, Quick Auth All, Navigate All). |
-| `Views/BrowserCellControl.xaml` | Одна ячейка с WebView2. |
-| `ViewModels/MainViewModel.cs`, `BrowserCellViewModel.cs` | MVVM‑биндинги через CommunityToolkit.Mvvm. |
-| `appsettings.json` | `FrontendUrl=http://localhost:5173`, `BackendUrl=http://localhost:8080/api/v1`, `McpPort=9700`. |
-| `mcp-proxy.ps1` | stdio↔HTTP мост для MCP‑клиентов, которые умеют только stdio. |
+| C# модуль (референс) | Назначение | Rust‑эквивалент в агенте |
+|---|---|---|
+| `Mcp/McpServer.cs` | JSON‑RPC сервер: Streamable HTTP + SSE | `axum` route'ы `/mcp`, `/sse`, `/message` |
+| `Mcp/McpToolRegistry.cs` | Реестр тулов | `HashMap<String, ToolFn>` + `inventory` для регистрации |
+| `Mcp/Tools/*` (9 групп) | Player/Navigation/Interaction/Read/Execution/Auth/Emulation/State/Diagnostics | модули `tools/{player,navigation,...}.rs` |
+| `Services/CdpService.cs` | CDP wrapper | `chromiumoxide` (high‑level) или raw `tokio-tungstenite` |
+| `Services/QuickAuthService.cs` | Регистрация/логин N тестовых юзеров | `reqwest` + параллельный join |
+| `Services/TokenInjectionService.cs` | Инжект токенов в storage | `Page.evaluate` через CDP |
+| `Services/TelegramInitDataService.cs` | Подделка `initData` под BotToken | HMAC‑SHA256 в `hmac` + `sha2` crates |
+| `Services/TelegramInjectionService.cs` | Инжект Telegram WebApp API | `Page.addScriptToEvaluateOnNewDocument` |
+| `Services/DeviceEmulationService.cs` | `Emulation.setDeviceMetricsOverride` | прямой CDP вызов |
+| `Services/LocationEmulationService.cs` | `Emulation.setGeolocationOverride` | прямой CDP вызов |
+| `Services/NetworkEmulationService.cs` | `Network.emulateNetworkConditions` | прямой CDP вызов |
+| `Services/ConsoleInterceptionService.cs` | Перехват `console.*` | подписка на CDP события + WS broadcast |
+| `Services/NotificationInterceptionService.cs` | Перехват push/notification API | инжект скрипта + bridge |
+| `Services/NetworkMonitoringService.cs` | Перехват сетевых запросов | подписка на `Network.*` |
+| `Models/AppConfig.cs` | Конфиг (FrontendUrl, BotToken, McpPort, ...) | `serde` структуры из TOML |
 
-### 1.2. Что уже спроектировано правильно для миграции
+Объём логики для портирования — около **3000 строк C#**, что в Rust
+обычно укладывается в 4000–5000 строк (типы и enum'ы расширяются за счёт
+явности). Реалистично — 4–6 недель работы одного разработчика, знающего
+Rust и async.
 
-- **`IBrowserEngine` + `IBrowserEngineFactory`** — абстракция движка уже
-  выделена. Это идеальная точка вставки CLI и Docker реализаций.
-- **MCP‑сервер транспорт‑агностичный** — JSON‑RPC поверх HTTP/SSE, не
-  привязан к WPF.
-- **`Services/*` работают через CDP** — переедут на любой backend, который
-  даёт CDP WebSocket endpoint.
-- **`AppConfig` через DI и `IConfiguration`** — добавление новых полей
-  тривиально.
+### 1.2. Что выбрасывается совсем
 
-### 1.3. Что привязано к WPF и должно быть заменено
+`Views/`, `ViewModels/`, `App.xaml*`, `Themes/`, `Converters/`,
+`VideoWallPanel.cs`, `Engines/WebView2Engine.cs`, `Interop/DwmApi.cs` —
+WPF UI и Windows‑native composition. UI заменяется React‑приложением,
+встраивание окон — CDP screencast.
 
-- `Views/*`, `ViewModels/*`, `App.xaml*`, `Themes/*`, `Converters/*` — UI
-  слой целиком.
-- `Engines/WebView2Engine.cs` — нативное встраивание WebView2 в HWND.
-  Останется как третий движок для desktop‑версии (опционально), но не
-  обязателен в Web.
-- `Interop/DwmApi.cs` — Windows‑специфичная композиция окон. Не нужна.
-- `McpServer.HandleRequest` маршалит в `Application.Current.Dispatcher` —
-  это надо снять, перевести на обычный thread‑pool.
+### 1.3. Что остаётся как есть
+
+`mcp-proxy.ps1` остаётся как stdio↔HTTP мост для MCP‑клиентов на stdio.
+В будущем переписывается на кросс‑платформенный Rust‑бинарь (`gdd-mcp-bridge`).
 
 ---
 
 ## 2. Цель: GDD‑Web
 
-Перенести UI в веб‑интерфейс при сохранении принципа «**браузеры живут на
-машине пользователя**». Никакого хостинга чужих сессий в облаке, никаких
-видеостримов через интернет. Поддержать **два варианта запуска браузеров
-одновременно**, переключаемых в настройках:
+Веб‑продукт с тремя компонентами:
 
-1. **CLI backend** — лёгкий локальный агент поднимает системный Chrome/Edge
-   через CDP. Минимальная установка (~15 МБ, один бинарь). Целевая
-   аудитория: indie/freelance QA, manual‑QA, корпоративные пользователи без
-   Docker.
+1. **gdd.app (React SPA)** — UI на любом устройстве с современным
+   браузером. Видеостена, управление players, настройки, MCP‑консоль,
+   аккаунты, проекты, история запусков.
+2. **api.gdd.app (Go backend)** — облачный сервис: аутентификация,
+   организации, проекты, сохранённые пресеты и сценарии, история
+   запусков, лицензии, телеметрия, webhooks для CI.
+3. **gdd CLI (Rust agent)** — локальный бинарь на машине пользователя.
+   Слушает `localhost:9700`, поднимает браузеры (системный Chrome или
+   Docker‑контейнеры), мостит ввод/скринкаст в React UI, проксирует
+   MCP, синхронизируется с облаком.
 
-2. **Docker backend** — агент поднимает контейнеры с Chromium per player,
-   подключается по CDP. Идеальная воспроизводимость, multi‑engine,
-   реальная сетевая изоляция, parity с CI. Целевая аудитория:
-   enterprise QA, команды с DevOps‑культурой, regression‑testing.
+Принцип: **браузеры всегда живут на машине пользователя**. Облачный
+backend хранит метаданные и конфигурации, но не хостит чужие сессии.
 
-UI, бизнес‑логика, MCP — общие. Разница только в реализации
-`IBrowserEngine`.
+### 2.1. Поддерживаемые сценарии браузеров (через `BrowserEngine` trait в Rust)
 
-### 2.1. Чего **не** делаем
+- **CLI backend** (`ChromiumProcessEngine`) — системный Chrome/Edge с
+  `--remote-debugging-port`, изолированный `--user-data-dir`. Минимум
+  установки, нативная производительность.
+- **Docker backend** (`DockerEngine`) — контейнеры с Chromium per
+  player. Воспроизводимость, multi‑engine, реальная сетевая изоляция,
+  parity с CI.
 
-- Не хостим браузеры в облаке (отвергнутый вариант).
-- Не используем iframe для тестируемого сайта (X‑Frame‑Options/CSP — не
-  работает).
-- Не ставим Playwright/Node.js в агент (избыточно — у нас уже есть свой
-  CDP‑клиент в `CdpService`).
-- Не делаем browser extension как основной путь (слабая изоляция, плашка
-  `chrome.debugger`). Может быть добавлен позже как отдельный «zero install»
-  бонус.
+Оба backend'а — части одного Rust бинаря, переключаются в настройках
+per‑project или per‑player.
+
+### 2.2. Чего **не** делаем
+
+- Не хостим браузеры в облаке (отвергнутый сценарий).
+- Не используем iframe для тестируемого сайта (X‑Frame‑Options/CSP).
+- Не используем Playwright/Node.js в агенте — прямой CDP через `chromiumoxide`.
+- Не делаем browser extension основным путём (слабая изоляция,
+  раздражающая плашка `chrome.debugger`). Может появиться позже как
+  бонус‑дистрибуция.
 
 ---
 
-## 3. Целевая архитектура
+## 3. Архитектура
 
 ```
-┌──────────────────────────────────────────────────────────────────────┐
-│  Пользовательская машина                                             │
+┌────────── облако (наша инфра) ──────────────────────────────────────┐
 │                                                                       │
-│  ┌─ Браузер пользователя (или Photino shell) ──┐                     │
-│  │  GDD Web UI (React + TS + Vite)             │                     │
-│  │  - Видеостена N <canvas> с CDP screencast   │                     │
-│  │  - Тулбар, настройки, MCP‑консоль           │                     │
-│  └──────────────────────────────────────────────┘                     │
-│         │ WebSocket ws://localhost:9700/ws                            │
-│         │ HTTP /mcp, /sse, /files/*, /static/*                        │
-│         ▼                                                             │
-│  ┌─ GDD Agent (.NET 8 self‑contained, ~25 МБ AOT) ────────────────┐  │
-│  │  - Kestrel HTTP/WebSocket сервер                                │  │
-│  │  - Reuse: Mcp/, Services/, Models/, CdpService                  │  │
-│  │  - IBrowserEngine factory: выбирает CLI или Docker per player   │  │
-│  │  - Bridge: WS events ↔ CDP commands, screencast pump            │  │
-│  └────────────────────────────────────────────────────────────────┘  │
-│         │                                    │                        │
-│         │ CDP WebSocket                       │ CDP WebSocket          │
-│         ▼                                    ▼                        │
-│  ┌─ ChromiumProcessEngine ───┐  ┌─ DockerEngine ────────────────┐   │
-│  │ Системный chrome.exe       │  │ docker run gdd/chromium:128   │   │
-│  │ --remote-debugging-port=0  │  │ --rm --memory=512m            │   │
-│  │ --user-data-dir=...        │  │ -v profile:/profile           │   │
-│  │ Профиль на диске юзера     │  │ Xvfb + headed Chromium        │   │
-│  └────────────────────────────┘  └───────────────────────────────┘   │
-│                                                                       │
-└──────────────────────────────────────────────────────────────────────┘
+│  ┌─ Static hosting ─────────────────┐    ┌─ Go API ─────────────────┐│
+│  │  gdd.app                          │    │  api.gdd.app              ││
+│  │  React SPA (Vite build)           │    │  axum/echo/chi на Go     ││
+│  │  CDN / S3+CloudFront / Vercel     │    │  Postgres + Redis + S3   ││
+│  └───────────────────────────────────┘    └───────────────────────────┘│
+│              ▲                                       ▲                 │
+└──────────────┼───────────────────────────────────────┼─────────────────┘
+               │ HTTPS                                  │ HTTPS (REST + WS для live)
+               │                                        │
+               │                                        │
+┌────────── машина пользователя ─────────────────────────────────────────┐
+│              │                                        │                 │
+│   ┌─ Браузер ▼ ────────────────────────────┐          │                 │
+│   │  React SPA, загружен с gdd.app          │          │                 │
+│   │   - Видеостена N <canvas>               │          │                 │
+│   │   - WS клиент:                          │          │                 │
+│   │     * к локальному агенту (live ввод)   │          │                 │
+│   │     * к облаку (state, sync, accounts)  │          │                 │
+│   └──────────┬──────────────────────────────┘          │                 │
+│              │ WS wss://local.gdd.app:9700              │                 │
+│              │ (резолвится в 127.0.0.1, см. §3.5)       │                 │
+│              ▼                                          │                 │
+│   ┌─ Rust agent (gdd CLI) ──────────────────────────────┴────────────┐  │
+│   │  axum HTTP/WS server на localhost:9700                            │  │
+│   │  modules:                                                          │  │
+│   │   - transport/   (WS bridge UI ↔ engine, JSON‑RPC)                 │  │
+│   │   - mcp/         (МСР сервер — портирован из C# Mcp/)             │  │
+│   │   - tools/       (9 групп тулов — портирован из Mcp/Tools/)        │  │
+│   │   - services/    (auth, telegram, emulation, etc.)                │  │
+│   │   - engines/     (chromium_process, docker)                        │  │
+│   │   - cdp/         (CDP клиент — chromiumoxide или raw)             │  │
+│   │   - cloud/       (HTTPS клиент к api.gdd.app: auth, sync, telemetry)│  │
+│   │   - files/       (upload/download bridge)                         │  │
+│   │   - screencast/  (Page.startScreencast → WS)                      │  │
+│   └──┬──────────────────────────┬─────────────────────────────────────┘  │
+│      │ CDP                       │ Docker socket                          │
+│      ▼                           ▼                                        │
+│   ┌─ ChromiumProcessEngine ─┐ ┌─ DockerEngine ─────────────────────────┐ │
+│   │ chrome.exe              │ │ docker run gdd/chromium:128 ...        │ │
+│   │ --remote-debugging-port │ │ Xvfb + headed Chromium в контейнере   │ │
+│   │ --user-data-dir=...     │ │ volume gdd-profile-N для профиля       │ │
+│   └─────────────────────────┘ └────────────────────────────────────────┘ │
+│                                                                            │
+└────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### 3.1. Распределение ответственности
+### 3.1. Frontend (React) — ответственность
 
-**Web UI (React)**
-- Рендерит сетку из `<canvas>`.
-- Принимает кадры скринкаста (JPEG base64) по WS, рисует в canvas.
-- Слушает `mousedown/up/move/wheel/keydown/keyup/paste/drop/...`,
-  отправляет в агент как CDP `Input.*` события.
-- UI настроек: выбор backend (CLI / Docker), per‑player эмуляция,
-  device presets, MCP‑консоль с тестовыми вызовами тулов.
-- Загружает файлы для upload‑сценариев через `POST /files/upload`.
+- Рендерит сетку из `<canvas>` для каждого player.
+- Принимает кадры скринкаста (JPEG base64) от Rust агента по WS, рисует
+  в canvas. Скейл‑фактор для координат.
+- Слушает `mousedown/up/move/wheel/keydown/paste/drop/...`, отправляет
+  как CDP `Input.*` события через локальный WS.
+- Управление: добавить/удалить player, навигация, Quick Auth All,
+  device/geo/network presets, MCP‑консоль.
+- Аккаунт: логин в облако, выбор организации/проекта, сохранение
+  сессий и пресетов в облако.
+- Загружает файлы для upload‑сценариев через `POST /files/upload`
+  (агент или облако в зависимости от сценария).
 - Получает download‑события и триггерит сохранение в браузере юзера.
 
-**Agent (.NET 8)**
-- Один self‑contained бинарь, AOT‑скомпилированный (~20–30 МБ).
+Два WS‑соединения параллельно:
+- `wss://local.gdd.app:9700/ws` — к локальному Rust агенту (low‑latency,
+  ввод и скринкаст).
+- `wss://api.gdd.app/ws/live` — к облачному Go (push‑уведомления,
+  изменения проекта в команде, статусы).
+
+### 3.2. Cloud backend (Go) — ответственность
+
+| Домен | Что хранит / делает |
+|---|---|
+| Accounts | пользователи, организации, инвайты, RBAC, OAuth (Google/GitHub) |
+| Projects | проекты, окружения, секреты (зашифрованные KMS) |
+| Presets | сохранённые device/geo/network пресеты, профили устройств |
+| Scenarios | (фаза 6+) записанные сценарии тестов |
+| Runs | история запусков players, длительность, статусы, ошибки |
+| Recordings | (фаза 6+) видео сессий, console/network логи |
+| Licenses | проверка лицензий, тарифные лимиты, биллинг (Stripe webhook) |
+| Telemetry | анонимная статистика использования, error reporting |
+| Webhooks | приём из CI (GitHub Actions / GitLab) для запуска сценариев |
+| Updates | endpoint для агента: проверка версий, выдача release notes |
+| Notifications | email (Postmark/SES), Slack, webhook outbound |
+
+Backend **не хостит браузеры**, **не получает screencast**, **не
+проксирует ввод**. Это всё локально между React и Rust агентом.
+
+### 3.3. Local agent (Rust) — ответственность
+
 - Слушает `localhost:9700`:
-  - `GET /` — раздаёт встроенную React‑сборку.
-  - `WS /ws` — основной канал с UI (JSON‑RPC).
-  - `POST /mcp`, `GET /sse`, `POST /message` — MCP (как сейчас).
-  - `POST /files/upload`, `GET /files/{id}` — загрузка/выдача файлов.
-- Хостит `IBrowserEngine` instances per player.
-- Реализует bridge: входящие UI‑команды → CDP, исходящие CDP‑события +
-  screencast → UI.
-- Работает headless (CLI) или с системным WebView через Photino (desktop
-  shell mode) — это два режима **дистрибуции**, не два кодовых дерева.
+  - `WS /ws` — основной канал с UI, JSON‑RPC.
+  - `POST /mcp`, `GET /sse`, `POST /message` — MCP сервер.
+  - `POST /files/upload`, `GET /files/{id}` — файловый bridge.
+  - `GET /health`, `GET /version` — служебные.
+- Хостит N инстансов `BrowserEngine` (CLI или Docker per player).
+- Bridge: WS события UI → CDP `Input.*`, CDP screencast → WS UI.
+- Опционально пингует облако: проверка лицензии, push телеметрии,
+  pull сохранённых пресетов.
+- Self‑update через GitHub Releases (или endpoint облака).
+- Tray icon в системе (Win/Mac/Linux) для запуска/остановки.
+- Кросс‑платформа: Win/Mac/Linux × x64/arm64.
 
-**ChromiumProcessEngine (CLI backend)**
-- Ищет системный браузер: Edge → Chrome → Chromium → Brave → fallback.
-- Запускает `chrome.exe` с уникальным `--user-data-dir` и
-  `--remote-debugging-port=0`.
-- Читает реальный порт из `<user-data-dir>/DevToolsActivePort`.
-- Подключается WebSocket'ом к `ws://localhost:<port>/devtools/browser/<id>`.
-- Стартует `Page.startScreencast`, прокидывает кадры в UI.
-- На остановке: `Browser.close` → kill процесса → опционально wipe
-  user‑data‑dir.
+### 3.4. Контракт `BrowserEngine` (Rust trait)
 
-**DockerEngine (Docker backend)**
-- Проверяет наличие Docker daemon (Docker Desktop / Podman / Rancher).
-- При первом запуске пуллит образ `gdd/chromium:<tag>` (наш образ).
-- `docker run --rm --name gdd-player-<id> -v gdd-profile-<id>:/profile
-  -p 0:9222 gdd/chromium:<tag>`.
-- Docker сам мапит порт 9222 контейнера на свободный хостовый, читаем
-  через `docker inspect`.
-- CDP WebSocket к `ws://localhost:<mapped>/devtools/browser/...`.
-- Volume `gdd-profile-<id>` живёт между запусками — это «профиль player'а».
-- Snapshot: `docker run gdd/profile-saver -v <volume>:/in -v
-  <snapshot-dir>:/out tar`. Restore — обратно.
+```rust
+#[async_trait]
+pub trait BrowserEngine: Send + Sync {
+    fn player_id(&self) -> i32;
+    fn user_data_folder(&self) -> &str;
+    fn is_initialized(&self) -> bool;
+    fn current_url(&self) -> &str;
 
-### 3.2. Контракт `IBrowserEngine` (расширение)
+    async fn initialize(&mut self, opts: BrowserStartOptions) -> Result<()>;
+    async fn navigate(&mut self, url: &str) -> Result<()>;
+    async fn close(&mut self) -> Result<()>;
 
-Сейчас в `Abstractions/IBrowserEngine.cs` есть базовый набор. Нужно
-расширить так, чтобы обе реализации легли чисто:
+    fn cdp_ws_url(&self) -> &str;
 
-```csharp
-public interface IBrowserEngine : IDisposable
-{
-    int PlayerId { get; }
-    string UserDataFolder { get; }    // путь или volume name
-    bool IsInitialized { get; }
-    string CurrentUrl { get; }
+    async fn start_screencast(&mut self, opts: ScreencastOptions) -> Result<()>;
+    async fn stop_screencast(&mut self) -> Result<()>;
 
-    // Жизненный цикл
-    Task InitializeAsync(BrowserStartOptions options, CancellationToken ct);
-    Task NavigateAsync(string url);
-    Task CloseAsync();
-
-    // CDP endpoint для Services/* (CdpService будет цепляться сюда)
-    string CdpWebSocketUrl { get; }
-
-    // Скринкаст (управляется агентом, кадры публикуются через event)
-    Task StartScreencastAsync(ScreencastOptions options);
-    Task StopScreencastAsync();
-    event EventHandler<ScreencastFrame> ScreencastFrameReceived;
-
-    // Существующие события
-    event EventHandler<NotificationEventArgs>? NotificationReceived;
-    event EventHandler<string>? NavigationCompleted;
-    event EventHandler<string>? TitleChanged;
+    fn screencast_rx(&self) -> tokio::sync::broadcast::Receiver<ScreencastFrame>;
+    fn events_rx(&self) -> tokio::sync::broadcast::Receiver<EngineEvent>;
 }
 
-public sealed record BrowserStartOptions(
-    string StartUrl,
-    Size? Viewport,
-    string? UserAgent,
-    string? ProxyServer,
-    IReadOnlyDictionary<string, string>? ExtraEnv);
+#[derive(Debug, Clone)]
+pub struct BrowserStartOptions {
+    pub start_url: String,
+    pub viewport: Option<(u32, u32)>,
+    pub user_agent: Option<String>,
+    pub proxy_server: Option<String>,
+    pub extra_env: HashMap<String, String>,
+}
 
-public sealed record ScreencastOptions(
-    string Format = "jpeg",       // jpeg | png
-    int Quality = 70,
-    int? MaxWidth = null,
-    int? MaxHeight = null,
-    int EveryNthFrame = 1);
+#[derive(Debug, Clone)]
+pub struct ScreencastOptions {
+    pub format: ScreencastFormat,    // Jpeg | Png
+    pub quality: u8,
+    pub max_width: Option<u32>,
+    pub max_height: Option<u32>,
+    pub every_nth_frame: u32,
+}
 
-public sealed record ScreencastFrame(
-    int PlayerId,
-    string DataBase64,
-    int SessionId,                // для Page.screencastFrameAck
-    long TimestampMs,
-    int Width, int Height);
+#[derive(Debug, Clone)]
+pub struct ScreencastFrame {
+    pub player_id: i32,
+    pub data_base64: String,
+    pub session_id: i32,
+    pub timestamp_ms: i64,
+    pub width: u32,
+    pub height: u32,
+}
+
+#[derive(Debug, Clone)]
+pub enum EngineEvent {
+    NavigationCompleted(String),
+    TitleChanged(String),
+    Notification { title: String, body: String },
+    FileChooserOpened { id: String, mode: FileChooserMode },
+    Download { name: String, size: u64, file_id: String },
+    Console { level: String, message: String, source: String },
+    Network { /* ... */ },
+}
 ```
 
-Текущий `WebView2Engine` остаётся — он покрывает desktop‑режим (вариант A
-из обсуждения), и его можно оставить как третью реализацию для пользователей
-Windows, которые не хотят ни CLI, ни Docker.
+Реализации:
+- `engines/chromium_process.rs` — `impl BrowserEngine for ChromiumProcessEngine`
+- `engines/docker.rs` — `impl BrowserEngine for DockerEngine`
 
-### 3.3. Протокол UI ↔ Agent (WebSocket)
+### 3.5. Сетевой / TLS трюк для `https://gdd.app` ↔ `ws://localhost:9700`
 
-JSON‑RPC 2.0 поверх одного WS‑соединения. Совместим по форме с MCP.
+Браузеры **блокируют** WebSocket из HTTPS‑страницы на `ws://localhost`
+(mixed content). Решения, в порядке предпочтения:
 
-**UI → Agent (методы):**
+1. **`local.gdd.app` → 127.0.0.1 + wildcard cert** (паттерн Plex,
+   Tailscale Funnel, Jellyfin).
+   - DNS A‑запись `local.gdd.app` → `127.0.0.1` (публичный DNS).
+   - Wildcard cert `*.local.gdd.app` от Let's Encrypt, выпускается на
+     наш домен. Приватный ключ отдаётся агенту при установке через
+     облачный backend (или встраивается в подписанный бинарь —
+     security tradeoff обсуждается).
+   - Агент слушает `wss://local.gdd.app:9700`. Браузер видит валидный
+     HTTPS на localhost.
+2. **Self‑signed cert + auto‑trust в OS keystore** при установке агента.
+   Раздражает security‑policy в корпоратах, но работает локально.
+3. **Агент сам отдаёт React build по HTTP** — пользователь открывает
+   `http://localhost:9700`, без cloud frontend. Безопасно, но без
+   облачных фич (логин, проекты).
 
-| Метод | Параметры | Возврат |
-|---|---|---|
-| `players.list` | — | `[{id, name, status, url, ...}]` |
-| `players.add` | `{count, preset?}` | `[{id}]` |
-| `players.remove` | `{id}` | `ok` |
-| `players.navigate` | `{id, url}` | `ok` |
-| `engine.setBackend` | `{kind: "cli"\|"docker", config}` | `ok` |
-| `input.mouse` | `{playerId, type, x, y, button, modifiers, clickCount}` | `ok` |
-| `input.key` | `{playerId, type, key, code, modifiers, text}` | `ok` |
-| `input.wheel` | `{playerId, x, y, deltaX, deltaY}` | `ok` |
-| `input.text` | `{playerId, text}` | `ok` (insertText, для IME) |
-| `input.file` | `{playerId, fileChooserId, fileIds}` | `ok` |
-| `screencast.start` | `{playerId, options}` | `ok` |
-| `screencast.stop` | `{playerId}` | `ok` |
-| `auth.quickAuth` | `{playerId}` | `{token, user}` |
-| `emulation.device` | `{playerId, preset}` | `ok` |
-| `emulation.geo` | `{playerId, lat, lng}` | `ok` |
-| `emulation.network` | `{playerId, preset}` | `ok` |
+Для MVP — **режим 3 (local‑only)**. Cloud‑mode с режимом 1 — фаза 5+.
+
+### 3.6. Протокол UI ↔ Local Agent (WebSocket)
+
+JSON‑RPC 2.0 поверх одного WS. Совместим по форме с MCP (одинаковый
+парсер).
+
+**UI → Agent:**
+
+| Метод | Параметры |
+|---|---|
+| `players.list` | — |
+| `players.add` | `{count, preset?, engine: "cli"|"docker"}` |
+| `players.remove` | `{id}` |
+| `players.navigate` | `{id, url}` |
+| `engine.setDefault` | `{kind, config}` |
+| `input.mouse` | `{playerId, type, x, y, button, modifiers, clickCount}` |
+| `input.key` | `{playerId, type, key, code, modifiers}` |
+| `input.wheel` | `{playerId, x, y, deltaX, deltaY}` |
+| `input.text` | `{playerId, text}` (для IME / не‑ASCII) |
+| `input.file` | `{playerId, fileChooserId, fileIds}` |
+| `screencast.start` | `{playerId, options}` |
+| `screencast.stop` | `{playerId}` |
+| `auth.quickAuth` | `{playerId}` |
+| `emulation.device` | `{playerId, preset}` |
+| `emulation.geo` | `{playerId, lat, lng}` |
+| `emulation.network` | `{playerId, preset}` |
 
 **Agent → UI (события):**
 
 | Событие | Данные |
 |---|---|
-| `screencast.frame` | `ScreencastFrame` (см. выше) |
+| `screencast.frame` | `ScreencastFrame` |
 | `player.status` | `{id, status, url}` |
 | `player.consoleEntry` | `{id, level, message, source}` |
 | `player.networkEntry` | `{id, request, response}` |
@@ -277,240 +335,448 @@ JSON‑RPC 2.0 поверх одного WS‑соединения. Совмес
 | `player.fileChooser` | `{id, fileChooserId, mode}` |
 | `player.download` | `{id, name, sizeBytes, fileId}` |
 
-### 3.4. Файлы — потоки
+### 3.7. Протокол UI ↔ Cloud (REST + WS)
+
+REST `api.gdd.app/v1/...`:
+
+```
+POST   /auth/login           → JWT
+POST   /auth/oauth/{provider}
+GET    /me
+GET    /orgs
+GET    /orgs/{id}/projects
+POST   /projects/{id}/presets
+GET    /projects/{id}/presets
+GET    /projects/{id}/runs
+POST   /projects/{id}/runs        (опционально, для CI)
+GET    /runs/{id}/recording       (фаза 6+)
+GET    /agent/latest              (release info для self‑update)
+POST   /telemetry                 (батч событий от агента)
+POST   /webhooks/github           (CI integration)
+POST   /webhooks/stripe           (биллинг)
+```
+
+WS `wss://api.gdd.app/ws/live`:
+- push‑уведомления по проекту (кто‑то в команде поменял пресет),
+- статусы запусков из CI,
+- license expiry warnings.
+
+### 3.8. Файлы и их потоки
 
 - **Upload в страницу**: при `Page.fileChooserOpened` агент шлёт
-  `player.fileChooser` в UI. UI открывает нативный `<input type=file>`,
-  пользователь выбирает файл, UI делает `POST /files/upload`, получает
-  `{fileId, agentPath}`, шлёт `input.file` с `agentPath`. Агент вызывает
+  `player.fileChooser` в UI. UI открывает нативный
+  `<input type=file>`, юзер выбирает файл, UI делает
+  `POST /files/upload` к **локальному агенту** (не облаку), получает
+  `{fileId, agent_path}`, шлёт `input.file`. Агент вызывает CDP
   `DOM.setFileInputFiles`.
 - **Download**: `Browser.setDownloadBehavior(allowAndName, dir)`,
-  `Browser.downloadProgress` → `player.download` → UI делает `GET
-  /files/{id}` и через `<a download>` отдаёт юзеру.
-- **Drag‑and‑drop из ОС**: `<canvas>.ondrop` → upload в агент → инжект
-  скрипта в страницу через `Page.addScriptToEvaluateOnNewDocument`
-  (helper `window.__gddDropFile`) → синтетический `DragEvent`.
-- **Paste файла из буфера**: симметрично drop'у через инжект скрипта.
+  `Browser.downloadProgress` → `player.download` → UI делает
+  `GET /files/{id}` от локального агента → `<a download>` отдаёт юзеру.
+- **Drag‑drop из ОС**: `<canvas>.ondrop` → upload в агент → инжект
+  helper‑скрипта (`window.__gddDropFile`) → синтетический `DragEvent`
+  в странице.
+- **Paste файла**: симметрично drag‑drop.
 
-Helper‑скрипт инжектится агентом в каждую новую страницу через
-`Page.addScriptToEvaluateOnNewDocument`.
+Helper‑скрипт инжектится агентом через
+`Page.addScriptToEvaluateOnNewDocument` в каждую новую страницу.
 
 ---
 
 ## 4. Технологический стек
 
-### 4.1. Agent
+### 4.1. Frontend (`web/`)
 
-- **Платформа**: .NET 8, AOT‑компиляция (`PublishAot=true`,
-  `<InvariantGlobalization>true</InvariantGlobalization>` для размера).
-- **Целевые рантаймы**: `win-x64`, `win-arm64`, `osx-x64`, `osx-arm64`,
-  `linux-x64`, `linux-arm64`.
-- **HTTP/WS сервер**: ASP.NET Core minimal API + Kestrel, WebSocket через
-  `app.UseWebSockets()`.
-- **CDP клиент**: оставляем существующий `CdpService` подход (прямой
-  `ClientWebSocket` + JSON‑RPC). Никакого Playwright/PuppeteerSharp.
-- **Docker SDK**: `Docker.DotNet` (NuGet). Альтернатива — `dotnet shell`
-  выполнение `docker` CLI; SDK безопаснее.
-- **Лог**: Serilog (как сейчас).
-- **DI/Config**: Generic Host (как сейчас).
-- **Подпись**: Authenticode (Win), Apple notarization (Mac). Без подписи
-  не выкатывать.
+| Что | Выбор | Почему |
+|---|---|---|
+| Framework | React 18 + TypeScript | Самый широкий найм и экосистема |
+| Bundler | Vite 5 | Быстрый dev, ESM, хороший DX |
+| State | Zustand | Минимальный boilerplate, в отличие от Redux |
+| Routing | React Router 6 (data router) | Стандарт, file‑based есть в Tanstack но overkill |
+| Стили | Tailwind CSS | Быстрая итерация UI |
+| Components | Radix UI primitives + кастом | Доступные нестилизованные блоки |
+| Forms | React Hook Form + Zod | Самая частая комбинация в TS‑экосистеме |
+| API клиент | TanStack Query (REST) + кастом WS клиент | Стандарт |
+| Графика | `<canvas>` 2D context | Достаточно для JPEG screencast в MVP |
+| Тесты | Vitest + Testing Library + Playwright | Стандарт |
 
-### 4.2. Frontend
+Хостинг: Vercel / Cloudflare Pages / S3+CloudFront — любой статический
+host. CSP должна разрешать `connect-src wss://local.gdd.app:9700` и
+`wss://api.gdd.app`.
 
-- **React 18 + TypeScript + Vite**.
-- **Стейт**: Zustand или Redux Toolkit (Zustand проще для размеров проекта).
-- **Стили**: Tailwind CSS (быстро) или CSS Modules (контролируемо).
-  Рекомендую Tailwind.
-- **WebSocket**: одно постоянное соединение, реконнект с экспоненциальным
-  бэкоффом.
-- **Canvas**: `<canvas>` 2D context, рисуем `Image` из base64. Для v2 —
-  WebGL с YUV‑декодированием от WebRTC.
-- **Билдится в `agent/wwwroot`** и embed'ится в .NET бинарь как
-  `EmbeddedResource` или раздаётся из disk при разработке.
+### 4.2. Cloud backend (`api/`)
 
-### 4.3. Desktop shell (опционально)
+| Что | Выбор | Почему |
+|---|---|---|
+| Язык | Go 1.22+ | Простой, быстрый, easy ops |
+| HTTP framework | `chi` | Минимальный, идиоматичный, без магии |
+| Альтернативно | `echo` или `fiber` | Если нужны batteries‑included |
+| DB | PostgreSQL 16 | Стандарт |
+| DB layer | `sqlc` (generated typed queries) | Лучшее сочетание safety/perf |
+| Альтернативно | `sqlx` | Если хочется ad‑hoc SQL |
+| Migrations | `goose` | Простой, стабильный |
+| Auth | `golang-jwt/jwt` + OAuth2 (`coreos/go-oidc`) | Стандартно |
+| Cache / queues | Redis + `redis/go-redis` | Кэш, rate limit, pub/sub |
+| Background jobs | `hibiken/asynq` | Redis‑backed, удобный UI |
+| Storage | S3‑compatible (`aws-sdk-go-v2`) | Универсально, MinIO для self‑host |
+| Validation | `go-playground/validator` | Стандарт |
+| Logging | `log/slog` (stdlib) | Структурированные логи без зависимостей |
+| Tracing | OpenTelemetry (`go.opentelemetry.io/otel`) | Стандарт |
+| Email | Postmark / SES через шаблоны | По вкусу |
+| Stripe | `stripe-go/v76` | Биллинг |
+| Config | `kelseyhightower/envconfig` | 12‑factor |
+| Tests | stdlib `testing` + `testcontainers-go` | Интеграционные с Postgres |
+| Build | многоэтапный Dockerfile, distroless | Минимальный образ |
+| Deploy | Kubernetes (helm chart) или Fly.io | По нагрузке |
 
-Для пользователей, кто хочет «нативное окно, а не вкладка в браузере»:
+Структура внутри `api/`:
 
-- **Photino.NET** — тонкий .NET wrapper над системным WebView (WebView2
-  на Win, WKWebView на Mac, WebKitGTK на Linux). ~5 МБ, не тянет
-  Chromium. Открывает наш React UI и работает как обычный desktop‑app.
-- Альтернатива: Electron (но тогда +120 МБ Chromium, не нужно).
+```
+api/
+├── cmd/
+│   └── api/
+│       └── main.go
+├── internal/
+│   ├── http/         (handlers, middleware, router)
+│   ├── auth/
+│   ├── orgs/
+│   ├── projects/
+│   ├── presets/
+│   ├── runs/
+│   ├── licenses/
+│   ├── telemetry/
+│   ├── webhooks/
+│   ├── billing/
+│   ├── storage/      (Postgres, Redis, S3 wrappers)
+│   └── platform/     (config, logging, otel, errors)
+├── migrations/       (goose SQL migrations)
+├── sqlc.yaml
+├── go.mod
+├── Dockerfile
+└── README.md
+```
 
-Один и тот же agent‑бинарь запускается:
-- **CLI mode**: `gdd-agent.exe` → tray icon, юзер открывает `localhost:9700`
-  в любом браузере.
-- **Desktop mode**: `gdd.exe` (Photino) → нативное окно с UI.
+### 4.3. Local agent (`agent/`)
 
-### 4.4. Docker образ (для DockerEngine)
+| Что | Выбор | Почему |
+|---|---|---|
+| Язык | Rust stable (2021 edition, 1.78+) | Минимальный бинарь, max performance, нет GC |
+| Async runtime | `tokio` | Стандарт |
+| HTTP/WS server | `axum` 0.7 | Идиоматичный, на `tower`, `hyper` |
+| WS client | `tokio-tungstenite` | Стандарт для CDP WS |
+| CDP клиент | `chromiumoxide` (high‑level) | Playwright‑like API, обширное покрытие CDP |
+| Альтернативно для CDP | raw `tokio-tungstenite` + `serde_json` | Если нужно полностью контролировать low‑level |
+| Docker SDK | `bollard` | Активный, типизированный |
+| Process control | `tokio::process::Command` | stdlib async |
+| Сериализация | `serde` + `serde_json` + `serde_with` | Стандарт |
+| Конфиг | `toml` + `serde` | Читаемый формат |
+| HTTP клиент | `reqwest` (rustls feature) | Для облачного API |
+| Logging | `tracing` + `tracing-subscriber` | Структурированные логи, файлы и stdout |
+| Errors | `thiserror` (для библиотек) + `anyhow` (для main) | Стандартная пара |
+| Embed React build | `rust-embed` | React build встраивается в бинарь для local‑mode |
+| Tray icon | `tray-icon` (cross‑platform) | Win/Mac/Linux |
+| Cross‑compile | `cargo` + `rustup target add` + `cross` | Тривиально |
+| Сборка релизов | GitHub Actions matrix | Стандарт |
+| Подпись | Authenticode (Win), notarytool (Mac) | Обязательно для дистрибуции |
+| Распространение | подписанные бинари в GitHub Releases + auto‑update | self‑update через `self_update` crate |
+| Tests | stdlib + `tokio::test` + `wiremock` для HTTP | Стандарт |
 
-Базовый Dockerfile (упрощённо):
+Структура `agent/`:
+
+```
+agent/
+├── Cargo.toml
+├── Cargo.lock
+├── build.rs                 (embed React, версия из git)
+├── src/
+│   ├── main.rs              (CLI args, запуск runtime)
+│   ├── config.rs
+│   ├── transport/
+│   │   ├── mod.rs
+│   │   ├── ws.rs            (UI ↔ agent JSON‑RPC)
+│   │   └── jsonrpc.rs       (общие типы, зеркало MCP)
+│   ├── mcp/
+│   │   ├── mod.rs
+│   │   ├── server.rs        (Streamable HTTP + SSE, портирован из McpServer.cs)
+│   │   ├── registry.rs
+│   │   └── types.rs
+│   ├── tools/               (9 модулей, портированы из Mcp/Tools/)
+│   │   ├── player.rs
+│   │   ├── navigation.rs
+│   │   ├── interaction.rs
+│   │   ├── read.rs
+│   │   ├── execution.rs
+│   │   ├── auth.rs
+│   │   ├── emulation.rs
+│   │   ├── state.rs
+│   │   └── diagnostics.rs
+│   ├── services/            (портированы из Services/)
+│   │   ├── quick_auth.rs
+│   │   ├── token_injection.rs
+│   │   ├── telegram.rs
+│   │   ├── device_emulation.rs
+│   │   ├── location_emulation.rs
+│   │   ├── network_emulation.rs
+│   │   ├── console_interception.rs
+│   │   ├── network_monitoring.rs
+│   │   └── notification_interception.rs
+│   ├── engines/
+│   │   ├── mod.rs           (trait BrowserEngine)
+│   │   ├── chromium_process.rs   (CLI backend)
+│   │   ├── docker.rs             (Docker backend)
+│   │   └── browser_finder.rs     (поиск системного Chrome/Edge per OS)
+│   ├── cdp/
+│   │   ├── mod.rs
+│   │   └── client.rs        (low‑level wrapper, если не chromiumoxide)
+│   ├── cloud/
+│   │   ├── mod.rs
+│   │   ├── client.rs        (REST к api.gdd.app)
+│   │   ├── auth.rs
+│   │   ├── telemetry.rs
+│   │   └── updates.rs
+│   ├── files/
+│   │   ├── mod.rs
+│   │   ├── upload.rs
+│   │   └── download.rs
+│   ├── screencast/
+│   │   ├── mod.rs
+│   │   └── pump.rs
+│   ├── tray/
+│   │   ├── mod.rs
+│   │   └── platform.rs
+│   └── web/                 (опц. embed React build для local‑mode)
+│       └── mod.rs
+└── tests/
+    ├── e2e_chromium_process.rs
+    └── e2e_docker.rs
+```
+
+### 4.4. Docker‑образ для DockerEngine (`docker/chromium/`)
 
 ```dockerfile
 FROM debian:bookworm-slim
-RUN apt-get update && apt-get install -y \
-    chromium xvfb fonts-liberation \
-    --no-install-recommends \
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      chromium \
+      xvfb \
+      fonts-liberation \
+      libnss3 libxss1 libasound2 \
+      ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 EXPOSE 9222
 COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 ENTRYPOINT ["/entrypoint.sh"]
-# entrypoint: Xvfb :99 & DISPLAY=:99 chromium \
-#   --remote-debugging-address=0.0.0.0 --remote-debugging-port=9222 \
-#   --user-data-dir=/profile --no-sandbox --disable-dev-shm-usage ...
 ```
 
-Образы: `gdd/chromium:128`, `gdd/firefox:latest`, `gdd/webkit:latest`
-(последние два — фаза 4+).
+`entrypoint.sh`:
+
+```bash
+#!/bin/sh
+Xvfb :99 -screen 0 1920x1080x24 &
+export DISPLAY=:99
+exec chromium \
+  --no-sandbox \
+  --disable-dev-shm-usage \
+  --remote-debugging-address=0.0.0.0 \
+  --remote-debugging-port=9222 \
+  --user-data-dir=/profile \
+  --no-first-run \
+  "$@"
+```
+
+Образы публикуются в GHCR: `ghcr.io/<org>/gdd-chromium:<chromium-version>`.
 
 ---
 
-## 5. Структура репозитория (целевая)
+## 5. Структура репозитория
 
 ```
 GDD/
 ├── docs/
-│   └── WEB_PORT_PLAN.md          (этот файл)
+│   └── WEB_PORT_PLAN.md         (этот файл)
 ├── src/
-│   ├── BrowserXn/                (текущий WPF, остаётся как desktop‑mode)
-│   ├── Gdd.Core/                 (новый: общая бизнес‑логика, Services/, Mcp/)
-│   ├── Gdd.Engines.WebView2/     (выделить из BrowserXn)
-│   ├── Gdd.Engines.ChromiumProcess/   (новый: CLI backend)
-│   ├── Gdd.Engines.Docker/       (новый: Docker backend)
-│   ├── Gdd.Agent/                (новый: ASP.NET Core host, точка входа web‑mode)
-│   └── Gdd.Desktop/              (новый: Photino shell, тонкая обёртка над Agent)
-├── web/
+│   └── BrowserXn/               (легаси .NET WPF GDD, остаётся как desktop‑Win версия и референс)
+├── web/                         (React frontend)
 │   ├── package.json
 │   ├── vite.config.ts
+│   ├── tailwind.config.ts
+│   ├── tsconfig.json
+│   ├── index.html
 │   ├── src/
+│   │   ├── main.tsx
 │   │   ├── App.tsx
-│   │   ├── stores/
+│   │   ├── routes/
+│   │   ├── stores/              (Zustand)
 │   │   ├── components/
-│   │   │   ├── VideoWall.tsx
-│   │   │   ├── PlayerCell.tsx        (canvas + input handlers)
+│   │   │   ├── VideoWall/
+│   │   │   │   ├── VideoWall.tsx
+│   │   │   │   ├── PlayerCell.tsx     (canvas + input handlers)
+│   │   │   │   └── coords.ts          (canvas → viewport mapping)
 │   │   │   ├── Toolbar.tsx
 │   │   │   ├── SettingsPanel.tsx
-│   │   │   └── McpConsole.tsx
+│   │   │   ├── McpConsole.tsx
+│   │   │   └── auth/
 │   │   ├── transport/
-│   │   │   └── ws-client.ts
-│   │   └── types/                    (зеркало JSON‑RPC контрактов)
-│   └── dist/                         (build output, embed в Gdd.Agent)
+│   │   │   ├── localAgent.ts          (WS клиент к Rust)
+│   │   │   └── cloud.ts               (REST + WS к Go)
+│   │   ├── types/                     (shared с агентом и backend'ом)
+│   │   └── utils/
+│   └── tests/
+├── api/                         (Go cloud backend, см. §4.2)
+├── agent/                       (Rust local agent, см. §4.3)
 ├── docker/
-│   ├── chromium/
-│   │   ├── Dockerfile
-│   │   └── entrypoint.sh
-│   └── firefox/                      (фаза 4)
+│   └── chromium/
+│       ├── Dockerfile
+│       └── entrypoint.sh
+├── shared/                      (опц. shared schemas)
+│   ├── jsonrpc.schema.json
+│   └── README.md
 ├── scripts/
-│   ├── build-agent.ps1
-│   ├── build-web.ps1
-│   └── package-installer.ps1
-└── BrowserXn.sln                     (добавить новые проекты)
+│   ├── build-all.sh
+│   ├── package-agent-win.ps1
+│   ├── package-agent-mac.sh
+│   └── package-agent-linux.sh
+├── .github/
+│   └── workflows/
+│       ├── web-build.yml
+│       ├── api-build.yml
+│       ├── agent-build.yml          (matrix: win/mac/linux × x64/arm64)
+│       └── release.yml
+├── BrowserXn.sln                (для легаси)
+├── README.md
+└── LICENSE
 ```
 
 ---
 
 ## 6. Фазировка реализации
 
-Цель: оба backend'а делаются **одновременно**, потому что 80% кода у них
-общее — расходятся только в реализации `IBrowserEngine`. Такой подход
-даёт сразу полный охват аудитории.
+Принцип: оба browser backend'а (CLI и Docker) делаются параллельно через
+`BrowserEngine` trait. Frontend и cloud backend разрабатываются
+параллельно с агентом.
 
-### Фаза 0. Подготовка (1–2 дня)
+### Фаза 0. Подготовка (3–5 дней)
 
-- [ ] Создать solution‑структуру (`Gdd.Core`, `Gdd.Agent`, `Gdd.Engines.*`).
-- [ ] Выделить из `src/BrowserXn/` в `Gdd.Core`: `Mcp/`, `Services/`,
-      `Models/`, `Abstractions/`. Это **код, который не зависит от WPF**.
-- [ ] Снять из `Mcp/McpServer.cs` зависимость от
-      `Application.Current.Dispatcher` — заменить на `IDispatcher`
-      абстракцию (в desktop‑режиме = WPF Dispatcher, в web‑режиме =
-      thread‑pool / `Task.Run`).
-- [ ] Расширить `IBrowserEngine` под новый контракт (см. §3.2).
-- [ ] `WebView2Engine` адаптировать под новый контракт. Должен по‑прежнему
-      работать в текущем десктопном UI без регрессии.
+- [ ] Создать структуру репо (`web/`, `api/`, `agent/`, `docker/`).
+- [ ] Свежий Cargo workspace в `agent/`.
+- [ ] Каркас Vite+React+TS в `web/` с роутингом и заглушкой видеостены.
+- [ ] Каркас Go в `api/` с health‑check и одним эндпоинтом.
+- [ ] Зафиксировать схему JSON‑RPC в `shared/jsonrpc.schema.json` (или
+      генерировать из Rust через `schemars`).
+- [ ] Базовый CI: lint и тесты для каждой части.
 
-### Фаза 1. Agent skeleton + ChromiumProcessEngine + минимальный Web UI (1–2 нед)
+### Фаза 1. Rust agent — skeleton + ChromiumProcessEngine + JPEG screencast (1.5–2 нед)
 
-- [ ] `Gdd.Agent`: ASP.NET Core minimal API, Kestrel на `localhost:9700`,
-      WS endpoint `/ws`, переезд MCP endpoint'ов из `McpServer.cs`.
-- [ ] `Gdd.Engines.ChromiumProcess`: запуск `chrome.exe`, CDP WebSocket,
-      реализация `IBrowserEngine`.
-- [ ] `web/`: React skeleton, WS клиент, одна `<canvas>` ячейка, базовые
-      input handlers, кнопка «Add Player».
-- [ ] CDP screencast pipeline: `Page.startScreencast` → агент → WS →
-      canvas. С `screencastFrameAck` — обязательно, иначе CDP перестаёт
-      слать кадры.
-- [ ] Маппинг координат `canvas → viewport` (скейл‑фактор из размеров
-      кадра).
-- [ ] DoD: можно открыть `http://localhost:9700`, нажать «+», увидеть
-      реальный браузер с openable example.com, кликать и вводить текст.
+- [ ] `agent/`: `axum` HTTP/WS server на `localhost:9700`.
+- [ ] `engines/chromium_process.rs`: поиск браузера, спавн с
+      `--remote-debugging-port=0`, чтение `DevToolsActivePort`,
+      подключение к CDP WS.
+- [ ] `cdp/client.rs` (или `chromiumoxide`): базовый wrapper.
+- [ ] `screencast/pump.rs`: `Page.startScreencast` + ack +
+      broadcast в WS.
+- [ ] `transport/ws.rs`: JSON‑RPC, методы `players.add/remove/list/navigate`,
+      `input.mouse/key/wheel/text`, `screencast.start/stop`.
+- [ ] Обработка `Browser.close` и cleanup `user-data-dir` опционально.
+- [ ] **DoD**: `cargo run`, открываешь `http://localhost:9700` → React
+      stub с одной ячейкой, видишь живой браузер, кликаешь, печатаешь.
 
-### Фаза 2. Перенос Services/Tools на новый transport (1–2 нед)
+### Фаза 2. Web UI — продвинутый (1.5–2 нед, параллельно с фазой 1)
 
-- [ ] `CdpService` подключается к `IBrowserEngine.CdpWebSocketUrl` —
-      универсально для CLI и Docker.
-- [ ] Все `Mcp/Tools/*.Register(...)` перенести на агент. UI получает
-      возможность вызывать тулы через `/mcp` (это автоматически работает,
-      так как MCP‑сервер уже мигрирован в фазе 1).
-- [ ] Quick Auth, device emulation, geolocation, network throttling,
-      console interception, network monitoring — все Services работают
-      из агента.
-- [ ] Telegram `initData` injection — то же самое.
-- [ ] DoD: все 9 групп MCP‑тулов вызываются из MCP‑клиента (Claude
-      Desktop / curl) и UI отражает изменения.
+- [ ] Видеостена с CSS Grid (`VideoWall.tsx`), responsive.
+- [ ] `PlayerCell.tsx`: canvas с draw loop, input handlers, координатное
+      масштабирование.
+- [ ] WS клиент с реконнектом и backpressure.
+- [ ] Toolbar: Add Player, Quick Auth All, Navigate All, URL bar.
+- [ ] SettingsPanel: per‑player engine selection (CLI/Docker), device
+      preset, geo, network.
+- [ ] McpConsole: список доступных тулов, форма вызова, JSON‑ответ.
+- [ ] **DoD**: 16 ячеек, плавный ввод во всех, выбор Docker engine
+      переключает backend.
 
-### Фаза 3. DockerEngine (1.5–2 нед, параллельно с фазой 2)
+### Фаза 3. DockerEngine + multi‑engine (1.5–2 нед, параллельно)
 
-- [ ] `docker/chromium/Dockerfile` + `entrypoint.sh` (Xvfb + headed
-      Chromium с `--remote-debugging-address=0.0.0.0`).
-- [ ] Опубликовать образ в registry (GHCR / Docker Hub) — `gdd/chromium`.
-- [ ] `Gdd.Engines.Docker`: через `Docker.DotNet` поднимает контейнер,
-      резолвит mapped port, открывает CDP.
-- [ ] Volume management для профилей: создание, восстановление,
-      snapshot/restore (опционально для фазы 3, можно фазу 5).
-- [ ] Health‑check Docker daemon при старте, понятная ошибка если нет.
-- [ ] Сетевая изоляция per‑player через отдельные `docker network create`
-      (для realistic proxy / VPN сценариев — фаза 5, но архитектурно
-      заложить сейчас).
-- [ ] UI: переключатель backend в настройках (CLI / Docker), per‑player
-      выбор движка (Chromium‑proc / Chromium‑docker).
-- [ ] DoD: с тем же UI можно поднять player в контейнере и
-      взаимодействовать как с CLI‑player'ом. MCP‑тулы работают
-      одинаково.
+- [ ] `docker/chromium/Dockerfile` + `entrypoint.sh`, билд и push в GHCR.
+- [ ] `engines/docker.rs`: `bollard`, поднять контейнер, резолвить
+      mapped port, открыть CDP.
+- [ ] Volume management для профилей (`gdd-profile-<id>`), создание,
+      персистентность между запусками.
+- [ ] Health‑check Docker daemon при старте, понятная ошибка если нет
+      или неподдерживаемая версия.
+- [ ] Docker socket per‑OS detection: `unix:///var/run/docker.sock` /
+      `npipe://./pipe/docker_engine`. `bollard` это умеет.
+- [ ] (Опц.) Сетевые namespaces per‑player для realistic proxy/VPN
+      сценариев — заложить контракт, реализация позже.
+- [ ] **DoD**: с тем же UI можно выбрать Docker engine, поднять
+      player в контейнере, всё взаимодействие работает идентично CLI.
 
-### Фаза 4. Файлы, IME, advanced input (1 нед)
+### Фаза 4. Перенос Services и MCP тулов (2 нед)
 
-- [ ] `Page.setInterceptFileChooserDialog` + UI диалог + upload pipe.
-- [ ] `Browser.setDownloadBehavior` + download pipe.
-- [ ] `Input.insertText` для не‑ASCII ввода и IME.
-- [ ] Helper‑скрипт для drag‑drop файлов из ОС
-      (`Page.addScriptToEvaluateOnNewDocument`).
-- [ ] Paste картинки из буфера.
-- [ ] DoD: можно загрузить файл в форму, сделать drag‑drop, скачать
-      файл и получить его в браузере юзера.
+- [ ] Портировать в `agent/services/`: QuickAuth, TokenInjection,
+      Telegram (`initData` HMAC + injection), DeviceEmulation,
+      LocationEmulation, NetworkEmulation, ConsoleInterception,
+      NetworkMonitoring, NotificationInterception.
+- [ ] Портировать `agent/mcp/server.rs` (Streamable HTTP + SSE) и
+      реализовать 9 групп тулов в `agent/tools/*`.
+- [ ] Helper‑скрипты для drag/drop файлов и paste —
+      `Page.addScriptToEvaluateOnNewDocument`.
+- [ ] **DoD**: Claude Desktop подключается к `localhost:9700/mcp`,
+      все тулы работают, эмуляция устройств/гео/сети применяется,
+      Telegram TMA с подделанным `initData` открывается.
 
-### Фаза 5. Полировка + дистрибуция (1–2 нед)
+### Фаза 5. Файлы, IME, advanced input (1 нед)
 
-- [ ] AOT‑сборка агента, тест размера и времени старта.
-- [ ] Tray icon (CLI mode) — Win/Mac/Linux.
-- [ ] `Gdd.Desktop` (Photino shell) для пользователей, кто хочет
-      нативное окно.
-- [ ] Auto‑update (агент проверяет GitHub releases / свой сервер).
-- [ ] Code signing (Authenticode + Apple notarization).
-- [ ] Инсталляторы: MSI (Win), DMG/PKG (Mac), DEB/RPM/AppImage (Linux).
-- [ ] Snapshot/restore профилей (Docker volumes, native zip).
-- [ ] Документация: README, getting started для CLI и Docker сценариев.
+- [ ] `Page.setInterceptFileChooserDialog` + UI диалог + upload.
+- [ ] `Browser.setDownloadBehavior` + download bridge.
+- [ ] `Input.insertText` для не‑ASCII / IME.
+- [ ] Drag‑and‑drop файлов из ОС.
+- [ ] Paste файла из буфера.
+- [ ] **DoD**: загрузка файла в форму, drag‑drop из ОС, скачивание
+      файла, всё работает в обоих backend'ах.
 
-### Фаза 6+. Будущее (вне MVP)
+### Фаза 6. Cloud backend MVP (3–4 нед, можно параллельно с 4–5)
 
-- Запись/повтор действий → экспорт в Playwright‑скрипт.
-- Ассершены и шаги (DSL).
-- Отчёты с видео сессии, console/network логами.
+- [ ] Go API skeleton: `chi` router, postgres connection, `sqlc`.
+- [ ] Auth: signup, login (JWT), OAuth Google/GitHub.
+- [ ] Orgs/projects: CRUD, инвайты, RBAC.
+- [ ] Presets: CRUD, sync с агентом.
+- [ ] Telemetry intake.
+- [ ] Update channel: `GET /agent/latest`.
+- [ ] License‑check endpoint (заготовка).
+- [ ] Stripe‑интеграция (фоном, заглушка эндпоинтов).
+- [ ] Web UI: страницы login/signup, settings, dashboard, project
+      switcher, presets editor.
+- [ ] **DoD**: пользователь регистрируется, создаёт проект, сохраняет
+      пресет в облаке, агент пуллит этот пресет.
+
+### Фаза 7. TLS / cloud‑mode для локального агента (1 нед)
+
+- [ ] DNS `local.gdd.app` → 127.0.0.1.
+- [ ] Wildcard cert `*.local.gdd.app` от Let's Encrypt, выпуск через
+      cloud backend.
+- [ ] Агент при первом запуске: pull cert, hot‑reload каждые N часов.
+- [ ] Frontend cloud‑mode: connect to `wss://local.gdd.app:9700`.
+- [ ] **DoD**: `https://gdd.app` корректно общается с локальным
+      агентом по WSS.
+
+### Фаза 8. Дистрибуция и подпись (1–1.5 нед)
+
+- [ ] AOT‑релизы через `cargo` matrix (Win/Mac/Linux × x64/arm64).
+- [ ] Signing: Authenticode (Win, EV‑cert), Apple notarization.
+- [ ] Auto‑update через `self_update` crate.
+- [ ] Tray icon на всех ОС.
+- [ ] Установщики: MSI (Win), DMG/PKG (Mac), DEB/RPM/AppImage (Linux).
+- [ ] **DoD**: пользователь скачивает установщик с gdd.app, ставит,
+      агент работает, обновление приходит автоматически.
+
+### Фаза 9+. После MVP
+
+- Snapshot/restore профилей (Docker volumes / native zip).
+- Запись/повтор сценариев → экспорт в Playwright.
+- Видео сессии и отчёты в облаке.
 - Визуальная регрессия.
-- CI mode (headless, JUnit/Allure отчёты, status check на PR).
+- CI mode (headless‑headed CDP, JUnit/Allure отчёты, GitHub Action).
 - Multi‑engine matrix: Firefox / WebKit Docker образы.
-- WebRTC screencast вместо JPEG.
-- Команды и шеринг сессий (требует серверной части — отдельная история).
+- WebRTC скринкаст (Rust‑агент с `webrtc.rs`) вместо JPEG.
+- Live‑шаринг сессии команде через cloud relay.
 
 ---
 
@@ -518,97 +784,113 @@ GDD/
 
 | Решение | Выбор | Почему |
 |---|---|---|
-| Язык агента | .NET 8 AOT | ~70% существующего кода реюзается. ~25 МБ self‑contained. |
-| Не используем Playwright | Прямой CDP через `ClientWebSocket` | У нас уже есть `CdpService`. Минус 200+ МБ зависимостей. |
-| HTTP сервер | Kestrel + ASP.NET Core minimal API | Стандарт .NET, WS из коробки, AOT‑совместим. |
-| Frontend framework | React + TS + Vite | Самый широкий найм и экосистема. |
-| Стейт | Zustand | Минимальный boilerplate. |
-| Стили | Tailwind | Быстро итерировать UI. |
-| Транспорт UI↔Agent | JSON‑RPC поверх WebSocket | Симметрично с MCP, единый формат. |
-| Скринкаст v1 | CDP `Page.startScreencast` JPEG | Ноль зависимостей, работает везде. |
-| Скринкаст v2 (после MVP) | WebRTC через локальный peer | Лучше FPS, дешевле CPU при 16+ ячейках. |
-| Docker SDK | `Docker.DotNet` | Типизированный, не shell out. |
-| Desktop shell | Photino.NET (опционально) | 5 МБ, использует системный WebView. |
-| Сохраняем `WebView2Engine` | Да, как desktop‑backend | Текущая Windows‑аудитория не теряется. |
-| Code signing | Обязательно перед релизом | Без него SmartScreen/Gatekeeper. |
+| Frontend | React 18 + TS + Vite + Tailwind + Zustand | Стандарт, найм, скорость |
+| Cloud backend | Go 1.22 + chi + Postgres + sqlc + Redis | Простой ops, быстрый старт |
+| Local agent | Rust 1.78+ + tokio + axum + bollard + chromiumoxide | Минимальный бинарь, true cross‑compile, нет GC, max performance |
+| Browser backends | `ChromiumProcessEngine` (CLI) + `DockerEngine` — оба одновременно | Покрывает обе аудитории через один код |
+| Не используем Playwright/Node | Прямой CDP через `chromiumoxide` | Минус 200 МБ зависимостей, контроль |
+| Транспорт UI↔Agent | JSON‑RPC over WebSocket | Симметрия с MCP |
+| Транспорт UI↔Cloud | REST + WS | Стандарт |
+| Скринкаст v1 | CDP `Page.startScreencast` JPEG | Нулевые зависимости |
+| Скринкаст v2 (после MVP) | WebRTC через `webrtc.rs` | Лучше FPS, дешевле CPU при 16+ ячейках |
+| TLS для local | `local.gdd.app` → 127.0.0.1 + wildcard cert | Паттерн Plex / Tailscale, нет mixed content |
+| Локальный mode без облака | Агент сам отдаёт React build из `rust-embed` | MVP без cloud зависимости |
+| C# код GDD | Только референс, не реюз | Перенос языка, не миграция |
+| Подпись бинарей | Authenticode + Apple notarytool | Обязательно для распространения |
 
 ---
 
-## 8. Открытые вопросы, которые нужно решить по ходу
+## 8. Открытые вопросы
 
-1. **Auth для агента**. Локальный `localhost:9700` доступен любому
-   процессу на машине. Нужен ли token‑based auth между UI и агентом?
-   Скорее да — простой shared secret в URL или header, генерируется при
-   старте агента. Иначе любая открытая вкладка может подключиться.
-2. **Пул прогретых браузеров** для CLI и Docker — делать сразу или
-   позже? Скорее позже, в фазе 5.
-3. **Telegram Desktop emulation**. Telegram TMA в реальном Telegram
-   Desktop работает на Qt WebEngine. Нужно ли воспроизводить его
-   user‑agent + специфическое окружение? Если да — добавить как
-   `TelegramDesktopProfile` в `DeviceEmulationService`.
-4. **Multi‑monitor для CLI mode**: при 16 native окнах — куда их класть?
-   Этот вопрос отпадает в Web UI (всё в canvas), но если кто‑то хочет
-   режим «native окна tiled» — это уже задача оконного менеджера.
-5. **Snapshot формат для профилей**: tar.gz volume (Docker) vs zip папки
-   (CLI). Хотим ли единый формат для портабельности между backends?
-   Желательно да — тогда `gdd-profile.zip` со схемой, которую обе
-   реализации умеют читать.
-6. **MCP‑proxy**: оставить ли `mcp-proxy.ps1` или переписать на
-   кросс‑платформенный bridge (Node? Go single binary?). Многие
-   MCP‑клиенты ещё на stdio.
+1. **Доставка wildcard cert** для `*.local.gdd.app`. Варианты:
+   (a) встраивать приватный ключ в подписанный бинарь — security
+   tradeoff (любой может извлечь), (b) пуллить per‑install от cloud
+   backend под аутентификацией, (c) каждый юзер выпускает свой через
+   ACME с DNS‑01 (требует контроля DNS — нет). Скорее (b).
+2. **Self‑hosted режим** (без cloud): должен ли агент работать полностью
+   автономно, без `api.gdd.app`? Скорее да — local‑mode по умолчанию,
+   cloud‑mode по логину.
+3. **Лицензирование**: open core / freemium / closed source SaaS?
+   Влияет на доступность кода агента.
+4. **CDP клиент**: `chromiumoxide` (high‑level, удобно) vs raw
+   `tokio-tungstenite` (полный контроль). Скорее `chromiumoxide` для
+   скорости разработки, fallback на raw для специфичных сценариев.
+5. **Telegram Desktop emulation**: TMA в реальном Telegram Desktop
+   работает на Qt WebEngine. Нужно ли воспроизводить его user‑agent +
+   environment? Если да — `TelegramDesktopProfile` в DeviceEmulation.
+6. **Snapshot формат профилей**: tar.gz volume (Docker) vs zip папки
+   (CLI). Хотим ли единый портабельный формат? Желательно.
+7. **MCP‑proxy**: оставлять `mcp-proxy.ps1` или переписать на
+   `gdd-mcp-bridge` (отдельный маленький Rust‑бинарь для stdio↔HTTP).
+   Скорее переписать, для кросс‑платформы.
+8. **Скейл агента**: один агент на машину, или несколько (для разных
+   проектов/окружений)? Один + workspaces — проще.
+9. **Auth между React и локальным агентом**: agent при старте
+   генерирует token, кладёт в OS‑specific secure storage, React
+   читает через web‑интеграцию (cloud отдаёт токен) или через локальный
+   `GET /pair` с одноразовым кодом. Нужно продумать UX без серверной
+   зависимости.
 
 ---
 
 ## 9. Что должен сделать assistant в новом чате
 
-1. Прочитать этот документ и `src/BrowserXn/` для актуального состояния
-   кода (особенно `Mcp/`, `Services/`, `Abstractions/`, `Engines/`).
-2. Подтвердить план или задать уточняющие вопросы по §8.
-3. Начать с **Фазы 0** — она разблокирует всё остальное.
-4. Работать в ветке `claude/review-project-docs-eXqi1` (или новой
-   фичевой), коммитить часто, маленькими атомарными изменениями.
-5. Не ломать текущий WPF GDD до конца фазы 1 — оба должны собираться
-   параллельно.
+1. Прочитать этот документ полностью.
+2. Прочитать `src/BrowserXn/` для понимания референсного кода (особенно
+   `Mcp/`, `Services/`, `Abstractions/IBrowserEngine.cs`).
+3. Подтвердить план или задать уточняющие вопросы по §8.
+4. Начать с **Фазы 0** — структура репо и заглушки.
+5. Дальше идти параллельно: фаза 1 (Rust agent) + фаза 2 (Web UI) +
+   фаза 3 (Docker) + фаза 6 (Go backend) — у разных компонентов
+   независимые critical path'ы. Если разработчик один, последовательность:
+   0 → 1 → 2 → 4 → 3 → 5 → 6 → 7 → 8.
+6. Работать в ветке `claude/review-project-docs-eXqi1` или ответвлять
+   фичевые ветки от неё. Часто и атомарно коммитить.
+7. Не трогать `src/BrowserXn/` — это легаси‑референс, ломать его не
+   нужно. Можно читать.
 
 ### 9.1. Команды для быстрой ориентации
 
 ```bash
-# Структура
+# Структура существующего GDD (референс для портирования)
 ls -la src/BrowserXn/
 
-# Что уже абстрагировано
+# Что уже абстрагировано в C# — образец для Rust trait
 cat src/BrowserXn/Abstractions/IBrowserEngine.cs
-cat src/BrowserXn/Abstractions/IBrowserEngineFactory.cs
 
-# MCP сервер и тулы
+# MCP сервер и тулы — образец для портирования
 ls src/BrowserXn/Mcp/Tools/
 cat src/BrowserXn/Mcp/McpServer.cs
 
-# Конфиг и точка входа
-cat src/BrowserXn/App.xaml.cs
-cat src/BrowserXn/appsettings.json
+# Бизнес‑логика, которую переносим
+ls src/BrowserXn/Services/
+cat src/BrowserXn/Services/QuickAuthService.cs
+cat src/BrowserXn/Services/TelegramInitDataService.cs
 
-# Текущий движок
-cat src/BrowserXn/Engines/WebView2Engine.cs
+# Конфиг
+cat src/BrowserXn/appsettings.json
 ```
 
 ---
 
 ## 10. Глоссарий
 
-- **Player** — одна изолированная браузерная сессия. В UI = одна ячейка
+- **Player** — одна изолированная браузерная сессия, одна ячейка
   видеостены.
-- **Backend** — реализация `IBrowserEngine`. Сейчас: WebView2. Цель: +
-  ChromiumProcess (CLI) + Docker.
-- **Agent** — .NET процесс на машине пользователя, который слушает
-  `localhost:9700`, оркестрирует players, проксирует MCP, мостит UI ↔ CDP.
-- **CDP** — Chrome DevTools Protocol. JSON‑RPC поверх WebSocket. Уже
-  используется в `CdpService`.
-- **MCP** — Model Context Protocol. Уже реализован в `Mcp/McpServer.cs`
-  для управления GDD из LLM‑агентов.
-- **TMA** — Telegram Mini App. Один из ключевых юзкейсов GDD —
-  тестирование TMA с подделкой `initData`.
-- **Screencast** — поток JPEG/H264 кадров со страницы. CDP метод
-  `Page.startScreencast` выдаёт base64‑JPEG'и.
-- **CLI backend** — `ChromiumProcessEngine`, использует системный браузер.
-- **Docker backend** — `DockerEngine`, контейнер per player.
+- **Engine** / **Backend** — реализация `BrowserEngine` trait. Есть
+  `ChromiumProcessEngine` (CLI) и `DockerEngine`.
+- **Agent** — Rust CLI‑процесс на машине пользователя. Слушает
+  `localhost:9700`.
+- **Cloud** / **API** — Go‑сервис на `api.gdd.app`. Аккаунты,
+  проекты, пресеты, история, лицензии.
+- **CDP** — Chrome DevTools Protocol. JSON‑RPC поверх WebSocket.
+- **MCP** — Model Context Protocol. Управление GDD из LLM‑агентов.
+- **TMA** — Telegram Mini App. Один из ключевых юзкейсов GDD.
+- **Screencast** — поток JPEG/H264 кадров со страницы. CDP
+  `Page.startScreencast`.
+- **Local mode** — агент работает автономно, React загружается с
+  `localhost:9700`, без cloud.
+- **Cloud mode** — React грузится с `gdd.app`, общается с агентом по
+  `wss://local.gdd.app:9700`, синхронизация через `api.gdd.app`.
+- **CLI backend** = `ChromiumProcessEngine` (системный браузер).
+- **Docker backend** = `DockerEngine` (контейнер per player).
