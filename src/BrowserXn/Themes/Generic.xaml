@@ -2,7 +2,7 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
     <!-- TAPP / Турнирка dark theme -->
-    <Color x:Key="BackgroundColor">#FF0B0E20</Color>
+    <Color x:Key="BackgroundColor">#FF090B1A</Color>
     <Color x:Key="SurfaceColor">#FF2A2A35</Color>
     <Color x:Key="SurfaceLightColor">#FF3A3A48</Color>
     <Color x:Key="AccentColor">#FF10B981</Color>

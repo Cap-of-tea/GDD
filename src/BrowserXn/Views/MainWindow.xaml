@@ -114,7 +114,7 @@
             </ItemsControl>
 
             <Image x:Name="MascotImage"
-                   Source="C:\VS\GDD\Design\giggly-dazzling-duckling.png"
+                   Source="C:\VS\BrowserXn\Design\giggly-dazzling-duckling.png"
                    HorizontalAlignment="Left"
                    VerticalAlignment="Center"
                    Margin="20,0,0,0"
