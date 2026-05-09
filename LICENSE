@@ -1,21 +1,122 @@
-MIT License
+GDD — Source Available Non-Commercial License
 
-Copyright (c) 2026 Cap-of-tea
+Version 1.0, May 2026
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+Copyright (c) 2026 Cap-of-tea. All rights reserved.
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+
+1. DEFINITIONS
+
+"Software" means the GDD (Giggly-Dazzling-Duckling) application, its source
+code, compiled binaries, documentation, configuration files, and all related
+materials distributed under this License.
+
+"Copyright Holder" means Cap-of-tea, the original author and rights owner
+of the Software.
+
+"Commercial Use" means any use of the Software that is primarily intended
+for or directed toward commercial advantage or monetary compensation. This
+includes, but is not limited to:
+  (a) using the Software in the development, testing, quality assurance,
+      or deployment of commercial products or services;
+  (b) using the Software as part of paid consulting, contracting, or
+      freelance work;
+  (c) using the Software within a for-profit organization for any
+      business-related purpose;
+  (d) offering the Software, or any service based on the Software, to
+      third parties for a fee;
+  (e) using the Software as part of beta testing, quality assurance,
+      or user acceptance testing services provided on a commercial basis.
+
+"Non-Commercial Use" means personal use, academic research, education,
+evaluation, or use by non-profit organizations for non-commercial purposes.
+
+"Beta Testing Services" means any activity where a person or organization
+provides testing, quality assurance, or bug-finding services to third parties,
+whether for compensation, in exchange for services, or as part of a business
+relationship.
+
+
+2. GRANT OF RIGHTS — NON-COMMERCIAL USE
+
+Subject to the terms of this License, the Copyright Holder grants you a
+worldwide, royalty-free, non-exclusive, non-transferable, non-sublicensable
+license to:
+  (a) use the Software for Non-Commercial Use;
+  (b) view, study, and modify the source code for personal learning;
+  (c) create derivative works for Non-Commercial Use only;
+  (d) share the Software with others, provided this License is included
+      in full and unmodified.
+
+
+3. RESTRICTIONS
+
+You may NOT, without a separate written Commercial License from the
+Copyright Holder:
+
+  (a) use the Software for any Commercial Use as defined in Section 1;
+  (b) use the Software to provide Beta Testing Services to any third party;
+  (c) incorporate the Software or any substantial portion of it into a
+      commercial product or service;
+  (d) sublicense, sell, rent, lease, or otherwise commercially distribute
+      the Software;
+  (e) remove or alter any copyright notices, license texts, or attribution
+      contained in the Software.
+
+
+4. COMMERCIAL LICENSE
+
+To obtain a Commercial License that permits use of the Software in
+commercial projects, products, or services, you must contact the
+Copyright Holder:
+
+  Email: 2vsmirnov@gmail.com
+  GitHub: https://github.com/Cap-of-tea
+
+Commercial License terms, scope, and fees are determined on a case-by-case
+basis. No Commercial Use is permitted until a written Commercial License
+agreement is signed by both parties.
+
+
+5. BETA TESTING SERVICES — FULL PROHIBITION
+
+The use of the Software by individuals or organizations that provide Beta
+Testing Services is expressly prohibited without a Commercial License,
+regardless of whether such services are offered for free or for compensation.
+This restriction applies to professional testers, QA firms, crowdsourced
+testing platforms, and any similar service providers.
+
+
+6. CONTRIBUTIONS
+
+By submitting a contribution (pull request, patch, or other modification)
+to the Software, you grant the Copyright Holder a perpetual, worldwide,
+royalty-free, irrevocable license to use, reproduce, modify, sublicense,
+and distribute your contribution as part of the Software under the terms
+of this License or any future license chosen by the Copyright Holder.
+
+
+7. DISCLAIMER OF WARRANTY
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+COPYRIGHT HOLDER BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY,
+WHETHER IN AN ACTION OF CONTRACT, TORT, OR OTHERWISE, ARISING FROM, OUT OF,
+OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+
+8. TERMINATION
+
+This License is effective until terminated. Your rights under this License
+terminate automatically without notice if you fail to comply with any of its
+terms. Upon termination, you must cease all use of the Software and destroy
+all copies in your possession.
+
+
+9. GOVERNING LAW
+
+This License shall be governed by and construed in accordance with
+applicable copyright law and international treaties, without regard to
+conflict of law principles.

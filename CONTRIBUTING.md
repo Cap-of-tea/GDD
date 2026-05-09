@@ -74,3 +74,7 @@ src/BrowserXn/
 Use [GitHub Issues](https://github.com/Cap-of-tea/GDD/issues) with the provided templates:
 - **Bug Report** — for crashes, incorrect behavior, or broken tools
 - **Feature Request** — for new tools, presets, or capabilities
+
+## License
+
+GDD is **Source Available — Non-Commercial**. By contributing, you agree that your contributions are licensed under the same terms (see [LICENSE](LICENSE), Section 6). Commercial use requires a separate license from the Copyright Holder.

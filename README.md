@@ -14,7 +14,7 @@
   <img src="https://img.shields.io/badge/.NET-8.0-purple?style=flat-square" alt=".NET 8" />
   <img src="https://img.shields.io/badge/platform-Windows%2010%2F11-0078D6?style=flat-square" alt="Windows" />
   <img src="https://img.shields.io/badge/MCP-2024--11--05-green?style=flat-square" alt="MCP Protocol" />
-  <a href="LICENSE"><img src="https://img.shields.io/github/license/Cap-of-tea/GDD?style=flat-square" alt="License" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-Non--Commercial-red?style=flat-square" alt="License" /></a>
 </p>
 
 ---
@@ -314,7 +314,9 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ## License
 
-[MIT](LICENSE) — free for personal and commercial use.
+**Source Available — Non-Commercial.** Free for personal use, education, and research. Commercial use, beta testing services, and use in commercial projects require a paid license. See [LICENSE](LICENSE) for full terms.
+
+For commercial licensing inquiries: **[2vsmirnov@gmail.com](mailto:2vsmirnov@gmail.com)**
 
 ---
 
