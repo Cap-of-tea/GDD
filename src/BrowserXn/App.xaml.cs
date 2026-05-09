@@ -3,6 +3,9 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Serilog;
+using Serilog.Settings.Configuration;
+using Serilog.Sinks.File;
+using GDD.Interop;
 using GDD.Mcp;
 using GDD.Mcp.Tools;
 using GDD.Models;
@@ -21,6 +24,12 @@ public partial class App : Application
     {
         base.OnStartup(e);
 
+        if (!WebView2Check.EnsureRuntime())
+        {
+            Shutdown();
+            return;
+        }
+
         _host = Host.CreateDefaultBuilder()
             .ConfigureAppConfiguration((_, config) =>
             {
@@ -29,7 +38,9 @@ public partial class App : Application
             })
             .UseSerilog((context, loggerConfig) =>
             {
-                loggerConfig.ReadFrom.Configuration(context.Configuration);
+                var readerOptions = new ConfigurationReaderOptions(
+                    typeof(FileLoggerConfigurationExtensions).Assembly);
+                loggerConfig.ReadFrom.Configuration(context.Configuration, readerOptions);
             })
             .ConfigureServices((context, services) =>
             {
