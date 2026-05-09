@@ -61,6 +61,8 @@ var host = Host.CreateDefaultBuilder(args)
     })
     .Build();
 
+await PlaywrightSetup.EnsureBrowserAsync();
+
 var registry = host.Services.GetRequiredService<McpToolRegistry>();
 var playerManager = host.Services.GetRequiredService<IPlayerManager>();
 var appConfig = host.Services.GetRequiredService<AppConfig>();
