@@ -25,9 +25,7 @@ public sealed class PlaywrightEngine : IBrowserEngine
 
     public event EventHandler<NotificationEventArgs>? NotificationReceived;
     public event EventHandler<string>? NavigationCompleted;
-#pragma warning disable CS0067
     public event EventHandler<string>? TitleChanged;
-#pragma warning restore CS0067
 
     public PlaywrightEngine(int playerId, IBrowser browser, AppConfig config)
     {
@@ -93,9 +91,16 @@ public sealed class PlaywrightEngine : IBrowserEngine
             })();
         ");
 
-        _page.Load += (_, _) =>
+        _page.Load += async (_, _) =>
         {
             NavigationCompleted?.Invoke(this, _page?.Url ?? "");
+            try
+            {
+                var title = await _page!.TitleAsync();
+                if (!string.IsNullOrEmpty(title))
+                    TitleChanged?.Invoke(this, title);
+            }
+            catch { }
         };
 
         if (!string.IsNullOrEmpty(startUrl))

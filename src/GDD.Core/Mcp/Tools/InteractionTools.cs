@@ -38,15 +38,15 @@ public static class InteractionTools
                 {
                     var selector = selectorEl.GetString()!.Replace("'", "\\'");
                     var rectJson = await player.Engine.ExecuteJavaScriptAsync(
-                        $@"(function() {{ var el = document.querySelector('{selector}'); if (!el) return null; var r = el.getBoundingClientRect(); return JSON.stringify({{x: r.x + r.width/2, y: r.y + r.height/2}}); }})()");
+                        $@"(function() {{ var el = document.querySelector('{selector}'); if (!el) return null; var r = el.getBoundingClientRect(); return {{x: r.x + r.width/2, y: r.y + r.height/2}}; }})()");
 
                     if (rectJson == "null" || rectJson == "\"null\"")
                         return McpResult.Error($"Element '{selectorEl.GetString()}' not found");
 
-                    var clean = rectJson.Trim('"').Replace("\\\"", "\"");
-                    if (clean.StartsWith("\\"))
-                        clean = JsonSerializer.Deserialize<string>(rectJson) ?? clean;
-                    using var doc = JsonDocument.Parse(clean);
+                    var json = rectJson;
+                    if (json.StartsWith("\""))
+                        json = JsonSerializer.Deserialize<string>(json) ?? json;
+                    using var doc = JsonDocument.Parse(json);
                     x = doc.RootElement.GetProperty("x").GetDouble();
                     y = doc.RootElement.GetProperty("y").GetDouble();
                 }

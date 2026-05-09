@@ -74,6 +74,9 @@ public sealed class HeadlessPlayerManager : IPlayerManager, IAsyncDisposable
             await engine.InitializeAsync(null, ctx.CurrentUrl);
             ctx.Engine = engine;
 
+            engine.NavigationCompleted += (_, url) => ctx.CurrentUrl = url;
+            engine.TitleChanged += (_, title) => ctx.StatusText = title;
+
             _notificationService.Attach(engine, ctx.PlayerId);
             _notificationService.NotificationReceived += (_, n) =>
             {
