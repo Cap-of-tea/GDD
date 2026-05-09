@@ -25,6 +25,16 @@ public partial class MainWindow : Window
         };
     }
 
+    private void OnWindowLoaded(object sender, RoutedEventArgs e)
+    {
+        var screenW = SystemParameters.WorkArea.Width;
+        var screenH = SystemParameters.WorkArea.Height;
+        Width = screenW * 0.3;
+        Height = screenH * 0.3;
+        Left = (screenW - Width) / 2;
+        Top = (screenH - Height) / 2;
+    }
+
     private void OnMascotMouseDown(object sender, MouseButtonEventArgs e)
     {
         MascotImage.CaptureMouse();

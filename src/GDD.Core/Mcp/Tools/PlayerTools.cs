@@ -17,7 +17,13 @@ public static class PlayerTools
                     type = "object",
                     properties = new
                     {
-                        count = new { type = "integer", minimum = 1, maximum = 64, description = "Number of players to add" }
+                        count = new { type = "integer", minimum = 1, maximum = 64, description = "Number of players to add" },
+                        device = new
+                        {
+                            type = "string",
+                            description = "Device preset name (default: iPhone 15 Pro)",
+                            @enum = GDD.Models.DevicePresets.All.Select(d => d.Name).ToArray()
+                        }
                     },
                     required = new[] { "count" }
                 }
@@ -25,9 +31,11 @@ public static class PlayerTools
             async args =>
             {
                 var count = args?.GetProperty("count").GetInt32() ?? 1;
-                var ids = playerManager.AddPlayers(count);
+                var deviceName = args?.TryGetProperty("device", out var dEl) == true ? dEl.GetString() : null;
+                var ids = playerManager.AddPlayers(count, deviceName);
                 await Task.CompletedTask;
-                return McpResult.Text($"Created {count} players: [{string.Join(", ", ids)}]");
+                var suffix = string.IsNullOrEmpty(deviceName) ? "" : $" with {deviceName}";
+                return McpResult.Text($"Created {count} players{suffix}: [{string.Join(", ", ids)}]");
             });
 
         registry.Register(

@@ -6,11 +6,11 @@
         xmlns:conv="clr-namespace:GDD.Converters"
         Icon="/app.ico"
         Title="GDD — Multi-Browser Testing"
-        Width="1400" Height="900"
         MinWidth="800" MinHeight="600"
         Background="{StaticResource BackgroundBrush}"
         WindowStartupLocation="CenterScreen"
-        WindowState="Maximized">
+        SizeToContent="Manual"
+        Loaded="OnWindowLoaded">
 
     <Window.Resources>
         <conv:BoolToVisibilityConverter x:Key="BoolToVis" />
@@ -92,13 +92,6 @@
                 <!-- Right: API + Status -->
                 <StackPanel DockPanel.Dock="Right" Orientation="Horizontal"
                             VerticalAlignment="Center" HorizontalAlignment="Right">
-                    <TextBlock Text="{Binding ApiEndpoint}"
-                               Foreground="{StaticResource AccentBrush}"
-                               VerticalAlignment="Center"
-                               FontSize="12"
-                               FontFamily="Cascadia Code,Consolas,Courier New"
-                               Margin="0,0,16,0"
-                               ToolTip="MCP API endpoint" />
                     <TextBlock Text="{Binding StatusText}"
                                Foreground="{StaticResource TextSecondaryBrush}"
                                VerticalAlignment="Center"
@@ -141,10 +134,17 @@
                 BorderThickness="0,1,0,0"
                 Padding="12,4">
             <DockPanel>
+                <TextBlock Text="{Binding ApiEndpoint}"
+                           Foreground="{StaticResource AccentBrush}"
+                           FontSize="11"
+                           FontFamily="Cascadia Code,Consolas,Courier New"
+                           VerticalAlignment="Center"
+                           ToolTip="MCP API endpoint" />
                 <TextBlock Text="{Binding StatusText}"
                            Foreground="{StaticResource TextSecondaryBrush}"
                            FontSize="12"
-                           VerticalAlignment="Center" />
+                           VerticalAlignment="Center"
+                           Margin="16,0,0,0" />
                 <TextBlock DockPanel.Dock="Right"
                            Text="{Binding PlayerCount, StringFormat='Players: {0}'}"
                            Foreground="{StaticResource TextSecondaryBrush}"

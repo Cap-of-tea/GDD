@@ -7,6 +7,7 @@ using System.Windows.Interop;
 using Microsoft.Web.WebView2.Core;
 using Microsoft.Web.WebView2.Wpf;
 using GDD.Interop;
+using GDD.Models;
 using GDD.ViewModels;
 using Serilog;
 
@@ -30,6 +31,12 @@ public partial class OverlayWindow : Window
         Closing += OnClosing;
     }
 
+    private void MoveOffScreen()
+    {
+        Left = -10000;
+        Top = -10000;
+    }
+
     private async void OnLoaded(object sender, RoutedEventArgs e)
     {
         if (_initialized || DataContext is not OverlayViewModel vm)
@@ -40,8 +47,7 @@ public partial class OverlayWindow : Window
 
         vm.CloseRequested += (_, _) =>
         {
-            Left = -10000;
-            Top = -10000;
+            MoveOffScreen();
             vm.Cell.IsOverlayOpen = false;
         };
 
@@ -56,6 +62,7 @@ public partial class OverlayWindow : Window
                 border.Child = _webView;
 
             var env = await CoreWebView2Environment.CreateAsync(
+                browserExecutableFolder: null,
                 userDataFolder: vm.Cell.UserDataFolder);
             await _webView.EnsureCoreWebView2Async(env);
 
@@ -102,6 +109,7 @@ public partial class OverlayWindow : Window
             };
 
             vm.Cell.WebView = _webView;
+            vm.Cell.OnDeviceChanged = OnDeviceChanged;
             vm.Cell.NotifyWebViewReady();
             _webView.CoreWebView2.Navigate(vm.Cell.CurrentUrl);
             vm.Cell.StatusText = "Loading...";
@@ -120,9 +128,7 @@ public partial class OverlayWindow : Window
         if (!_forceClosing)
         {
             e.Cancel = true;
-            // Move off-screen instead of hiding — DWM needs the window visible for thumbnails
-            Left = -10000;
-            Top = -10000;
+            MoveOffScreen();
             if (DataContext is OverlayViewModel vm)
                 vm.Cell.IsOverlayOpen = false;
             return;
@@ -145,6 +151,29 @@ public partial class OverlayWindow : Window
         Logger.Information("Overlay destroyed");
     }
 
+    private void OnDeviceChanged(BrowserCellViewModel cell, DevicePreset device)
+    {
+        Dispatcher.Invoke(() =>
+        {
+            _aspectRatio = (double)device.Width / device.Height;
+            Width = device.Width + 4;
+            Height = device.Height + 40;
+
+            if (cell.IsOverlayOpen)
+            {
+                Left = (SystemParameters.WorkArea.Width - Width) / 2;
+                Top = (SystemParameters.WorkArea.Height - Height) / 2;
+            }
+            else
+            {
+                MoveOffScreen();
+            }
+
+            if (DataContext is OverlayViewModel vm)
+                vm.Title = $"{cell.PlayerName} — {device.Name}";
+        });
+    }
+
     public void ForceClose()
     {
         _forceClosing = true;
@@ -160,8 +189,7 @@ public partial class OverlayWindow : Window
     {
         if (e.Key == Key.Escape)
         {
-            Left = -10000;
-            Top = -10000;
+            MoveOffScreen();
             if (DataContext is OverlayViewModel vm)
                 vm.Cell.IsOverlayOpen = false;
         }

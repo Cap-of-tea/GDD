@@ -15,7 +15,7 @@ The `.mcp.json` in this project connects you to GDD. GDD auto-launches when you 
 ## Available Tools (26)
 
 ### Player Management
-- `gdd_add_players(count)` — Create N browser windows. Returns player IDs (e.g. [1, 2, 3]). Always start here.
+- `gdd_add_players(count, device?)` — Create N browser windows with optional device preset. Returns player IDs (e.g. [1, 2, 3]). Always start here.
 - `gdd_remove_player(player_id)` — Close and remove a browser window.
 - `gdd_list_windows()` — List all active players with their state (URL, device, auth).
 
@@ -74,11 +74,10 @@ The `.mcp.json` in this project connects you to GDD. GDD auto-launches when you 
 
 ### Cross-device testing
 ```
-1. gdd_add_players(3)              → [1, 2, 3]
-2. gdd_set_device(1, "iPhone 15 Pro")
-3. gdd_set_device(2, "iPad Air")
-4. gdd_set_device(3, "Desktop 1080p")
-5. Navigate all to the same URL, take screenshots, compare
+1. gdd_add_players(1, device="iPhone 15 Pro")  → [1]
+2. gdd_add_players(1, device="iPad Air")        → [2]
+3. gdd_add_players(1, device="Desktop 1080p")   → [3]
+4. Navigate all to the same URL, take screenshots, compare
 ```
 
 ### Debugging

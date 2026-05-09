@@ -47,6 +47,7 @@ public sealed class McpServer : IDisposable
                 _listener.Prefixes.Add($"http://localhost:{port}/");
                 _listener.Start();
                 ActualPort = port;
+                Console.WriteLine($"GDD MCP server listening on http://localhost:{port}");
                 Logger.Information("MCP server started on http://localhost:{Port}", port);
                 break;
             }

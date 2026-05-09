@@ -1,3 +1,4 @@
+using System.Windows.Threading;
 using Microsoft.Web.WebView2.Core;
 using GDD.Abstractions;
 using GDD.Platform;
@@ -7,6 +8,7 @@ namespace GDD.Engines;
 public sealed class WebView2ControlAdapter : IBrowserEngine
 {
     private readonly CoreWebView2 _webView;
+    private readonly Dispatcher _dispatcher;
 
     public int PlayerId { get; }
     public string UserDataFolder => "";
@@ -21,6 +23,7 @@ public sealed class WebView2ControlAdapter : IBrowserEngine
     {
         _webView = webView;
         PlayerId = playerId;
+        _dispatcher = Dispatcher.CurrentDispatcher;
 
         _webView.NavigationCompleted += (_, _) =>
             NavigationCompleted?.Invoke(this, _webView.Source ?? string.Empty);
@@ -46,31 +49,32 @@ public sealed class WebView2ControlAdapter : IBrowserEngine
         => Task.CompletedTask;
 
     public Task NavigateAsync(string url)
-    {
-        _webView.Navigate(url);
-        return Task.CompletedTask;
-    }
+        => _dispatcher.InvokeAsync(() => _webView.Navigate(url)).Task;
 
-    public async Task<string> ExecuteJavaScriptAsync(string script)
-        => await _webView.ExecuteScriptAsync(script);
+    public Task<string> ExecuteJavaScriptAsync(string script)
+        => _dispatcher.InvokeAsync(() => _webView.ExecuteScriptAsync(script)).Task.Unwrap();
 
-    public async Task CallCdpMethodAsync(string methodName, string parametersJson)
-        => await _webView.CallDevToolsProtocolMethodAsync(methodName, parametersJson);
+    public Task CallCdpMethodAsync(string methodName, string parametersJson)
+        => _dispatcher.InvokeAsync(() =>
+            _webView.CallDevToolsProtocolMethodAsync(methodName, parametersJson)).Task.Unwrap();
 
-    public async Task<string> CallCdpMethodWithResultAsync(string methodName, string parametersJson)
-        => await _webView.CallDevToolsProtocolMethodAsync(methodName, parametersJson);
+    public Task<string> CallCdpMethodWithResultAsync(string methodName, string parametersJson)
+        => _dispatcher.InvokeAsync(() =>
+            _webView.CallDevToolsProtocolMethodAsync(methodName, parametersJson)).Task.Unwrap();
 
-    public async Task<byte[]> CaptureScreenshotAsync()
-    {
-        var resultJson = await _webView.CallDevToolsProtocolMethodAsync(
-            "Page.captureScreenshot", "{\"format\":\"png\"}");
-        using var doc = System.Text.Json.JsonDocument.Parse(resultJson);
-        var base64 = doc.RootElement.GetProperty("data").GetString()!;
-        return Convert.FromBase64String(base64);
-    }
+    public Task<byte[]> CaptureScreenshotAsync()
+        => _dispatcher.InvokeAsync(async () =>
+        {
+            var resultJson = await _webView.CallDevToolsProtocolMethodAsync(
+                "Page.captureScreenshot", "{\"format\":\"png\"}");
+            using var doc = System.Text.Json.JsonDocument.Parse(resultJson);
+            var base64 = doc.RootElement.GetProperty("data").GetString()!;
+            return Convert.FromBase64String(base64);
+        }).Task.Unwrap();
 
-    public async Task InjectScriptOnDocumentCreatedAsync(string script)
-        => await _webView.AddScriptToExecuteOnDocumentCreatedAsync(script);
+    public Task InjectScriptOnDocumentCreatedAsync(string script)
+        => _dispatcher.InvokeAsync(() =>
+            _webView.AddScriptToExecuteOnDocumentCreatedAsync(script)).Task.Unwrap();
 
     public ICdpEventSubscription SubscribeToCdpEvent(string eventName)
         => new WebView2CdpSubscription(_webView, eventName);

@@ -90,14 +90,18 @@ GDD запускает MCP HTTP сервер на порту 9700 (auto-fallback
 
 ### 3.1 Player Management
 
-#### `gdd_add_players(count)`
+#### `gdd_add_players(count, device?)`
+
 Create N browser windows. **Always start here.**
 
-| Param | Type | Required | Range |
-|-------|------|----------|-------|
-| `count` | integer | yes | 1-64 |
+| Param    | Type    | Required | Description                                |
+|----------|---------|----------|--------------------------------------------|
+| `count`  | integer | yes      | Number of players (1-64)                   |
+| `device` | string  | no       | Device preset name (default: iPhone 15 Pro)|
 
-Returns: `"Created 3 players: [1, 2, 3]"`
+Returns: `"Created 3 players with iPad Air: [1, 2, 3]"`
+
+The `device` parameter lets you create players with a specific device profile immediately — no need to call `gdd_set_device` separately. See Device Emulation for available presets.
 
 After creation, wait ~5 seconds before navigating — WebView2 needs init time.
 
@@ -190,7 +194,7 @@ Execute JavaScript, return result.
 #### `gdd_set_device(player_id, preset)`
 Apply device profile. Sets viewport size, DPI, User-Agent, touch emulation.
 
-**23 presets:**
+**22 presets:**
 
 | Category | Presets |
 |----------|---------|
@@ -379,20 +383,19 @@ Report: "Successfully logged in. Dashboard loaded with user 'Test User'."
 User: "Compare the navbar on mobile vs tablet vs desktop"
 
 Agent:
-1. gdd_add_players(3)                        → [1, 2, 3]
-2. [wait 5 seconds]
-3. gdd_set_device(1, "iPhone 15 Pro")
-4. gdd_set_device(2, "iPad Air")
-5. gdd_set_device(3, "Desktop 1080p")
-6. gdd_navigate(1, "https://app.example.com")
-7. gdd_navigate(2, "https://app.example.com")
-8. gdd_navigate(3, "https://app.example.com")
-9. gdd_wait(1, "nav")
-10. gdd_wait(2, "nav")
-11. gdd_wait(3, "nav")
-12. gdd_screenshot(1)                        → [hamburger menu on mobile]
-13. gdd_screenshot(2)                        → [compact nav on tablet]
-14. gdd_screenshot(3)                        → [full nav on desktop]
+1. gdd_add_players(1, device="iPhone 15 Pro")   → [1]
+2. gdd_add_players(1, device="iPad Air")         → [2]
+3. gdd_add_players(1, device="Desktop 1080p")    → [3]
+4. [wait 5 seconds]
+5. gdd_navigate(1, "https://app.example.com")
+6. gdd_navigate(2, "https://app.example.com")
+7. gdd_navigate(3, "https://app.example.com")
+8. gdd_wait(1, "nav")
+9. gdd_wait(2, "nav")
+10. gdd_wait(3, "nav")
+11. gdd_screenshot(1)                        → [hamburger menu on mobile]
+12. gdd_screenshot(2)                        → [compact nav on tablet]
+13. gdd_screenshot(3)                        → [full nav on desktop]
 
 Report: "Mobile (393px): hamburger menu, nav items hidden.
 Tablet (820px): condensed nav, icons without labels. 
@@ -529,7 +532,7 @@ Claude Code ──JSON-RPC──→ mcp-proxy.ps1 ──HTTP──→ GDD (port 
 ```json
 {
   "GDD": {
-    "FrontendUrl": "http://localhost:5173",
+    "FrontendUrl": "about:blank",
     "BackendUrl": "http://localhost:8080/api/v1",
     "BotToken": "",
     "McpPort": 9700,
@@ -540,7 +543,7 @@ Claude Code ──JSON-RPC──→ mcp-proxy.ps1 ──HTTP──→ GDD (port 
 
 | Key | Description | Default |
 |-----|-------------|---------|
-| `FrontendUrl` | URL for token injection redirect | `http://localhost:5173` |
+| `FrontendUrl` | Default URL for new browsers & token injection | `about:blank` |
 | `BackendUrl` | Backend API for `gdd_quick_auth` | `http://localhost:8080/api/v1` |
 | `BotToken` | Telegram Bot Token (for WebApp injection) | empty |
 | `McpPort` | MCP server port | 9700 |

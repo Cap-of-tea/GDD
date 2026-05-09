@@ -142,7 +142,7 @@ Claude will use GDD tools to add players, set devices, navigate, interact, and r
 
 | Tool | Description |
 |------|-------------|
-| `gdd_add_players` | Add N new browser instances with device presets |
+| `gdd_add_players` | Add N browser instances with optional device preset |
 | `gdd_remove_player` | Remove a browser instance by player ID |
 | `gdd_list_windows` | List all active browsers with current state |
 
@@ -346,7 +346,7 @@ BrowserXn.sln
 
 | Key | Description | Default |
 |-----|-------------|---------|
-| `FrontendUrl` | Default URL for new browsers | `http://localhost:5173` (GUI) / `about:blank` (Headless) |
+| `FrontendUrl` | Default URL for new browsers | `about:blank` |
 | `BackendUrl` | Backend API for auth service | `http://localhost:8080/api/v1` |
 | `BotToken` | Telegram bot token (for TG testing) | — |
 | `McpPort` | MCP server port (auto-fallback +1..+9) | `9700` |

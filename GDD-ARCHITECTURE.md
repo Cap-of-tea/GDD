@@ -42,7 +42,7 @@ GDD (Giggly-Dazzling-Duckling) — кроссплатформенное прил
 └─────────────────────┬────────────────────────────────┘
                       │
 ┌─────────────────────▼────────────────────────────────┐
-│              McpToolRegistry (25 tools)               │
+│              McpToolRegistry (26 tools)               │
 │  PlayerTools · NavigationTools · InteractionTools     │
 │  ReadTools · EmulationTools · AuthTools               │
 │  StateTools · DiagnosticsTools                        │
@@ -78,7 +78,7 @@ App.OnStartup()
   → LoadConfig("appsettings.json") → AppConfig
   → ConfigureSerilog()
   → RegisterServices(DI container)
-  → RegisterMcpTools() — 25 tools → McpToolRegistry
+  → RegisterMcpTools() — 26 tools → McpToolRegistry
   → StartMcpServer() — HttpListener on :9700
   → new MainWindow { DataContext = MainViewModel }
 ```
@@ -124,7 +124,7 @@ src/BrowserXn/
 │       └── DiagnosticsTools.cs  get_console, get_network, get_performance, clear_logs
 ├── Models/
 │   ├── AppConfig.cs             FrontendUrl, BackendUrl, McpPort, etc.
-│   ├── DevicePreset.cs          21 preset (phones/tablets/desktops)
+│   ├── DevicePreset.cs          22 presets (phones/tablets/desktops)
 │   ├── LocationPreset.cs        5 city presets
 │   ├── NetworkPreset.cs         5 network conditions
 │   ├── ConsoleEntry.cs          Console log record
@@ -211,7 +211,7 @@ interface IBrowserEngine : IAsyncDisposable
 
 Все работают через CDP (Chrome DevTools Protocol):
 
-**DeviceEmulationService** — 21 пресет устройства:
+**DeviceEmulationService** — 22 пресета устройств:
 - `Emulation.setDeviceMetricsOverride` (ширина, высота, DPI, mobile)
 - `Emulation.setUserAgentOverride` (User-Agent строка)
 - `Emulation.setTouchEmulationEnabled` (5 touch points)

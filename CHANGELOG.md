@@ -2,6 +2,26 @@
 
 All notable changes to GDD are documented here.
 
+## [1.2.0] - 2026-05-09
+
+### Added
+
+- **`gdd_add_players` device parameter** — create players with a specific device preset immediately (`gdd_add_players(3, device="iPad Air")`) instead of creating with default then switching
+- **`gdd_set_viewport`** — set arbitrary viewport dimensions (width, height, scale, mobile flag, user agent)
+- **`gdd_set_language`** — set browser language/locale, changes `navigator.language`, `navigator.languages`, and `Accept-Language` header
+- **`gdd_set_device` expanded** — now exposes all 22 device presets (was 5 in enum)
+- **Console & network diagnostics on ViewModel** — ConsoleErrorCount, NetworkErrorCount, LastError fields on BrowserCellViewModel
+- **Stdout port output** — GDD prints `GDD MCP server listening on http://localhost:{port}` on startup
+- **MCP endpoint in status bar** — moved from toolbar to bottom-left for cleaner UI
+
+### Changed
+
+- Default `FrontendUrl` changed from `http://localhost:5173` to `about:blank` (faster startup, no dependency on dev server)
+- Main window opens at 30% of screen size (was maximized)
+- Overlay window title and size update on device change
+- `gdd_set_device` now calls `NavigateAsync` after applying device metrics (page reloads with correct viewport)
+- WebView2ControlAdapter uses Dispatcher marshaling for all CDP calls
+
 ## [1.1.0] - 2026-05-09
 
 ### Added

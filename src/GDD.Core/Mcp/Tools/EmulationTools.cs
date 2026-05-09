@@ -49,8 +49,9 @@ public static class EmulationTools
                 if (preset is null)
                     return McpResult.Error($"Unknown device preset: {presetName}. Available: {string.Join(", ", DevicePresets.All.Select(d => d.Name))}");
 
-                await deviceService.ApplyAsync(player.Engine, preset);
                 player.SelectedDevice = preset;
+                await deviceService.ApplyAsync(player.Engine, preset);
+                await player.Engine.NavigateAsync(player.CurrentUrl);
                 return McpResult.Text($"Device set to {preset.Name} ({preset.Width}x{preset.Height}) for player {playerId}");
             });
 

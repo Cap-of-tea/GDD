@@ -76,12 +76,21 @@ public partial class MainViewModel : ObservableObject, IPlayerManager
     public IPlayerContext? GetPlayer(int playerId) =>
         Players.FirstOrDefault(p => p.PlayerId == playerId);
 
-    public IReadOnlyList<int> AddPlayers(int count)
+    public IReadOnlyList<int> AddPlayers(int count, string? devicePreset = null)
     {
+        var device = DevicePresets.Default;
+        if (!string.IsNullOrEmpty(devicePreset))
+        {
+            var found = DevicePresets.All.FirstOrDefault(d =>
+                d.Name.Equals(devicePreset, StringComparison.OrdinalIgnoreCase));
+            if (found is not null)
+                device = found;
+        }
+
         var ids = new List<int>();
         for (var i = 0; i < count; i++)
         {
-            AddPlayer();
+            AddPlayerWithDevice(device);
             ids.Add(Players.Last().PlayerId);
         }
         return ids;
@@ -312,8 +321,10 @@ public partial class MainViewModel : ObservableObject, IPlayerManager
         vm.IsOverlayOpen = true;
 
         var device = vm.SelectedDevice;
-        overlay.Left = (SystemParameters.WorkArea.Width - device.Width - 4) / 2;
-        overlay.Top = (SystemParameters.WorkArea.Height - device.Height - 40) / 2;
+        overlay.Width = device.Width + 4;
+        overlay.Height = device.Height + 40;
+        overlay.Left = (SystemParameters.WorkArea.Width - overlay.Width) / 2;
+        overlay.Top = (SystemParameters.WorkArea.Height - overlay.Height) / 2;
         overlay.Activate();
     }
 

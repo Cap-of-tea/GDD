@@ -89,6 +89,7 @@ public partial class BrowserCellViewModel : ObservableObject, IPlayerContext, ID
     public Action<BrowserCellViewModel>? OnSettingsRequested { get; set; }
     public Action<BrowserCellViewModel>? OnOverlayRequested { get; set; }
     public Action<BrowserCellViewModel>? OnWebViewReady { get; set; }
+    public Action<BrowserCellViewModel, DevicePreset>? OnDeviceChanged { get; set; }
 
     public BrowserCellViewModel(int playerId, AppConfig config, string defaultUrl)
     {
@@ -104,6 +105,11 @@ public partial class BrowserCellViewModel : ObservableObject, IPlayerContext, ID
     partial void OnNotificationCountChanged(int value)
     {
         OnPropertyChanged(nameof(HasNotifications));
+    }
+
+    partial void OnSelectedDeviceChanged(DevicePreset value)
+    {
+        OnDeviceChanged?.Invoke(this, value);
     }
 
     public void UpdateNetworkIndicator(NetworkPreset preset)
