@@ -1,0 +1,111 @@
+name: Build & Release
+
+on:
+  push:
+    branches: [master]
+    tags: ['v*']
+  pull_request:
+    branches: [master]
+
+jobs:
+  build-windows-gui:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - run: dotnet restore src/BrowserXn/BrowserXn.csproj
+      - run: dotnet build src/BrowserXn/BrowserXn.csproj -c Release --no-restore
+      - run: dotnet publish src/BrowserXn/BrowserXn.csproj -c Release -p:PublishSingleFile=true -o publish/win-gui
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gdd-windows-gui
+          path: publish/win-gui/
+
+  build-headless:
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            rid: win-x64
+            artifact: gdd-headless-win-x64
+          - os: ubuntu-22.04
+            rid: linux-x64
+            artifact: gdd-headless-linux-x64
+          - os: macos-14
+            rid: osx-arm64
+            artifact: gdd-headless-macos-arm64
+          - os: macos-13
+            rid: osx-x64
+            artifact: gdd-headless-macos-x64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - run: dotnet restore src/GDD.Headless/GDD.Headless.csproj
+      - run: dotnet build src/GDD.Headless/GDD.Headless.csproj -c Release --no-restore
+      - name: Publish
+        run: >
+          dotnet publish src/GDD.Headless/GDD.Headless.csproj
+          -c Release
+          -r ${{ matrix.rid }}
+          --self-contained
+          -o publish/${{ matrix.rid }}
+
+      - name: Install Playwright browsers
+        run: pwsh publish/${{ matrix.rid }}/playwright.ps1 install chromium
+
+      - name: Smoke test
+        shell: bash
+        run: |
+          cd publish/${{ matrix.rid }}
+          if [[ "${{ matrix.rid }}" == win-* ]]; then
+            ./GDD.Headless.exe &
+          else
+            chmod +x GDD.Headless
+            chmod +x Scripts/mcp-proxy.sh
+            ./GDD.Headless &
+          fi
+          PID=$!
+          sleep 8
+          RESPONSE=$(curl -sf -X POST http://localhost:9700/mcp \
+            -H "Content-Type: application/json" \
+            -d '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}')
+          TOOLS=$(echo "$RESPONSE" | python3 -c "import sys,json; print(len(json.loads(sys.stdin.read())['result']['tools']))")
+          echo "Tools found: $TOOLS"
+          kill $PID 2>/dev/null || true
+          if [ "$TOOLS" -ne 26 ]; then
+            echo "Expected 26 tools, got $TOOLS"
+            exit 1
+          fi
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: publish/${{ matrix.rid }}/
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [build-windows-gui, build-headless]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts/
+
+      - name: Package archives
+        run: |
+          cd artifacts
+          for dir in gdd-*; do
+            tar -czf "${dir}.tar.gz" -C "$dir" .
+          done
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/*.tar.gz
+          generate_release_notes: true
