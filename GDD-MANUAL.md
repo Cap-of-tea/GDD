@@ -2,7 +2,9 @@
 
 ## 1. What is GDD
 
-GDD (Giggly-Dazzling-Duckling) — Windows-десктоп для мультибраузерного тестирования. Управляет N изолированными Chromium-инстансами (WebView2) и выставляет 25 MCP-инструментов для Claude Code.
+GDD (Giggly-Dazzling-Duckling) — кроссплатформенный инструмент для мультибраузерного тестирования. Управляет N изолированными Chromium-инстансами и выставляет 26 MCP-инструментов для Claude Code.
+
+Два режима: **Windows GUI** (WPF + WebView2, с визуальным превью) и **Headless** (Playwright, работает на Windows/Linux/macOS). Оба режима предоставляют идентичный набор MCP-инструментов.
 
 Claude видит и управляет браузерами как человек: открывает страницы, тапает кнопки, читает текст, делает скриншоты, эмулирует устройства/сети/геолокации, мониторит консоль и сетевые запросы.
 
@@ -12,66 +14,66 @@ Claude видит и управляет браузерами как челове
 
 ### Prerequisites
 
-- Windows 10/11
-- .NET 8 Runtime (`Microsoft.WindowsDesktop.App 8.0+`)
-- WebView2 Runtime (обычно предустановлен с Edge)
 - Claude Code (VS Code extension или CLI)
 
-### File Structure
+**Windows GUI:**
+- Windows 10/11
+- WebView2 Runtime (обычно предустановлен с Edge, проверяется при запуске)
 
-```
-c:\VS\BrowserXn\
-├── .mcp.json              ← MCP config (Claude Code reads this)
-├── mcp-proxy.ps1          ← stdio-to-HTTP bridge
-├── GDD-PROMPT.md          ← Claude agent instructions (add to CLAUDE.md)
-├── src\BrowserXn\
-│   └── bin\Debug\net8.0-windows\
-│       └── GDD.exe        ← main executable
-└── ...
-```
+**Headless (Windows/Linux/macOS):**
+- Chromium устанавливается автоматически при первом запуске через Playwright
 
-### Step 1 — Launch GDD
+### Запуск
 
+**Windows GUI:**
 ```powershell
-# From project root or shortcut:
-.\src\BrowserXn\bin\Debug\net8.0-windows\GDD.exe
+# Скачать из Releases или собрать из исходников:
+.\GDD.exe
 ```
 
-GDD opens a window and starts the MCP HTTP server on port 9700 (auto-fallback to 9701..9709 if busy). Check the log:
-
+**Headless (любая платформа):**
+```bash
+./GDD.Headless
+# MCP server starts on http://localhost:9700/mcp
 ```
-[INF] MCP server started on http://localhost:9700
-```
 
-### Step 2 — Configure Claude Code
+GDD запускает MCP HTTP сервер на порту 9700 (auto-fallback 9701..9709 если занят).
 
-`.mcp.json` in the project root:
+### Настройка Claude Code
 
+`.mcp.json` в корне проекта:
+
+**Windows (PowerShell proxy с автозапуском):**
 ```json
 {
   "mcpServers": {
     "gdd": {
       "command": "powershell",
-      "args": ["-ExecutionPolicy", "Bypass", "-File", "c:\\VS\\BrowserXn\\mcp-proxy.ps1"]
+      "args": ["-ExecutionPolicy", "Bypass", "-File", "path/to/Scripts/mcp-proxy.ps1"]
     }
   }
 }
 ```
 
-This uses stdio transport via `mcp-proxy.ps1` — a thin bridge that forwards JSON-RPC from Claude Code to GDD's HTTP endpoint (`http://localhost:9700/mcp`).
-
-### Step 3 — Start a Claude Code Session
-
-Open a **new chat** in Claude Code (or Reload Window). The MCP client reads `.mcp.json` only at session start.
-
-Verify tools are available:
-
+**Linux / macOS (Bash proxy с автозапуском):**
+```json
+{
+  "mcpServers": {
+    "gdd": {
+      "command": "bash",
+      "args": ["path/to/Scripts/mcp-proxy.sh"]
+    }
+  }
+}
 ```
-> ToolSearch: +gdd
-→ mcp__gdd__gdd_add_players, mcp__gdd__gdd_navigate, ...
-```
 
-25 tools should appear with `mcp__gdd__` prefix.
+Прокси-скрипты автоматически запускают GDD если он не работает, и пробрасывают JSON-RPC из stdin Claude Code в HTTP endpoint `http://localhost:9700/mcp`.
+
+### Проверка подключения
+
+Откройте **новый чат** в Claude Code (или Reload Window). MCP клиент читает `.mcp.json` только при старте сессии.
+
+26 tools должны появиться с `mcp__gdd__` префиксом.
 
 ### Troubleshooting
 
@@ -502,7 +504,7 @@ Report: "All 3 players have isolated sessions. Each sees their own profile name.
 ```
 Claude Code ──JSON-RPC──→ mcp-proxy.ps1 ──HTTP──→ GDD (port 9700)
                                                     │
-                                          McpToolRegistry (25 tools)
+                                          McpToolRegistry (26 tools)
                                                     │
                                             MainViewModel
                                           ┌────┬────┬────┐
@@ -512,11 +514,11 @@ Claude Code ──JSON-RPC──→ mcp-proxy.ps1 ──HTTP──→ GDD (port 
                                       Chrome DevTools Protocol (CDP)
 ```
 
-**Transport:** Claude Code spawns `mcp-proxy.ps1` as a stdio subprocess. The script converts stdin JSON-RPC to HTTP POST → `http://localhost:9700/mcp` → HTTP response → stdout JSON-RPC.
+**Transport:** Claude Code spawns `mcp-proxy.ps1` (Windows) or `mcp-proxy.sh` (Linux/macOS) as a stdio subprocess. Скрипт конвертирует stdin JSON-RPC в HTTP POST → `http://localhost:9700/mcp` → HTTP response → stdout JSON-RPC. При необходимости автоматически запускает GDD.
 
-**Threading:** MCP requests arrive on HttpListener threads. `tools/call` dispatches to WPF UI thread via `Dispatcher.InvokeAsync` (WebView2 requires STA thread). Response flows back through the same chain.
+**Threading:** MCP requests arrive on HttpListener threads. `tools/call` dispatches через `IMainThreadDispatcher` — `WpfDispatcher` (GUI, WPF UI thread) или `ConsoleDispatcher` (Headless, прямое выполнение).
 
-**Isolation:** Each player has its own WebView2 user data folder (`%LOCALAPPDATA%\GDD\Profiles\Player_{id}`), cookies, localStorage, and session. Players are fully independent.
+**Isolation:** Each player has its own browser profile folder, cookies, localStorage, and session. Players are fully independent.
 
 ---
 

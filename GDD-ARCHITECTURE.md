@@ -1,8 +1,10 @@
-# GDD — Architecture & Cross-Platform Analysis
+# GDD — Architecture
 
 ## 1. What is GDD
 
-GDD (Giggly-Dazzling-Duckling) — десктопное приложение для мультибраузерного тестирования веб-приложений. Управляет N изолированными Chromium-инстансами ("players") через Chrome DevTools Protocol и предоставляет 25 MCP-инструментов для автоматизации через Claude Code или любой MCP-клиент.
+GDD (Giggly-Dazzling-Duckling) — кроссплатформенное приложение для мультибраузерного тестирования веб-приложений. Управляет N изолированными Chromium-инстансами ("players") через Chrome DevTools Protocol и предоставляет 26 MCP-инструментов для автоматизации через Claude Code или любой MCP-клиент.
+
+Два режима: **Windows GUI** (WPF + WebView2) и **Headless** (Playwright, Windows/Linux/macOS). Общее ядро GDD.Core содержит все сервисы и MCP-инструменты, работающие через абстракции `IBrowserEngine` и `IPlayerManager`.
 
 **Ключевая идея:** один AI-агент (Claude) видит и управляет несколькими браузерами одновременно — навигация, клики, скриншоты, эмуляция устройств/сети/геолокации, мониторинг консоли и сетевых запросов.
 

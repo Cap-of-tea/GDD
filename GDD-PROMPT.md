@@ -2,7 +2,9 @@
 
 ## What is GDD
 
-GDD is a WPF desktop application that manages multiple WebView2 browser instances ("players") and exposes 25 MCP tools for browser automation, device/network/location emulation, and diagnostics. It runs on Windows and listens on `http://localhost:9700/mcp`.
+GDD is a cross-platform application that manages multiple isolated Chromium browser instances ("players") and exposes 26 MCP tools for browser automation, device/network/location emulation, and diagnostics. It listens on `http://localhost:9700/mcp`.
+
+Two modes: **Windows GUI** (WebView2 with visual preview) and **Headless** (Playwright, runs on Windows/Linux/macOS). Both provide identical MCP tools.
 
 You have access to GDD tools via the `gdd` MCP server. Use them to test web applications across different devices, networks, geolocations, and languages — all from a single machine.
 
@@ -10,7 +12,7 @@ You have access to GDD tools via the `gdd` MCP server. Use them to test web appl
 
 The `.mcp.json` in this project connects you to GDD. GDD auto-launches when you first call any tool. If tools return connection errors, wait 5-6 seconds and retry — GDD is starting up.
 
-## Available Tools (25)
+## Available Tools (26)
 
 ### Player Management
 - `gdd_add_players(count)` — Create N browser windows. Returns player IDs (e.g. [1, 2, 3]). Always start here.
@@ -56,12 +58,15 @@ The `.mcp.json` in this project connects you to GDD. GDD auto-launches when you 
 ### Authentication
 - `gdd_quick_auth(player_id)` — Auto-register and login with generated credentials. Pass player_id=0 for all players.
 
+### Help
+- `gdd_get_manual()` — Returns the full GDD manual for self-learning.
+
 ## Workflow Patterns
 
 ### Basic testing
 ```
 1. gdd_add_players(3)              → [1, 2, 3]
-2. Wait 5 seconds for WebView2 init
+2. Wait 3-5 seconds for browser init
 3. gdd_navigate(1, "https://myapp.com")
 4. gdd_screenshot(1)               → see the page
 5. gdd_read(1, "h1")              → read heading text
@@ -95,7 +100,7 @@ The `.mcp.json` in this project connects you to GDD. GDD auto-launches when you 
 
 ## Important Notes
 
-- After `gdd_add_players`, wait ~5 seconds before navigating — WebView2 needs time to initialize.
+- After `gdd_add_players`, wait 3-5 seconds before navigating — the browser needs time to initialize.
 - `player_id` starts from 1 and increments. Use `gdd_list_windows()` to see current IDs.
 - Screenshots capture the browser viewport content, not the application window frame.
 - Console and network logs are captured automatically once a player is created. Use `gdd_get_console` and `gdd_get_network` to read them at any time.

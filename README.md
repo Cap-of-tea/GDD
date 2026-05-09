@@ -5,14 +5,14 @@
 <h1 align="center">GDD — Giggly-Dazzling-Duckling</h1>
 
 <p align="center">
-  <strong>Multi-browser testing tool powered by AI</strong><br>
-  Control N isolated Chromium instances from Claude Code via 25 MCP tools
+  <strong>Cross-platform multi-browser testing tool powered by AI</strong><br>
+  Control N isolated Chromium instances from Claude Code via 26 MCP tools
 </p>
 
 <p align="center">
   <a href="https://github.com/Cap-of-tea/GDD/releases/latest"><img src="https://img.shields.io/github/v/release/Cap-of-tea/GDD?style=flat-square&color=blue" alt="Release" /></a>
   <img src="https://img.shields.io/badge/.NET-8.0-purple?style=flat-square" alt=".NET 8" />
-  <img src="https://img.shields.io/badge/platform-Windows%2010%2F11-0078D6?style=flat-square" alt="Windows" />
+  <img src="https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-0078D6?style=flat-square" alt="Windows | Linux | macOS" />
   <img src="https://img.shields.io/badge/MCP-2024--11--05-green?style=flat-square" alt="MCP Protocol" />
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-Non--Commercial-red?style=flat-square" alt="License" /></a>
 </p>
@@ -21,9 +21,18 @@
 
 ## What is GDD?
 
-GDD is a Windows desktop application that lets an AI agent (Claude Code) see and control multiple browser windows simultaneously — just like a human tester would, but faster and programmable.
+GDD is a cross-platform tool that lets an AI agent (Claude Code) see and control multiple browser windows simultaneously — just like a human tester would, but faster and programmable.
 
-Each browser is an isolated Chromium instance (WebView2) with its own profile, cookies, device emulation, geolocation, and network conditions. Claude connects via [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) and operates browsers through 25 specialized tools.
+Each browser is an isolated Chromium instance with its own profile, cookies, device emulation, geolocation, and network conditions. Claude connects via [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) and operates browsers through 26 specialized tools.
+
+**Two modes:**
+
+| | Windows GUI | Headless (Windows, Linux, macOS) |
+|---|---|---|
+| Browser engine | WebView2 | Playwright (Chromium) |
+| UI | WPF desktop with video wall | No UI — fully controlled via MCP |
+| Use case | Visual testing with live preview | CI/CD, servers, cross-platform |
+| MCP tools | 26 | 26 (identical) |
 
 **Use cases:**
 - Automated multi-device responsive testing
@@ -31,39 +40,93 @@ Each browser is an isolated Chromium instance (WebView2) with its own profile, c
 - Cross-device visual regression checking
 - Network condition testing (4G, 3G, offline)
 - Geolocation-dependent feature testing
+- CI/CD browser testing on Linux/macOS
 
 ---
 
 ## Quick Start
 
-### 1. Download
+### Windows GUI
 
-Grab the latest `GDD.exe` from [Releases](https://github.com/Cap-of-tea/GDD/releases/latest) — it's a single self-contained executable (~70 MB), no .NET installation required.
+1. Download `gdd-windows-gui.tar.gz` from [Releases](https://github.com/Cap-of-tea/GDD/releases/latest)
+2. Extract and run `GDD.exe` (self-contained, ~70 MB)
+3. **Prerequisite:** [WebView2 Runtime](https://developer.microsoft.com/en-us/microsoft-edge/webview2/) (checked on startup)
 
-> **Prerequisite:** [WebView2 Runtime](https://developer.microsoft.com/en-us/microsoft-edge/webview2/) must be installed. GDD checks for it on startup and offers to install it if missing.
+### Headless (Windows)
 
-### 2. Launch
+1. Download `gdd-headless-win-x64.tar.gz` from [Releases](https://github.com/Cap-of-tea/GDD/releases/latest)
+2. Extract and run:
+   ```powershell
+   .\GDD.Headless.exe
+   # MCP server starts on http://localhost:9700/mcp
+   ```
+3. First run installs Chromium automatically via Playwright
 
-Double-click `GDD.exe`. The MCP server starts automatically on port `9700`.
+### Headless (Linux)
 
-### 3. Connect Claude Code
+1. Download `gdd-headless-linux-x64.tar.gz` from [Releases](https://github.com/Cap-of-tea/GDD/releases/latest)
+2. Extract and run:
+   ```bash
+   chmod +x GDD.Headless
+   ./GDD.Headless
+   ```
+3. First run installs Chromium. On Ubuntu/Debian you may need:
+   ```bash
+   sudo apt install -y libnss3 libatk-bridge2.0-0 libdrm2 libxkbcommon0 libgbm1
+   ```
+
+### Headless (macOS)
+
+1. Download `gdd-headless-macos-arm64.tar.gz` (Apple Silicon) or `gdd-headless-macos-x64.tar.gz` (Intel) from [Releases](https://github.com/Cap-of-tea/GDD/releases/latest)
+2. Extract and run:
+   ```bash
+   chmod +x GDD.Headless
+   ./GDD.Headless
+   ```
+
+### Connect Claude Code
 
 Add to your project's `.mcp.json`:
 
+**Windows (GUI with auto-launch):**
 ```json
 {
   "mcpServers": {
     "gdd": {
       "command": "powershell",
-      "args": ["-ExecutionPolicy", "Bypass", "-File", "path/to/mcp-proxy-auto.ps1"]
+      "args": ["-ExecutionPolicy", "Bypass", "-File", "path/to/Scripts/mcp-proxy.ps1"]
     }
   }
 }
 ```
 
-The proxy script auto-launches GDD if it's not running — no need to start it manually.
+**Windows (Headless with auto-launch):**
+```json
+{
+  "mcpServers": {
+    "gdd": {
+      "command": "powershell",
+      "args": ["-ExecutionPolicy", "Bypass", "-File", "path/to/Scripts/mcp-proxy.ps1"]
+    }
+  }
+}
+```
 
-### 4. Use
+**Linux / macOS (Headless with auto-launch):**
+```json
+{
+  "mcpServers": {
+    "gdd": {
+      "command": "bash",
+      "args": ["path/to/Scripts/mcp-proxy.sh"]
+    }
+  }
+}
+```
+
+The proxy scripts auto-launch GDD if it's not running — no need to start it manually.
+
+### Use
 
 Tell Claude:
 
@@ -73,7 +136,7 @@ Claude will use GDD tools to add players, set devices, navigate, interact, and r
 
 ---
 
-## MCP Tools (25)
+## MCP Tools (26)
 
 ### Player Management
 
@@ -191,16 +254,6 @@ Claude will use GDD tools to add players, set devices, navigate, interact, and r
 
 </details>
 
-### Quick Presets
-
-| Preset | Devices | Use Case |
-|--------|---------|----------|
-| 3 Phones | iPhone SE, iPhone 15 Pro, Pixel 9 | Quick mobile check |
-| All Phones | All 11 phone devices | Full mobile coverage |
-| Responsive | iPhone 15 Pro + iPad Air + Desktop 1080p | Responsive design |
-| Cross-Platform | 6 devices across all categories | Cross-platform QA |
-| All Screens | 10 devices covering all sizes | Full coverage |
-
 ---
 
 ## Architecture
@@ -217,21 +270,46 @@ Claude will use GDD tools to add players, set devices, navigate, interact, and r
 └────────────────────┬─────────────────────────────┘
                      │
 ┌────────────────────▼─────────────────────────────┐
-│           McpToolRegistry (25 tools)             │
+│           McpToolRegistry (26 tools)             │
 │  Player · Navigation · Interaction · Read        │
-│  Emulation · Auth · State · Diagnostics          │
+│  Emulation · Auth · State · Diagnostics · Help   │
 └────────────────────┬─────────────────────────────┘
-                     │ Dispatcher.InvokeAsync
+                     │ IMainThreadDispatcher
 ┌────────────────────▼─────────────────────────────┐
-│           MainViewModel (MVVM hub)               │
-│    ObservableCollection<BrowserCellViewModel>    │
+│              IPlayerManager                      │
+│      MainViewModel (WPF) / HeadlessManager       │
 └────────────────────┬─────────────────────────────┘
                      │
 ┌────────────────────▼─────────────────────────────┐
-│          WebView2 Instances (Players)            │
+│          IBrowserEngine Instances (Players)       │
+│   WebView2ControlAdapter  |  PlaywrightEngine    │
+│   (Windows GUI)           |  (Headless, x-plat)  │
 │    Each: own profile, CDP session, emulation     │
-│    DWM thumbnails for video wall rendering       │
 └──────────────────────────────────────────────────┘
+```
+
+### Project Structure
+
+```
+BrowserXn.sln
+├── src/
+│   ├── GDD.Core/              ← Shared library (net8.0)
+│   │   ├── Abstractions/      ← IBrowserEngine, IPlayerManager, ...
+│   │   ├── Mcp/               ← MCP server, tools, protocol
+│   │   ├── Models/            ← Device, Location, Network presets
+│   │   ├── Services/          ← CDP, Emulation, Monitoring services
+│   │   └── Collections/       ← RingBuffer
+│   ├── BrowserXn/             ← Windows GUI (net8.0-windows, WPF)
+│   │   ├── Engines/           ← WebView2ControlAdapter
+│   │   ├── Platform/          ← WpfDispatcher, WebView2CdpSubscription
+│   │   ├── ViewModels/        ← MVVM (MainViewModel : IPlayerManager)
+│   │   ├── Views/             ← WPF XAML
+│   │   └── Interop/           ← Win32 P/Invoke
+│   └── GDD.Headless/          ← Headless runner (net8.0, cross-platform)
+│       ├── Engines/           ← PlaywrightEngine
+│       ├── Platform/          ← ConsoleDispatcher, HeadlessPlayerManager
+│       └── Scripts/           ← mcp-proxy.sh, mcp-proxy.ps1
+└── .github/workflows/         ← CI/CD (build all platforms + release)
 ```
 
 ### Tech Stack
@@ -239,14 +317,14 @@ Claude will use GDD tools to add players, set devices, navigate, interact, and r
 | Layer | Technology |
 |-------|-----------|
 | Runtime | .NET 8.0 (self-contained) |
-| UI | WPF + XAML |
-| Browser | Microsoft WebView2 (Chromium) |
-| MVVM | CommunityToolkit.Mvvm |
+| Shared Core | GDD.Core (platform-independent) |
+| UI (Windows) | WPF + XAML + CommunityToolkit.Mvvm |
+| Browser (Windows GUI) | Microsoft WebView2 (Chromium) |
+| Browser (Headless) | Microsoft Playwright (Chromium) |
 | DI | Microsoft.Extensions.Hosting |
-| Logging | Serilog (rolling file) |
+| Logging | Serilog (file + console) |
 | Protocol | MCP (Model Context Protocol) |
 | Browser Control | Chrome DevTools Protocol (CDP) |
-| Window Management | Win32 P/Invoke (DWM, User32) |
 
 ---
 
@@ -268,11 +346,11 @@ Claude will use GDD tools to add players, set devices, navigate, interact, and r
 
 | Key | Description | Default |
 |-----|-------------|---------|
-| `FrontendUrl` | Default URL for new browsers | `http://localhost:5173` |
+| `FrontendUrl` | Default URL for new browsers | `http://localhost:5173` (GUI) / `about:blank` (Headless) |
 | `BackendUrl` | Backend API for auth service | `http://localhost:8080/api/v1` |
 | `BotToken` | Telegram bot token (for TG testing) | — |
 | `McpPort` | MCP server port (auto-fallback +1..+9) | `9700` |
-| `DataFolderRoot` | Browser profile storage root | `%LOCALAPPDATA%\GDD` |
+| `DataFolderRoot` | Browser profile storage root | OS-specific app data dir |
 
 ---
 
@@ -281,21 +359,31 @@ Claude will use GDD tools to add players, set devices, navigate, interact, and r
 ### Prerequisites
 
 - [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
-- Windows 10/11
-- [WebView2 Runtime](https://developer.microsoft.com/en-us/microsoft-edge/webview2/)
 
-### Debug Build
+### Windows GUI
 
 ```powershell
 dotnet build src/BrowserXn/BrowserXn.csproj
-# Output: src/BrowserXn/bin/Debug/net8.0-windows/GDD.exe
+# Requires: Windows 10/11, WebView2 Runtime
 ```
 
-### Publish Single-File EXE
-
+Single-file publish:
 ```powershell
-dotnet publish src/BrowserXn/BrowserXn.csproj -c Release -p:PublishSingleFile=true -o ./publish
-# Output: publish/GDD.exe (~70 MB, self-contained, no .NET required)
+dotnet publish src/BrowserXn/BrowserXn.csproj -c Release -p:PublishSingleFile=true -o ./publish/win-gui
+```
+
+### Headless (any platform)
+
+```bash
+dotnet build src/GDD.Headless/GDD.Headless.csproj
+
+# Self-contained publish:
+dotnet publish src/GDD.Headless/GDD.Headless.csproj -c Release -r linux-x64 --self-contained -o ./publish/linux-x64
+dotnet publish src/GDD.Headless/GDD.Headless.csproj -c Release -r osx-arm64 --self-contained -o ./publish/osx-arm64
+dotnet publish src/GDD.Headless/GDD.Headless.csproj -c Release -r win-x64 --self-contained -o ./publish/win-x64
+
+# Install Chromium (first run):
+pwsh publish/linux-x64/playwright.ps1 install chromium
 ```
 
 ---
@@ -303,7 +391,7 @@ dotnet publish src/BrowserXn/BrowserXn.csproj -c Release -p:PublishSingleFile=tr
 ## Documentation
 
 - [GDD-MANUAL.md](GDD-MANUAL.md) — Full usage manual with agent rules and workflow examples
-- [GDD-ARCHITECTURE.md](GDD-ARCHITECTURE.md) — Architecture deep-dive and cross-platform analysis
+- [GDD-ARCHITECTURE.md](GDD-ARCHITECTURE.md) — Architecture deep-dive and cross-platform design
 - [GDD-PROMPT.md](GDD-PROMPT.md) — Claude agent instructions for MCP integration
 
 ---
@@ -321,5 +409,5 @@ For commercial licensing inquiries: **[2vsmirnov@gmail.com](mailto:2vsmirnov@gma
 ---
 
 <p align="center">
-  <sub>Built with WPF, WebView2, and the Model Context Protocol</sub>
+  <sub>Built with .NET 8, WebView2, Playwright, and the Model Context Protocol</sub>
 </p>

@@ -2,6 +2,39 @@
 
 All notable changes to GDD are documented here.
 
+## [1.1.0] - 2026-05-09
+
+### Added
+
+- **Cross-platform headless mode** — GDD.Headless runs on Windows, Linux, and macOS
+- **GDD.Core shared library** — platform-independent core with all MCP tools, services, and abstractions
+- **PlaywrightEngine** — IBrowserEngine implementation via Microsoft Playwright (Chromium)
+- **HeadlessPlayerManager** — manages browser instances without GUI
+- **PlaywrightSetup** — automatic Chromium browser installation on first run
+- **mcp-proxy.sh** — Bash auto-launch proxy for Linux/macOS
+- **mcp-proxy.ps1** — PowerShell auto-launch proxy for headless Windows
+- **26th MCP tool**: `gdd_get_manual` — returns the full manual for M2M self-learning
+- **CI/CD pipeline** — GitHub Actions builds for 5 targets: Windows GUI, headless win-x64, linux-x64, osx-arm64, osx-x64
+- **Smoke tests in CI** — each headless build verifies 26 tools via HTTP
+- **Auto-release** — `v*` tags trigger GitHub Releases with tar.gz archives
+
+### Changed
+
+- Extracted all services, MCP tools, and models from BrowserXn into GDD.Core
+- IBrowserEngine interface: `nint` → `object?` for cross-platform InitializeAsync
+- Added ICdpEventSubscription abstraction replacing WebView2-specific CDP event receivers
+- Added IMainThreadDispatcher abstraction replacing WPF Dispatcher
+- Added IPlayerManager/IPlayerContext abstractions replacing direct ViewModel access
+- MCP tools now work through abstractions — identical behavior on WebView2 and Playwright
+- Headless default FrontendUrl changed to `about:blank` (no dev server dependency)
+- Serilog config: added `"Using"` section for single-file publish compatibility
+
+### Fixed
+
+- Serilog crash on single-file publish (missing assembly resolution)
+- HeadlessPlayerContext URL and title not updating after navigation
+- `gdd_tap` failing on Playwright due to JSON.stringify double-escaping
+
 ## [1.0.0] - 2026-05-09
 
 ### Added
@@ -15,7 +48,6 @@ All notable changes to GDD are documented here.
   - State & diagnostics: browser state, console, network requests, notifications, performance metrics
   - Auth: quick auto-registration with token injection
   - Execution: arbitrary JavaScript execution
-  - Help: M2M manual API for agent self-learning
 - **MCP server** with Streamable HTTP and SSE transports
 - **Stdio proxy** (`mcp-proxy-auto.ps1`) with auto-launch — GDD starts automatically when Claude Code connects
 - **Video wall** UI with DWM thumbnail rendering

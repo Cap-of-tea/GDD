@@ -8,10 +8,11 @@
 
 ## Test plan
 
-- [ ] Debug build compiles without errors
-- [ ] GDD launches and MCP server responds on :9700
+- [ ] Solution builds without errors (`dotnet build BrowserXn.sln`)
+- [ ] Windows GUI: GDD launches and MCP server responds on :9700
+- [ ] Headless: GDD.Headless launches and MCP server responds on :9700
 - [ ] Affected MCP tools tested via Claude Code or manual HTTP
-- [ ] No regressions in existing tools
+- [ ] No regressions in existing tools (26 tools expected)
 
 ## Screenshots (if UI changes)
 

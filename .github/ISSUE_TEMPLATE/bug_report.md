@@ -19,9 +19,9 @@ Steps to reproduce:
 What you expected to happen.
 
 **Environment**
-- GDD version: [e.g. 1.0.0]
-- Windows version: [e.g. Windows 11 Pro 24H2]
-- WebView2 Runtime version: 
+- GDD version: [e.g. 1.1.0]
+- Mode: [Windows GUI / Headless]
+- OS: [e.g. Windows 11 Pro 24H2 / Ubuntu 22.04 / macOS 14 Sonoma]
 - Claude Code version (if MCP-related): 
 
 **MCP tool involved (if applicable)**
