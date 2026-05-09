@@ -10,6 +10,8 @@
     <AssemblyName>GDD</AssemblyName>
     <ApplicationIcon>app.ico</ApplicationIcon>
     <StartupObject>GDD.App</StartupObject>
+    <Company>https://github.com/Cap-of-tea/GDD</Company>
+    <Product>GDD</Product>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(PublishSingleFile)' == 'true'">

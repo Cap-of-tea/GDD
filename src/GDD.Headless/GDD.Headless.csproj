@@ -7,6 +7,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>GDD.Headless</RootNamespace>
     <AssemblyName>GDD.Headless</AssemblyName>
+    <Company>https://github.com/Cap-of-tea/GDD</Company>
+    <Product>GDD</Product>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(SelfContained)' == 'true'">
