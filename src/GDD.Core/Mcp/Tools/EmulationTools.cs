@@ -1,7 +1,7 @@
 using System.Text.Json;
+using GDD.Abstractions;
 using GDD.Models;
 using GDD.Services;
-using GDD.ViewModels;
 
 namespace GDD.Mcp.Tools;
 
@@ -9,7 +9,7 @@ public static class EmulationTools
 {
     public static void Register(
         McpToolRegistry registry,
-        MainViewModel mainVm,
+        IPlayerManager playerManager,
         DeviceEmulationService deviceService,
         LocationEmulationService locationService,
         NetworkEmulationService networkService,
@@ -40,8 +40,8 @@ public static class EmulationTools
             {
                 var playerId = args?.GetProperty("player_id").GetInt32() ?? 0;
                 var presetName = args?.GetProperty("preset").GetString() ?? "";
-                var player = mainVm.Players.FirstOrDefault(p => p.PlayerId == playerId);
-                if (player?.WebView?.CoreWebView2 is null)
+                var player = playerManager.GetPlayer(playerId);
+                if (player?.Engine is null)
                     return McpResult.Error($"Player {playerId} not found or not initialized");
 
                 var preset = DevicePresets.All.FirstOrDefault(d =>
@@ -49,7 +49,7 @@ public static class EmulationTools
                 if (preset is null)
                     return McpResult.Error($"Unknown device preset: {presetName}. Available: {string.Join(", ", DevicePresets.All.Select(d => d.Name))}");
 
-                await deviceService.ApplyAsync(player.WebView.CoreWebView2, preset);
+                await deviceService.ApplyAsync(player.Engine, preset);
                 player.SelectedDevice = preset;
                 return McpResult.Text($"Device set to {preset.Name} ({preset.Width}x{preset.Height}) for player {playerId}");
             });
@@ -83,8 +83,8 @@ public static class EmulationTools
             {
                 var playerId = args?.GetProperty("player_id").GetInt32() ?? 0;
                 var presetName = args?.GetProperty("preset").GetString() ?? "";
-                var player = mainVm.Players.FirstOrDefault(p => p.PlayerId == playerId);
-                if (player?.WebView?.CoreWebView2 is null)
+                var player = playerManager.GetPlayer(playerId);
+                if (player?.Engine is null)
                     return McpResult.Error($"Player {playerId} not found or not initialized");
 
                 LocationPreset? preset;
@@ -105,7 +105,7 @@ public static class EmulationTools
                         return McpResult.Error($"Unknown location: {presetName}");
                 }
 
-                await locationService.ApplyAsync(player.WebView.CoreWebView2, preset);
+                await locationService.ApplyAsync(player.Engine, preset);
                 return McpResult.Text($"Location set to {preset.CityName} ({preset.Latitude}, {preset.Longitude}) for player {playerId}");
             });
 
@@ -134,8 +134,8 @@ public static class EmulationTools
             {
                 var playerId = args?.GetProperty("player_id").GetInt32() ?? 0;
                 var presetName = args?.GetProperty("preset").GetString() ?? "";
-                var player = mainVm.Players.FirstOrDefault(p => p.PlayerId == playerId);
-                if (player?.WebView?.CoreWebView2 is null)
+                var player = playerManager.GetPlayer(playerId);
+                if (player?.Engine is null)
                     return McpResult.Error($"Player {playerId} not found or not initialized");
 
                 var preset = NetworkPresets.All.FirstOrDefault(n =>
@@ -143,7 +143,7 @@ public static class EmulationTools
                 if (preset is null)
                     return McpResult.Error($"Unknown network preset: {presetName}");
 
-                await networkService.ApplyAsync(player.WebView.CoreWebView2, preset);
+                await networkService.ApplyAsync(player.Engine, preset);
                 return McpResult.Text($"Network set to {preset.Name} for player {playerId}");
             });
 
@@ -176,8 +176,8 @@ public static class EmulationTools
                 var mobile = args?.TryGetProperty("mobile", out var mEl) == true && mEl.GetBoolean();
                 var ua = args?.TryGetProperty("user_agent", out var uaEl) == true ? uaEl.GetString() ?? "" : "";
 
-                var player = mainVm.Players.FirstOrDefault(p => p.PlayerId == playerId);
-                if (player?.WebView?.CoreWebView2 is null)
+                var player = playerManager.GetPlayer(playerId);
+                if (player?.Engine is null)
                     return McpResult.Error($"Player {playerId} not found or not initialized");
 
                 if (string.IsNullOrEmpty(ua))
@@ -186,7 +186,7 @@ public static class EmulationTools
                         : "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36";
 
                 var preset = new DevicePreset($"Custom {width}x{height}", "Custom", width, height, scale, ua, mobile, mobile);
-                await deviceService.ApplyAsync(player.WebView.CoreWebView2, preset);
+                await deviceService.ApplyAsync(player.Engine, preset);
                 player.SelectedDevice = preset;
                 return McpResult.Text($"Viewport set to {width}x{height} (scale={scale}, mobile={mobile}) for player {playerId}");
             });
@@ -212,19 +212,19 @@ public static class EmulationTools
                 var playerId = args?.GetProperty("player_id").GetInt32() ?? 0;
                 var locale = args?.GetProperty("locale").GetString() ?? "en-US";
 
-                var player = mainVm.Players.FirstOrDefault(p => p.PlayerId == playerId);
-                if (player?.WebView?.CoreWebView2 is null)
+                var player = playerManager.GetPlayer(playerId);
+                if (player?.Engine is null)
                     return McpResult.Error($"Player {playerId} not found or not initialized");
 
-                await cdpService.CallAsync(player.WebView.CoreWebView2, "Emulation.setLocaleOverride", new { locale });
+                await cdpService.CallAsync(player.Engine, "Emulation.setLocaleOverride", new { locale });
 
-                await cdpService.CallAsync(player.WebView.CoreWebView2, "Emulation.setUserAgentOverride", new
+                await cdpService.CallAsync(player.Engine, "Emulation.setUserAgentOverride", new
                 {
                     userAgent = player.SelectedDevice.UserAgent,
                     acceptLanguage = locale
                 });
 
-                await cdpService.CallAsync(player.WebView.CoreWebView2, "Network.setExtraHTTPHeaders", new
+                await cdpService.CallAsync(player.Engine, "Network.setExtraHTTPHeaders", new
                 {
                     headers = new Dictionary<string, string> { ["Accept-Language"] = locale }
                 });

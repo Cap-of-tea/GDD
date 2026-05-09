@@ -1,11 +1,11 @@
 using System.Text.Json;
-using GDD.ViewModels;
+using GDD.Abstractions;
 
 namespace GDD.Mcp.Tools;
 
 public static class ExecutionTools
 {
-    public static void Register(McpToolRegistry registry, MainViewModel mainVm)
+    public static void Register(McpToolRegistry registry, IPlayerManager playerManager)
     {
         registry.Register(
             new McpToolDefinition
@@ -27,11 +27,11 @@ public static class ExecutionTools
             {
                 var playerId = args?.GetProperty("player_id").GetInt32() ?? 0;
                 var script = args?.GetProperty("script").GetString() ?? "";
-                var player = mainVm.Players.FirstOrDefault(p => p.PlayerId == playerId);
-                if (player?.WebView?.CoreWebView2 is null)
+                var player = playerManager.GetPlayer(playerId);
+                if (player?.Engine is null)
                     return McpResult.Error($"Player {playerId} not found or not initialized");
 
-                var result = await player.WebView.CoreWebView2.ExecuteScriptAsync(script);
+                var result = await player.Engine.ExecuteJavaScriptAsync(script);
                 return McpResult.Text(result);
             });
     }

@@ -1,7 +1,7 @@
 using System.Text.Json;
+using GDD.Abstractions;
 using GDD.Models;
 using GDD.Services;
-using GDD.ViewModels;
 
 namespace GDD.Mcp.Tools;
 
@@ -9,9 +9,10 @@ public static class AuthTools
 {
     public static void Register(
         McpToolRegistry registry,
-        MainViewModel mainVm,
+        IPlayerManager playerManager,
         QuickAuthService authService,
         TokenInjectionService tokenService,
+        IMainThreadDispatcher dispatcher,
         AppConfig config)
     {
         registry.Register(
@@ -32,9 +33,10 @@ public static class AuthTools
             async args =>
             {
                 var playerId = args?.GetProperty("player_id").GetInt32() ?? 0;
+                var allPlayers = playerManager.GetPlayers();
                 var targets = playerId == 0
-                    ? mainVm.Players.ToList()
-                    : mainVm.Players.Where(p => p.PlayerId == playerId).ToList();
+                    ? allPlayers.ToList()
+                    : allPlayers.Where(p => p.PlayerId == playerId).ToList();
 
                 if (targets.Count == 0)
                     return McpResult.Error(playerId == 0
@@ -49,18 +51,18 @@ public static class AuthTools
                     {
                         try
                         {
-                            if (player.WebView?.CoreWebView2 is null)
+                            if (player.Engine is null)
                                 return $"Player {player.PlayerId}: not initialized";
 
                             var authResult = await authService.RegisterAndLoginAsync(player.PlayerId);
                             if (authResult is null)
                                 return $"Player {player.PlayerId}: auth failed";
 
-                            await System.Windows.Application.Current.Dispatcher.InvokeAsync(async () =>
+                            await dispatcher.InvokeAsync(async () =>
                             {
                                 await tokenService.InjectAsync(
-                                    player.WebView.CoreWebView2, authResult, config.FrontendUrl);
-                            }).Task;
+                                    player.Engine, authResult, config.FrontendUrl);
+                            });
 
                             return $"Player {player.PlayerId}: authenticated as {authResult.User?.Username}";
                         }

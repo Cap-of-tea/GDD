@@ -1,6 +1,6 @@
 using System.Text.Json;
+using GDD.Abstractions;
 using GDD.Services;
-using GDD.ViewModels;
 
 namespace GDD.Mcp.Tools;
 
@@ -8,7 +8,7 @@ public static class StateTools
 {
     public static void Register(
         McpToolRegistry registry,
-        MainViewModel mainVm,
+        IPlayerManager playerManager,
         NotificationInterceptionService notificationService)
     {
         registry.Register(
@@ -29,7 +29,7 @@ public static class StateTools
             async args =>
             {
                 var playerId = args?.GetProperty("player_id").GetInt32() ?? 0;
-                var player = mainVm.Players.FirstOrDefault(p => p.PlayerId == playerId);
+                var player = playerManager.GetPlayer(playerId);
                 if (player is null)
                     return McpResult.Error($"Player {playerId} not found");
 
@@ -80,9 +80,7 @@ public static class StateTools
                 if (args?.TryGetProperty("player_id", out var idEl) == true)
                     playerId = idEl.GetInt32();
 
-                var notifications = playerId == 0
-                    ? notificationService.Notifications.ToList()
-                    : notificationService.Notifications.Where(n => n.PlayerId == playerId).ToList();
+                var notifications = notificationService.GetNotifications(playerId == 0 ? null : playerId);
 
                 var result = notifications.Select(n => new
                 {

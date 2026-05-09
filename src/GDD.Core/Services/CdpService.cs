@@ -1,5 +1,5 @@
 using System.Text.Json;
-using Microsoft.Web.WebView2.Core;
+using GDD.Abstractions;
 using Serilog;
 
 namespace GDD.Services;
@@ -8,7 +8,7 @@ public sealed class CdpService
 {
     private static readonly ILogger Logger = Log.ForContext<CdpService>();
 
-    public async Task CallAsync(CoreWebView2 webView, string method, object parameters)
+    public async Task CallAsync(IBrowserEngine engine, string method, object parameters)
     {
         var json = JsonSerializer.Serialize(parameters, new JsonSerializerOptions
         {
@@ -16,10 +16,10 @@ public sealed class CdpService
         });
 
         Logger.Debug("CDP {Method}: {Params}", method, json);
-        await webView.CallDevToolsProtocolMethodAsync(method, json);
+        await engine.CallCdpMethodAsync(method, json);
     }
 
-    public async Task<string> CallWithResultAsync(CoreWebView2 webView, string method, object parameters)
+    public async Task<string> CallWithResultAsync(IBrowserEngine engine, string method, object parameters)
     {
         var json = JsonSerializer.Serialize(parameters, new JsonSerializerOptions
         {
@@ -27,6 +27,6 @@ public sealed class CdpService
         });
 
         Logger.Debug("CDP {Method}: {Params}", method, json);
-        return await webView.CallDevToolsProtocolMethodAsync(method, json);
+        return await engine.CallCdpMethodWithResultAsync(method, json);
     }
 }

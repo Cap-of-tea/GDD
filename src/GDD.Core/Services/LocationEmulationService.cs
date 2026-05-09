@@ -1,4 +1,4 @@
-using Microsoft.Web.WebView2.Core;
+using GDD.Abstractions;
 using GDD.Models;
 using Serilog;
 
@@ -14,21 +14,21 @@ public sealed class LocationEmulationService
         _cdp = cdp;
     }
 
-    public async Task ApplyAsync(CoreWebView2 webView, LocationPreset preset)
+    public async Task ApplyAsync(IBrowserEngine engine, LocationPreset preset)
     {
-        await _cdp.CallAsync(webView, "Emulation.setGeolocationOverride", new
+        await _cdp.CallAsync(engine, "Emulation.setGeolocationOverride", new
         {
             latitude = preset.Latitude,
             longitude = preset.Longitude,
             accuracy = preset.Accuracy
         });
 
-        await _cdp.CallAsync(webView, "Emulation.setTimezoneOverride", new
+        await _cdp.CallAsync(engine, "Emulation.setTimezoneOverride", new
         {
             timezoneId = preset.TimezoneId
         });
 
-        await _cdp.CallAsync(webView, "Emulation.setLocaleOverride", new
+        await _cdp.CallAsync(engine, "Emulation.setLocaleOverride", new
         {
             locale = preset.Locale
         });
@@ -37,8 +37,8 @@ public sealed class LocationEmulationService
             preset.CityName, preset.Latitude, preset.Longitude, preset.TimezoneId, preset.Locale);
     }
 
-    public async Task ClearAsync(CoreWebView2 webView)
+    public async Task ClearAsync(IBrowserEngine engine)
     {
-        await _cdp.CallAsync(webView, "Emulation.clearGeolocationOverride", new { });
+        await _cdp.CallAsync(engine, "Emulation.clearGeolocationOverride", new { });
     }
 }

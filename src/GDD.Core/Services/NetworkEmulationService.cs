@@ -1,4 +1,4 @@
-using Microsoft.Web.WebView2.Core;
+using GDD.Abstractions;
 using GDD.Models;
 using Serilog;
 
@@ -14,11 +14,11 @@ public sealed class NetworkEmulationService
         _cdp = cdp;
     }
 
-    public async Task ApplyAsync(CoreWebView2 webView, NetworkPreset preset)
+    public async Task ApplyAsync(IBrowserEngine engine, NetworkPreset preset)
     {
-        await _cdp.CallAsync(webView, "Network.enable", new { });
+        await _cdp.CallAsync(engine, "Network.enable", new { });
 
-        await _cdp.CallAsync(webView, "Network.emulateNetworkConditions", new
+        await _cdp.CallAsync(engine, "Network.emulateNetworkConditions", new
         {
             offline = preset.Offline,
             latency = preset.LatencyMs,
@@ -30,9 +30,9 @@ public sealed class NetworkEmulationService
             preset.Name, preset.Offline, preset.LatencyMs);
     }
 
-    public async Task ClearAsync(CoreWebView2 webView)
+    public async Task ClearAsync(IBrowserEngine engine)
     {
-        await _cdp.CallAsync(webView, "Network.emulateNetworkConditions", new
+        await _cdp.CallAsync(engine, "Network.emulateNetworkConditions", new
         {
             offline = false,
             latency = 0,

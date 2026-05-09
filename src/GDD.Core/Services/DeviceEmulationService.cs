@@ -1,4 +1,4 @@
-using Microsoft.Web.WebView2.Core;
+using GDD.Abstractions;
 using GDD.Models;
 using Serilog;
 
@@ -14,9 +14,9 @@ public sealed class DeviceEmulationService
         _cdp = cdp;
     }
 
-    public async Task ApplyAsync(CoreWebView2 webView, DevicePreset preset)
+    public async Task ApplyAsync(IBrowserEngine engine, DevicePreset preset)
     {
-        await _cdp.CallAsync(webView, "Emulation.setDeviceMetricsOverride", new
+        await _cdp.CallAsync(engine, "Emulation.setDeviceMetricsOverride", new
         {
             width = preset.Width,
             height = preset.Height,
@@ -24,12 +24,12 @@ public sealed class DeviceEmulationService
             mobile = preset.IsMobile
         });
 
-        await _cdp.CallAsync(webView, "Emulation.setUserAgentOverride", new
+        await _cdp.CallAsync(engine, "Emulation.setUserAgentOverride", new
         {
             userAgent = preset.UserAgent
         });
 
-        await _cdp.CallAsync(webView, "Emulation.setTouchEmulationEnabled", new
+        await _cdp.CallAsync(engine, "Emulation.setTouchEmulationEnabled", new
         {
             enabled = preset.HasTouch,
             maxTouchPoints = 5
@@ -39,9 +39,9 @@ public sealed class DeviceEmulationService
             preset.Name, preset.Width, preset.Height);
     }
 
-    public async Task ClearAsync(CoreWebView2 webView)
+    public async Task ClearAsync(IBrowserEngine engine)
     {
-        await _cdp.CallAsync(webView, "Emulation.clearDeviceMetricsOverride", new { });
-        await _cdp.CallAsync(webView, "Emulation.setTouchEmulationEnabled", new { enabled = false });
+        await _cdp.CallAsync(engine, "Emulation.clearDeviceMetricsOverride", new { });
+        await _cdp.CallAsync(engine, "Emulation.setTouchEmulationEnabled", new { enabled = false });
     }
 }

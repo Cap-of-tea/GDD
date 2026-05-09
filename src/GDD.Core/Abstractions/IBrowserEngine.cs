@@ -16,13 +16,14 @@ public interface IBrowserEngine : IAsyncDisposable
     bool IsInitialized { get; }
     string CurrentUrl { get; }
 
-    Task InitializeAsync(nint parentHwnd, string startUrl);
+    Task InitializeAsync(object? hostHandle, string startUrl);
     Task NavigateAsync(string url);
     Task<string> ExecuteJavaScriptAsync(string script);
     Task CallCdpMethodAsync(string methodName, string parametersJson);
     Task<string> CallCdpMethodWithResultAsync(string methodName, string parametersJson);
     Task<byte[]> CaptureScreenshotAsync();
     Task InjectScriptOnDocumentCreatedAsync(string script);
+    ICdpEventSubscription SubscribeToCdpEvent(string eventName);
 
     event EventHandler<NotificationEventArgs>? NotificationReceived;
     event EventHandler<string>? NavigationCompleted;

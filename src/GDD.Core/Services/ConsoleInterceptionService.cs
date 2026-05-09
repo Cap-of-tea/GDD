@@ -1,6 +1,6 @@
 using System.Collections.Concurrent;
 using System.Text.Json;
-using Microsoft.Web.WebView2.Core;
+using GDD.Abstractions;
 using GDD.Collections;
 using GDD.Models;
 using Serilog;
@@ -20,18 +20,18 @@ public sealed class ConsoleInterceptionService
         _cdp = cdp;
     }
 
-    public async Task AttachAsync(CoreWebView2 webView, int playerId)
+    public async Task AttachAsync(IBrowserEngine engine, int playerId)
     {
         _buffers.TryAdd(playerId, new RingBuffer<ConsoleEntry>());
 
-        await _cdp.CallAsync(webView, "Runtime.enable", new { });
+        await _cdp.CallAsync(engine, "Runtime.enable", new { });
 
-        webView.GetDevToolsProtocolEventReceiver("Runtime.consoleAPICalled")
-            .DevToolsProtocolEventReceived += (_, e) =>
+        var consoleSub = engine.SubscribeToCdpEvent("Runtime.consoleAPICalled");
+        consoleSub.EventReceived += (_, json) =>
         {
             try
             {
-                using var doc = JsonDocument.Parse(e.ParameterObjectAsJson);
+                using var doc = JsonDocument.Parse(json);
                 var root = doc.RootElement;
 
                 var level = root.GetProperty("type").GetString() ?? "log";
@@ -73,12 +73,12 @@ public sealed class ConsoleInterceptionService
             }
         };
 
-        webView.GetDevToolsProtocolEventReceiver("Runtime.exceptionThrown")
-            .DevToolsProtocolEventReceived += (_, e) =>
+        var exceptionSub = engine.SubscribeToCdpEvent("Runtime.exceptionThrown");
+        exceptionSub.EventReceived += (_, json) =>
         {
             try
             {
-                using var doc = JsonDocument.Parse(e.ParameterObjectAsJson);
+                using var doc = JsonDocument.Parse(json);
                 var root = doc.RootElement;
                 var exDetail = root.GetProperty("exceptionDetails");
 
@@ -91,10 +91,10 @@ public sealed class ConsoleInterceptionService
 
                 string? stack = null;
                 if (exDetail.TryGetProperty("stackTrace", out var st) &&
-                    st.TryGetProperty("callFrames", out var frames))
+                    st.TryGetProperty("callFrames", out var frames2))
                 {
                     var lines = new List<string>();
-                    foreach (var frame in frames.EnumerateArray())
+                    foreach (var frame in frames2.EnumerateArray())
                     {
                         var fn = frame.GetProperty("functionName").GetString();
                         var url = frame.GetProperty("url").GetString();

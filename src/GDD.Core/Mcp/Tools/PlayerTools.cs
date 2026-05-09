@@ -1,11 +1,11 @@
 using System.Text.Json;
-using GDD.ViewModels;
+using GDD.Abstractions;
 
 namespace GDD.Mcp.Tools;
 
 public static class PlayerTools
 {
-    public static void Register(McpToolRegistry registry, MainViewModel mainVm)
+    public static void Register(McpToolRegistry registry, IPlayerManager playerManager)
     {
         registry.Register(
             new McpToolDefinition
@@ -25,12 +25,7 @@ public static class PlayerTools
             async args =>
             {
                 var count = args?.GetProperty("count").GetInt32() ?? 1;
-                var ids = new List<int>();
-                for (var i = 0; i < count; i++)
-                {
-                    mainVm.AddPlayerCommand.Execute(null);
-                    ids.Add(mainVm.Players.Last().PlayerId);
-                }
+                var ids = playerManager.AddPlayers(count);
                 await Task.CompletedTask;
                 return McpResult.Text($"Created {count} players: [{string.Join(", ", ids)}]");
             });
@@ -53,10 +48,10 @@ public static class PlayerTools
             async args =>
             {
                 var playerId = args?.GetProperty("player_id").GetInt32() ?? 0;
-                var player = mainVm.Players.FirstOrDefault(p => p.PlayerId == playerId);
+                var player = playerManager.GetPlayer(playerId);
                 if (player is null)
                     return McpResult.Error($"Player {playerId} not found");
-                mainVm.RemovePlayerCommand.Execute(player);
+                playerManager.RemovePlayer(playerId);
                 await Task.CompletedTask;
                 return McpResult.Text($"Removed player {playerId}");
             });
@@ -70,7 +65,7 @@ public static class PlayerTools
             },
             async args =>
             {
-                var players = mainVm.Players.Select(p => new
+                var players = playerManager.GetPlayers().Select(p => new
                 {
                     id = p.PlayerId,
                     name = p.PlayerName,

@@ -1,5 +1,5 @@
 using System.Text.Json;
-using Microsoft.Web.WebView2.Core;
+using GDD.Abstractions;
 using GDD.Models;
 using Serilog;
 
@@ -9,7 +9,7 @@ public sealed class TokenInjectionService
 {
     private static readonly ILogger Logger = Log.ForContext<TokenInjectionService>();
 
-    public async Task InjectAsync(CoreWebView2 webView, AuthResult authResult, string frontendUrl)
+    public async Task InjectAsync(IBrowserEngine engine, AuthResult authResult, string frontendUrl)
     {
         var state = new NoiseAuthState
         {
@@ -28,10 +28,10 @@ public sealed class TokenInjectionService
         var escapedJson = JsonSerializer.Serialize(json);
 
         var script = $"localStorage.setItem('noise-auth', {escapedJson});";
-        await webView.ExecuteScriptAsync(script);
+        await engine.ExecuteJavaScriptAsync(script);
 
         Logger.Information("Tokens injected for user {Username}", authResult.User?.Username);
 
-        webView.Navigate(frontendUrl);
+        await engine.NavigateAsync(frontendUrl);
     }
 }

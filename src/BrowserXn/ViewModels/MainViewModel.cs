@@ -3,6 +3,8 @@ using System.Threading;
 using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using GDD.Abstractions;
+using GDD.Engines;
 using GDD.Models;
 using GDD.Services;
 using GDD.Views;
@@ -10,10 +12,11 @@ using Serilog;
 
 namespace GDD.ViewModels;
 
-public partial class MainViewModel : ObservableObject
+public partial class MainViewModel : ObservableObject, IPlayerManager
 {
     private static readonly ILogger Logger = Log.ForContext<MainViewModel>();
     private readonly AppConfig _config;
+    private readonly IMainThreadDispatcher _dispatcher;
     private readonly DeviceEmulationService _deviceService;
     private readonly LocationEmulationService _locationService;
     private readonly NetworkEmulationService _networkService;
@@ -41,6 +44,7 @@ public partial class MainViewModel : ObservableObject
 
     public MainViewModel(
         AppConfig config,
+        IMainThreadDispatcher dispatcher,
         DeviceEmulationService deviceService,
         LocationEmulationService locationService,
         NetworkEmulationService networkService,
@@ -52,6 +56,7 @@ public partial class MainViewModel : ObservableObject
         NetworkMonitoringService networkMonitorService)
     {
         _config = config;
+        _dispatcher = dispatcher;
         _deviceService = deviceService;
         _locationService = locationService;
         _networkService = networkService;
@@ -63,6 +68,33 @@ public partial class MainViewModel : ObservableObject
         _networkMonitorService = networkMonitorService;
         _defaultUrl = config.FrontendUrl;
     }
+
+    // ── IPlayerManager ────────────────────────────────────────────────
+
+    public IReadOnlyList<IPlayerContext> GetPlayers() => Players;
+
+    public IPlayerContext? GetPlayer(int playerId) =>
+        Players.FirstOrDefault(p => p.PlayerId == playerId);
+
+    public IReadOnlyList<int> AddPlayers(int count)
+    {
+        var ids = new List<int>();
+        for (var i = 0; i < count; i++)
+        {
+            AddPlayer();
+            ids.Add(Players.Last().PlayerId);
+        }
+        return ids;
+    }
+
+    void IPlayerManager.RemovePlayer(int playerId)
+    {
+        var player = Players.FirstOrDefault(p => p.PlayerId == playerId);
+        if (player is not null)
+            RemovePlayer(player);
+    }
+
+    // ── Commands ───────────────────────────────────────────────────────
 
     [RelayCommand]
     private void AddPlayer()
@@ -138,14 +170,15 @@ public partial class MainViewModel : ObservableObject
             {
                 try
                 {
-                    if (player.WebView?.CoreWebView2 is null) return;
+                    if (player.Engine is null) return;
 
                     var authResult = await _authService.RegisterAndLoginAsync(player.PlayerId);
                     if (authResult is null) return;
 
-                    await Application.Current.Dispatcher.InvokeAsync(
-                        () => _tokenService.InjectAsync(
-                            player.WebView.CoreWebView2, authResult, _config.FrontendUrl));
+                    await _dispatcher.InvokeAsync(async () =>
+                    {
+                        await _tokenService.InjectAsync(player.Engine, authResult, _config.FrontendUrl);
+                    });
 
                     Interlocked.Increment(ref authenticated);
                     player.StatusText = $"Authenticated as {authResult.User?.Username}";
@@ -197,7 +230,7 @@ public partial class MainViewModel : ObservableObject
 
         foreach (var player in Players)
         {
-            player.WebView?.CoreWebView2?.Navigate(url);
+            player.Engine?.NavigateAsync(url);
             player.CurrentUrl = url;
         }
 
@@ -219,26 +252,26 @@ public partial class MainViewModel : ObservableObject
 
     private async Task ApplySettingsAsync(BrowserCellViewModel vm, CellSettingsWindow settings)
     {
-        var webView = vm.WebView?.CoreWebView2;
-        if (webView is null)
+        var engine = vm.Engine;
+        if (engine is null)
         {
-            Logger.Warning("Cannot apply settings — WebView2 not initialized for {Player}", vm.PlayerName);
+            Logger.Warning("Cannot apply settings — engine not initialized for {Player}", vm.PlayerName);
             return;
         }
 
         try
         {
             vm.SelectedDevice = settings.SelectedDevice;
-            await _deviceService.ApplyAsync(webView, settings.SelectedDevice);
+            await _deviceService.ApplyAsync(engine, settings.SelectedDevice);
 
             vm.SelectedLocation = settings.SelectedLocation;
             if (settings.SelectedLocation is not null)
-                await _locationService.ApplyAsync(webView, settings.SelectedLocation);
+                await _locationService.ApplyAsync(engine, settings.SelectedLocation);
             else
-                await _locationService.ClearAsync(webView);
+                await _locationService.ClearAsync(engine);
 
             vm.SelectedNetwork = settings.SelectedNetwork;
-            await _networkService.ApplyAsync(webView, settings.SelectedNetwork);
+            await _networkService.ApplyAsync(engine, settings.SelectedNetwork);
             vm.UpdateNetworkIndicator(settings.SelectedNetwork);
 
             if (!string.IsNullOrEmpty(settings.NavigateUrl))
@@ -246,7 +279,7 @@ public partial class MainViewModel : ObservableObject
                 var url = settings.NavigateUrl;
                 if (!url.Contains("://"))
                     url = "https://" + url;
-                webView.Navigate(url);
+                await engine.NavigateAsync(url);
                 vm.CurrentUrl = url;
             }
 
@@ -257,7 +290,7 @@ public partial class MainViewModel : ObservableObject
                 vm.TelegramUsername = tgConfig.Username;
                 vm.TelegramFirstName = tgConfig.FirstName;
                 vm.TelegramLanguageCode = tgConfig.LanguageCode;
-                await _telegramService.InjectAsync(webView, tgConfig, _config.BotToken);
+                await _telegramService.InjectAsync(engine, tgConfig, _config.BotToken);
             }
 
             Logger.Information("Settings applied for {Player}: device={Device}, location={Location}, network={Network}, telegram={Tg}",
@@ -288,7 +321,9 @@ public partial class MainViewModel : ObservableObject
     {
         if (vm.WebView?.CoreWebView2 is null) return;
 
-        _notificationService.Attach(vm.WebView.CoreWebView2, vm.PlayerId);
+        vm.Engine = new WebView2ControlAdapter(vm.WebView.CoreWebView2, vm.PlayerId);
+
+        _notificationService.Attach(vm.Engine, vm.PlayerId);
         _notificationService.NotificationReceived += (_, n) =>
         {
             if (n.PlayerId == vm.PlayerId)
@@ -297,7 +332,7 @@ public partial class MainViewModel : ObservableObject
 
         try
         {
-            await _consoleService.AttachAsync(vm.WebView.CoreWebView2, vm.PlayerId);
+            await _consoleService.AttachAsync(vm.Engine, vm.PlayerId);
             _consoleService.EntryReceived += (_, entry) =>
             {
                 if (entry.PlayerId != vm.PlayerId) return;
@@ -308,7 +343,7 @@ public partial class MainViewModel : ObservableObject
                 }
             };
 
-            await _networkMonitorService.AttachAsync(vm.WebView.CoreWebView2, vm.PlayerId);
+            await _networkMonitorService.AttachAsync(vm.Engine, vm.PlayerId);
             _networkMonitorService.RequestFailed += (_, entry) =>
             {
                 if (entry.PlayerId == vm.PlayerId)

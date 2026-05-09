@@ -1,9 +1,9 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using GDD.Abstractions;
-using GDD.Engines;
 using GDD.Mcp;
 using GDD.Models;
+using GDD.Platform;
 using GDD.ViewModels;
 
 namespace GDD.Services;
@@ -18,18 +18,7 @@ public static class IServiceCollectionExtensions
         configuration.GetSection("GDD").Bind(config);
         services.AddSingleton(config);
 
-        services.AddSingleton<IBrowserEngineFactory, WebView2EngineFactory>();
-        services.AddSingleton<MainViewModel>(sp => new MainViewModel(
-            sp.GetRequiredService<AppConfig>(),
-            sp.GetRequiredService<DeviceEmulationService>(),
-            sp.GetRequiredService<LocationEmulationService>(),
-            sp.GetRequiredService<NetworkEmulationService>(),
-            sp.GetRequiredService<TelegramInjectionService>(),
-            sp.GetRequiredService<QuickAuthService>(),
-            sp.GetRequiredService<TokenInjectionService>(),
-            sp.GetRequiredService<NotificationInterceptionService>(),
-            sp.GetRequiredService<ConsoleInterceptionService>(),
-            sp.GetRequiredService<NetworkMonitoringService>()));
+        services.AddSingleton<IMainThreadDispatcher, WpfDispatcher>();
 
         services.AddSingleton<CdpService>();
         services.AddSingleton<DeviceEmulationService>();
@@ -43,9 +32,24 @@ public static class IServiceCollectionExtensions
         services.AddSingleton<ConsoleInterceptionService>();
         services.AddSingleton<NetworkMonitoringService>();
 
+        services.AddSingleton<MainViewModel>(sp => new MainViewModel(
+            sp.GetRequiredService<AppConfig>(),
+            sp.GetRequiredService<IMainThreadDispatcher>(),
+            sp.GetRequiredService<DeviceEmulationService>(),
+            sp.GetRequiredService<LocationEmulationService>(),
+            sp.GetRequiredService<NetworkEmulationService>(),
+            sp.GetRequiredService<TelegramInjectionService>(),
+            sp.GetRequiredService<QuickAuthService>(),
+            sp.GetRequiredService<TokenInjectionService>(),
+            sp.GetRequiredService<NotificationInterceptionService>(),
+            sp.GetRequiredService<ConsoleInterceptionService>(),
+            sp.GetRequiredService<NetworkMonitoringService>()));
+        services.AddSingleton<IPlayerManager>(sp => sp.GetRequiredService<MainViewModel>());
+
         services.AddSingleton<McpToolRegistry>();
         services.AddSingleton(sp => new McpServer(
             sp.GetRequiredService<McpToolRegistry>(),
+            sp.GetRequiredService<IMainThreadDispatcher>(),
             config.McpPort));
 
         services.AddHttpClient("GDDAuth", client =>

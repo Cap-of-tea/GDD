@@ -1,11 +1,11 @@
 using System.Text.Json;
-using GDD.ViewModels;
+using GDD.Abstractions;
 
 namespace GDD.Mcp.Tools;
 
 public static class NavigationTools
 {
-    public static void Register(McpToolRegistry registry, MainViewModel mainVm)
+    public static void Register(McpToolRegistry registry, IPlayerManager playerManager)
     {
         registry.Register(
             new McpToolDefinition
@@ -27,10 +27,10 @@ public static class NavigationTools
             {
                 var playerId = args?.GetProperty("player_id").GetInt32() ?? 0;
                 var url = args?.GetProperty("url").GetString() ?? "";
-                var player = mainVm.Players.FirstOrDefault(p => p.PlayerId == playerId);
-                if (player?.WebView?.CoreWebView2 is null)
+                var player = playerManager.GetPlayer(playerId);
+                if (player?.Engine is null)
                     return McpResult.Error($"Player {playerId} not found or not initialized");
-                player.WebView.CoreWebView2.Navigate(url);
+                await player.Engine.NavigateAsync(url);
                 await Task.Delay(500);
                 return McpResult.Text($"Navigated player {playerId} to {url}");
             });
@@ -60,8 +60,8 @@ public static class NavigationTools
                 if (args?.TryGetProperty("timeout", out var timeoutEl) == true)
                     timeout = timeoutEl.GetInt32();
 
-                var player = mainVm.Players.FirstOrDefault(p => p.PlayerId == playerId);
-                if (player?.WebView?.CoreWebView2 is null)
+                var player = playerManager.GetPlayer(playerId);
+                if (player?.Engine is null)
                     return McpResult.Error($"Player {playerId} not found or not initialized");
 
                 var escapedSelector = selector.Replace("'", "\\'");
@@ -69,7 +69,7 @@ public static class NavigationTools
 
                 while (elapsed < timeout)
                 {
-                    var result = await player.WebView.CoreWebView2.ExecuteScriptAsync(
+                    var result = await player.Engine.ExecuteJavaScriptAsync(
                         $"document.querySelector('{escapedSelector}') !== null");
                     if (result == "true")
                         return McpResult.Text($"Found '{selector}' after {elapsed}ms");

@@ -5,6 +5,7 @@ using Microsoft.Extensions.Hosting;
 using Serilog;
 using Serilog.Settings.Configuration;
 using Serilog.Sinks.File;
+using GDD.Abstractions;
 using GDD.Interop;
 using GDD.Mcp;
 using GDD.Mcp.Tools;
@@ -62,8 +63,9 @@ public partial class App : Application
     private void RegisterMcpTools()
     {
         var registry = _host!.Services.GetRequiredService<McpToolRegistry>();
-        var mainVm = _host.Services.GetRequiredService<MainViewModel>();
+        var playerManager = _host.Services.GetRequiredService<IPlayerManager>();
         var config = _host.Services.GetRequiredService<AppConfig>();
+        var dispatcher = _host.Services.GetRequiredService<IMainThreadDispatcher>();
         var authService = _host.Services.GetRequiredService<QuickAuthService>();
         var tokenService = _host.Services.GetRequiredService<TokenInjectionService>();
         var deviceService = _host.Services.GetRequiredService<DeviceEmulationService>();
@@ -74,15 +76,15 @@ public partial class App : Application
         var networkMonitorService = _host.Services.GetRequiredService<NetworkMonitoringService>();
         var cdpService = _host.Services.GetRequiredService<CdpService>();
 
-        PlayerTools.Register(registry, mainVm);
-        NavigationTools.Register(registry, mainVm);
-        InteractionTools.Register(registry, mainVm);
-        ReadTools.Register(registry, mainVm);
-        ExecutionTools.Register(registry, mainVm);
-        AuthTools.Register(registry, mainVm, authService, tokenService, config);
-        EmulationTools.Register(registry, mainVm, deviceService, locationService, networkService, cdpService);
-        StateTools.Register(registry, mainVm, notificationService);
-        DiagnosticsTools.Register(registry, mainVm, consoleService, networkMonitorService, cdpService);
+        PlayerTools.Register(registry, playerManager);
+        NavigationTools.Register(registry, playerManager);
+        InteractionTools.Register(registry, playerManager);
+        ReadTools.Register(registry, playerManager);
+        ExecutionTools.Register(registry, playerManager);
+        AuthTools.Register(registry, playerManager, authService, tokenService, dispatcher, config);
+        EmulationTools.Register(registry, playerManager, deviceService, locationService, networkService, cdpService);
+        StateTools.Register(registry, playerManager, notificationService);
+        DiagnosticsTools.Register(registry, playerManager, consoleService, networkMonitorService, cdpService);
         HelpTools.Register(registry);
     }
 

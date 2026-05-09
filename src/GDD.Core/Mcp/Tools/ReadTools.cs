@@ -1,11 +1,11 @@
 using System.Text.Json;
-using GDD.ViewModels;
+using GDD.Abstractions;
 
 namespace GDD.Mcp.Tools;
 
 public static class ReadTools
 {
-    public static void Register(McpToolRegistry registry, MainViewModel mainVm)
+    public static void Register(McpToolRegistry registry, IPlayerManager playerManager)
     {
         registry.Register(
             new McpToolDefinition
@@ -27,12 +27,12 @@ public static class ReadTools
             {
                 var playerId = args?.GetProperty("player_id").GetInt32() ?? 0;
                 var selector = args?.GetProperty("selector").GetString() ?? "";
-                var player = mainVm.Players.FirstOrDefault(p => p.PlayerId == playerId);
-                if (player?.WebView?.CoreWebView2 is null)
+                var player = playerManager.GetPlayer(playerId);
+                if (player?.Engine is null)
                     return McpResult.Error($"Player {playerId} not found or not initialized");
 
                 var escaped = selector.Replace("'", "\\'");
-                var result = await player.WebView.CoreWebView2.ExecuteScriptAsync(
+                var result = await player.Engine.ExecuteJavaScriptAsync(
                     $"document.querySelector('{escaped}')?.textContent ?? null");
 
                 if (result == "null")
@@ -62,12 +62,12 @@ public static class ReadTools
             {
                 var playerId = args?.GetProperty("player_id").GetInt32() ?? 0;
                 var selector = args?.GetProperty("selector").GetString() ?? "";
-                var player = mainVm.Players.FirstOrDefault(p => p.PlayerId == playerId);
-                if (player?.WebView?.CoreWebView2 is null)
+                var player = playerManager.GetPlayer(playerId);
+                if (player?.Engine is null)
                     return McpResult.Error($"Player {playerId} not found or not initialized");
 
                 var escaped = selector.Replace("'", "\\'");
-                var result = await player.WebView.CoreWebView2.ExecuteScriptAsync(
+                var result = await player.Engine.ExecuteJavaScriptAsync(
                     $"JSON.stringify([...document.querySelectorAll('{escaped}')].map(el => el.textContent))");
 
                 var text = JsonSerializer.Deserialize<string>(result);
@@ -92,15 +92,12 @@ public static class ReadTools
             async args =>
             {
                 var playerId = args?.GetProperty("player_id").GetInt32() ?? 0;
-                var player = mainVm.Players.FirstOrDefault(p => p.PlayerId == playerId);
-                if (player?.WebView?.CoreWebView2 is null)
+                var player = playerManager.GetPlayer(playerId);
+                if (player?.Engine is null)
                     return McpResult.Error($"Player {playerId} not found or not initialized");
 
-                var resultJson = await player.WebView.CoreWebView2.CallDevToolsProtocolMethodAsync(
-                    "Page.captureScreenshot", "{\"format\":\"png\"}");
-
-                using var doc = JsonDocument.Parse(resultJson);
-                var base64 = doc.RootElement.GetProperty("data").GetString()!;
+                var screenshotBytes = await player.Engine.CaptureScreenshotAsync();
+                var base64 = Convert.ToBase64String(screenshotBytes);
 
                 return new McpToolResult
                 {

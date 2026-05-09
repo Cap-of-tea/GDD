@@ -1,5 +1,5 @@
 using System.Text.Json;
-using Microsoft.Web.WebView2.Core;
+using GDD.Abstractions;
 using GDD.Models;
 using Serilog;
 
@@ -15,7 +15,7 @@ public sealed class TelegramInjectionService
         _initDataService = initDataService;
     }
 
-    public async Task InjectAsync(CoreWebView2 webView, TelegramUserConfig config, string botToken)
+    public async Task InjectAsync(IBrowserEngine engine, TelegramUserConfig config, string botToken)
     {
         var initData = _initDataService.GenerateInitData(config, botToken);
 
@@ -129,7 +129,7 @@ public sealed class TelegramInjectionService
             })();
             """;
 
-        await webView.AddScriptToExecuteOnDocumentCreatedAsync(script);
+        await engine.InjectScriptOnDocumentCreatedAsync(script);
 
         Logger.Information("Telegram WebApp injected for TG user {TgUserId} ({Username})",
             config.TelegramUserId, config.Username);

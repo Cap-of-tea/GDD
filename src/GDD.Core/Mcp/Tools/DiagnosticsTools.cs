@@ -1,6 +1,6 @@
 using System.Text.Json;
+using GDD.Abstractions;
 using GDD.Services;
-using GDD.ViewModels;
 
 namespace GDD.Mcp.Tools;
 
@@ -8,7 +8,7 @@ public static class DiagnosticsTools
 {
     public static void Register(
         McpToolRegistry registry,
-        MainViewModel mainVm,
+        IPlayerManager playerManager,
         ConsoleInterceptionService consoleService,
         NetworkMonitoringService networkMonitorService,
         CdpService cdpService)
@@ -33,7 +33,7 @@ public static class DiagnosticsTools
             async args =>
             {
                 var playerId = args?.GetProperty("player_id").GetInt32() ?? 0;
-                var player = mainVm.Players.FirstOrDefault(p => p.PlayerId == playerId);
+                var player = playerManager.GetPlayer(playerId);
                 if (player is null)
                     return McpResult.Error($"Player {playerId} not found");
 
@@ -87,7 +87,7 @@ public static class DiagnosticsTools
             async args =>
             {
                 var playerId = args?.GetProperty("player_id").GetInt32() ?? 0;
-                var player = mainVm.Players.FirstOrDefault(p => p.PlayerId == playerId);
+                var player = playerManager.GetPlayer(playerId);
                 if (player is null)
                     return McpResult.Error($"Player {playerId} not found");
 
@@ -142,13 +142,13 @@ public static class DiagnosticsTools
             async args =>
             {
                 var playerId = args?.GetProperty("player_id").GetInt32() ?? 0;
-                var player = mainVm.Players.FirstOrDefault(p => p.PlayerId == playerId);
-                if (player?.WebView?.CoreWebView2 is null)
+                var player = playerManager.GetPlayer(playerId);
+                if (player?.Engine is null)
                     return McpResult.Error($"Player {playerId} not found or not initialized");
 
-                await cdpService.CallAsync(player.WebView.CoreWebView2, "Performance.enable", new { });
+                await cdpService.CallAsync(player.Engine, "Performance.enable", new { });
                 var json = await cdpService.CallWithResultAsync(
-                    player.WebView.CoreWebView2, "Performance.getMetrics", new { });
+                    player.Engine, "Performance.getMetrics", new { });
 
                 using var doc = JsonDocument.Parse(json);
                 var metrics = doc.RootElement.GetProperty("metrics");
@@ -188,7 +188,7 @@ public static class DiagnosticsTools
             async args =>
             {
                 var playerId = args?.GetProperty("player_id").GetInt32() ?? 0;
-                var player = mainVm.Players.FirstOrDefault(p => p.PlayerId == playerId);
+                var player = playerManager.GetPlayer(playerId);
                 if (player is null)
                     return McpResult.Error($"Player {playerId} not found");
 

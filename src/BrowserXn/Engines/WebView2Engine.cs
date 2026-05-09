@@ -1,6 +1,7 @@
 using System.IO;
 using Microsoft.Web.WebView2.Core;
 using GDD.Abstractions;
+using GDD.Platform;
 using Serilog;
 
 namespace GDD.Engines;
@@ -29,9 +30,11 @@ public sealed class WebView2Engine : IBrowserEngine
         UserDataFolder = userDataFolder;
     }
 
-    public async Task InitializeAsync(nint parentHwnd, string startUrl)
+    public async Task InitializeAsync(object? hostHandle, string startUrl)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
+
+        var parentHwnd = hostHandle is nint hwnd ? hwnd : throw new ArgumentException("WebView2Engine requires nint hostHandle");
 
         Directory.CreateDirectory(UserDataFolder);
 
@@ -49,6 +52,7 @@ public sealed class WebView2Engine : IBrowserEngine
         _webView.PermissionRequested += OnPermissionRequested;
         _webView.NavigationCompleted += OnNavigationCompleted;
         _webView.DocumentTitleChanged += OnDocumentTitleChanged;
+        _webView.NotificationReceived += OnNotificationReceived;
 
         Logger.Information("WebView2 initialized for Player {PlayerId} with data folder {Folder}",
             PlayerId, UserDataFolder);
@@ -99,6 +103,12 @@ public sealed class WebView2Engine : IBrowserEngine
         await _webView!.AddScriptToExecuteOnDocumentCreatedAsync(script);
     }
 
+    public ICdpEventSubscription SubscribeToCdpEvent(string eventName)
+    {
+        EnsureInitialized();
+        return new WebView2CdpSubscription(_webView!, eventName);
+    }
+
     public void SetBounds(System.Drawing.Rectangle bounds)
     {
         if (_controller is not null)
@@ -142,6 +152,19 @@ public sealed class WebView2Engine : IBrowserEngine
         TitleChanged?.Invoke(this, _webView?.DocumentTitle ?? string.Empty);
     }
 
+    private void OnNotificationReceived(object? sender, CoreWebView2NotificationReceivedEventArgs e)
+    {
+        e.Handled = true;
+        NotificationReceived?.Invoke(this, new NotificationEventArgs
+        {
+            Title = e.Notification.Title ?? "NOISE",
+            Body = e.Notification.Body ?? string.Empty,
+            IconUri = e.Notification.IconUri,
+            BadgeUri = e.Notification.BadgeUri,
+            Tag = e.Notification.Tag
+        });
+    }
+
     private void EnsureInitialized()
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
@@ -159,6 +182,7 @@ public sealed class WebView2Engine : IBrowserEngine
             _webView.PermissionRequested -= OnPermissionRequested;
             _webView.NavigationCompleted -= OnNavigationCompleted;
             _webView.DocumentTitleChanged -= OnDocumentTitleChanged;
+            _webView.NotificationReceived -= OnNotificationReceived;
         }
 
         _controller?.Close();

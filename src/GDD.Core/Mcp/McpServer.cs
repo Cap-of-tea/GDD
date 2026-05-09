@@ -3,6 +3,7 @@ using System.IO;
 using System.Net;
 using System.Text;
 using System.Text.Json;
+using GDD.Abstractions;
 using Serilog;
 
 namespace GDD.Mcp;
@@ -17,6 +18,7 @@ public sealed class McpServer : IDisposable
     };
 
     private readonly McpToolRegistry _registry;
+    private readonly IMainThreadDispatcher _dispatcher;
     private readonly int _port;
     private readonly ConcurrentDictionary<string, SseSession> _sessions = new();
     private HttpListener? _listener;
@@ -26,9 +28,10 @@ public sealed class McpServer : IDisposable
 
     public int ActualPort { get; private set; }
 
-    public McpServer(McpToolRegistry registry, int port)
+    public McpServer(McpToolRegistry registry, IMainThreadDispatcher dispatcher, int port)
     {
         _registry = registry;
+        _dispatcher = dispatcher;
         _port = port;
     }
 
@@ -100,21 +103,18 @@ public sealed class McpServer : IDisposable
         {
             var path = request.Url?.AbsolutePath ?? "";
 
-            // Streamable HTTP transport: POST /mcp
             if (request.HttpMethod == "POST" && path == "/mcp")
             {
                 await HandleStreamableHttp(request, response);
                 return;
             }
 
-            // SSE transport: GET /sse
             if (request.HttpMethod == "GET" && path == "/sse")
             {
                 await HandleSse(response);
                 return;
             }
 
-            // SSE transport: POST /message
             if (request.HttpMethod == "POST" && path == "/message")
             {
                 await HandleSseMessage(request, response);
@@ -132,8 +132,6 @@ public sealed class McpServer : IDisposable
         }
     }
 
-    // ── Streamable HTTP transport ──────────────────────────────────────
-
     private async Task HandleStreamableHttp(HttpListenerRequest request, HttpListenerResponse response)
     {
         using var reader = new StreamReader(request.InputStream, Encoding.UTF8);
@@ -150,7 +148,6 @@ public sealed class McpServer : IDisposable
             return;
         }
 
-        // Notifications don't need a response
         if (rpcRequest.Method.StartsWith("notifications/"))
         {
             response.StatusCode = 204;
@@ -165,8 +162,6 @@ public sealed class McpServer : IDisposable
 
         await WriteJsonResponse(response, rpcResponse);
     }
-
-    // ── SSE transport ──────────────────────────────────────────────────
 
     private async Task HandleSseMessage(HttpListenerRequest request, HttpListenerResponse response)
     {
@@ -265,8 +260,6 @@ public sealed class McpServer : IDisposable
         }
     }
 
-    // ── Shared ─────────────────────────────────────────────────────────
-
     private async Task<JsonRpcResponse> ProcessRequest(JsonRpcRequest rpcRequest)
     {
         switch (rpcRequest.Method)
@@ -313,7 +306,7 @@ public sealed class McpServer : IDisposable
                 }
 
                 var tcs = new TaskCompletionSource<McpToolResult>();
-                await System.Windows.Application.Current.Dispatcher.InvokeAsync(async () =>
+                await _dispatcher.InvokeAsync(async () =>
                 {
                     try
                     {
@@ -324,7 +317,7 @@ public sealed class McpServer : IDisposable
                     {
                         tcs.SetException(ex);
                     }
-                }, System.Windows.Threading.DispatcherPriority.Normal);
+                });
                 var result = await tcs.Task;
 
                 return new JsonRpcResponse

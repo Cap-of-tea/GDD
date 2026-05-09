@@ -1,6 +1,6 @@
 using System.Collections.Concurrent;
 using System.Text.Json;
-using Microsoft.Web.WebView2.Core;
+using GDD.Abstractions;
 using GDD.Collections;
 using GDD.Models;
 using Serilog;
@@ -22,18 +22,18 @@ public sealed class NetworkMonitoringService
         _cdp = cdp;
     }
 
-    public async Task AttachAsync(CoreWebView2 webView, int playerId)
+    public async Task AttachAsync(IBrowserEngine engine, int playerId)
     {
         _buffers.TryAdd(playerId, new RingBuffer<NetworkEntry>());
 
-        await _cdp.CallAsync(webView, "Network.enable", new { });
+        await _cdp.CallAsync(engine, "Network.enable", new { });
 
-        webView.GetDevToolsProtocolEventReceiver("Network.requestWillBeSent")
-            .DevToolsProtocolEventReceived += (_, e) =>
+        engine.SubscribeToCdpEvent("Network.requestWillBeSent")
+            .EventReceived += (_, json) =>
         {
             try
             {
-                using var doc = JsonDocument.Parse(e.ParameterObjectAsJson);
+                using var doc = JsonDocument.Parse(json);
                 var root = doc.RootElement;
 
                 var requestId = root.GetProperty("requestId").GetString() ?? "";
@@ -56,12 +56,12 @@ public sealed class NetworkMonitoringService
             }
         };
 
-        webView.GetDevToolsProtocolEventReceiver("Network.responseReceived")
-            .DevToolsProtocolEventReceived += (_, e) =>
+        engine.SubscribeToCdpEvent("Network.responseReceived")
+            .EventReceived += (_, json) =>
         {
             try
             {
-                using var doc = JsonDocument.Parse(e.ParameterObjectAsJson);
+                using var doc = JsonDocument.Parse(json);
                 var root = doc.RootElement;
 
                 var requestId = root.GetProperty("requestId").GetString() ?? "";
@@ -85,12 +85,12 @@ public sealed class NetworkMonitoringService
             }
         };
 
-        webView.GetDevToolsProtocolEventReceiver("Network.loadingFinished")
-            .DevToolsProtocolEventReceived += (_, e) =>
+        engine.SubscribeToCdpEvent("Network.loadingFinished")
+            .EventReceived += (_, json) =>
         {
             try
             {
-                using var doc = JsonDocument.Parse(e.ParameterObjectAsJson);
+                using var doc = JsonDocument.Parse(json);
                 var requestId = doc.RootElement.GetProperty("requestId").GetString() ?? "";
 
                 if (!_pending.TryRemove(requestId, out var entry)) return;
@@ -110,12 +110,12 @@ public sealed class NetworkMonitoringService
             }
         };
 
-        webView.GetDevToolsProtocolEventReceiver("Network.loadingFailed")
-            .DevToolsProtocolEventReceived += (_, e) =>
+        engine.SubscribeToCdpEvent("Network.loadingFailed")
+            .EventReceived += (_, json) =>
         {
             try
             {
-                using var doc = JsonDocument.Parse(e.ParameterObjectAsJson);
+                using var doc = JsonDocument.Parse(json);
                 var root = doc.RootElement;
                 var requestId = root.GetProperty("requestId").GetString() ?? "";
 

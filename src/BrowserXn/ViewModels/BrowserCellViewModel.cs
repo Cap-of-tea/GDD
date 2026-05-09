@@ -4,11 +4,13 @@ using System.Windows.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Web.WebView2.Wpf;
+using GDD.Abstractions;
+using GDD.Engines;
 using GDD.Models;
 
 namespace GDD.ViewModels;
 
-public partial class BrowserCellViewModel : ObservableObject, IDisposable
+public partial class BrowserCellViewModel : ObservableObject, IPlayerContext, IDisposable
 {
     private readonly AppConfig _config;
 
@@ -81,6 +83,8 @@ public partial class BrowserCellViewModel : ObservableObject, IDisposable
 
     public WebView2? WebView { get; set; }
     public Window? OverlayWindow { get; set; }
+
+    public IBrowserEngine? Engine { get; set; }
 
     public Action<BrowserCellViewModel>? OnSettingsRequested { get; set; }
     public Action<BrowserCellViewModel>? OnOverlayRequested { get; set; }
