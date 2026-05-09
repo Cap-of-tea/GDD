@@ -34,6 +34,9 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty]
     private string _defaultUrl;
 
+    [ObservableProperty]
+    private string _apiEndpoint = "";
+
     public ObservableCollection<BrowserCellViewModel> Players { get; } = new();
 
     public MainViewModel(

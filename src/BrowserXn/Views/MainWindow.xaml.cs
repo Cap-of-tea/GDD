@@ -1,7 +1,9 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Interop;
 using System.Windows.Threading;
+using GDD.Interop;
 using GDD.Models;
 using GDD.ViewModels;
 
@@ -14,6 +16,7 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        SourceInitialized += (_, _) => DarkTitleBar.Apply(this);
         _mascotTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(5) };
         _mascotTimer.Tick += (_, _) =>
         {

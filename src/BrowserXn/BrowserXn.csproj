@@ -8,7 +8,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>GDD</RootNamespace>
     <AssemblyName>GDD</AssemblyName>
-    <ApplicationIcon />
+    <ApplicationIcon>app.ico</ApplicationIcon>
     <StartupObject>GDD.App</StartupObject>
   </PropertyGroup>
 
@@ -20,6 +20,10 @@
     <PackageReference Include="Serilog.Extensions.Hosting" Version="8.0.0" />
     <PackageReference Include="Serilog.Settings.Configuration" Version="10.0.0" />
     <PackageReference Include="Serilog.Sinks.File" Version="6.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="app.ico" />
   </ItemGroup>
 
   <ItemGroup>

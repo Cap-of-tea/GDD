@@ -1,6 +1,7 @@
 <Window x:Class="GDD.Views.CellSettingsWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Icon="/app.ico"
         Title="Settings"
         Width="340" Height="520"
         ResizeMode="NoResize"

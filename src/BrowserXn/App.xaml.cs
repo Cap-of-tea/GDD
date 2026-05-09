@@ -41,6 +41,8 @@ public partial class App : Application
         StartMcpServer();
 
         var mainViewModel = _host.Services.GetRequiredService<MainViewModel>();
+        if (_mcpServer is not null)
+            mainViewModel.ApiEndpoint = $"http://localhost:{_mcpServer.ActualPort}/mcp";
         var mainWindow = new MainWindow { DataContext = mainViewModel };
         MainWindow = mainWindow;
         mainWindow.Show();

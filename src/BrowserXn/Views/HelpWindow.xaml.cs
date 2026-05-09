@@ -1,5 +1,6 @@
 using System.IO;
 using System.Windows;
+using GDD.Interop;
 
 namespace GDD.Views;
 
@@ -8,6 +9,7 @@ public partial class HelpWindow : Window
     public HelpWindow()
     {
         InitializeComponent();
+        SourceInitialized += (_, _) => DarkTitleBar.Apply(this);
         LoadManual();
     }
 

@@ -1,6 +1,7 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using GDD.Interop;
 using GDD.Models;
 using GDD.ViewModels;
 
@@ -21,6 +22,7 @@ public partial class CellSettingsWindow : Window
     public CellSettingsWindow(BrowserCellViewModel vm, string defaultUrl = "")
     {
         InitializeComponent();
+        SourceInitialized += (_, _) => DarkTitleBar.Apply(this);
         _vm = vm;
 
         TitleRun.Text = $"{vm.PlayerName} — Settings";

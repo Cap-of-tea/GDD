@@ -41,6 +41,12 @@ internal static class DwmApi
     public const int WS_EX_TRANSPARENT = 0x00000020;
     public const int WS_EX_TOOLWINDOW = 0x00000080;
 
+    [DllImport("dwmapi.dll")]
+    public static extern int DwmSetWindowAttribute(IntPtr hwnd, int attr, ref int attrValue, int attrSize);
+
+    public const int DWMWA_USE_IMMERSIVE_DARK_MODE = 20;
+    public const int DWMWA_CAPTION_COLOR = 35;
+
     public const int DWM_TNP_RECTDESTINATION = 0x00000001;
     public const int DWM_TNP_RECTSOURCE = 0x00000002;
     public const int DWM_TNP_OPACITY = 0x00000004;
