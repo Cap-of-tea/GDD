@@ -71,6 +71,7 @@ public sealed class WebView2ControlAdapter : IBrowserEngine
                 if (state.Contains("complete")) break;
                 await Task.Delay(200);
             }
+            await Task.Delay(150);
 
             var metricsJson = await _webView.CallDevToolsProtocolMethodAsync(
                 "Page.getLayoutMetrics", "{}");

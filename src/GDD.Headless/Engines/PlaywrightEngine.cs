@@ -175,6 +175,7 @@ public sealed class PlaywrightEngine : IBrowserEngine
             if (state == "complete") break;
             await Task.Delay(200);
         }
+        await Task.Delay(150);
         return await _page.ScreenshotAsync(new PageScreenshotOptions
         {
             Type = ScreenshotType.Jpeg,
