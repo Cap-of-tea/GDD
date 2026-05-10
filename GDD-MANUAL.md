@@ -365,8 +365,10 @@ GDD is a **UI testing tool**. All actions go through the interface the user sees
 ### Work Cycle
 
 ```
-gdd_navigate → gdd_screenshot → gdd_tap/gdd_type → gdd_screenshot → repeat
+gdd_navigate → gdd_wait(selector) → gdd_screenshot → gdd_tap/gdd_type → gdd_wait → gdd_screenshot → repeat
 ```
+
+**ALWAYS `gdd_wait` after `gdd_navigate`** — the page needs time to load. Never screenshot or interact immediately after navigation.
 
 Always screenshot **before and after** every significant action. Never guess UI state.
 
@@ -374,11 +376,11 @@ Always screenshot **before and after** every significant action. Never guess UI 
 
 | Rule | Why |
 |------|-----|
-| Tap by selectors, not coordinates | Coordinates break across DPR/viewport. If no good selector exists — add an `id` in the code first |
+| **Wait after navigation** | **ALWAYS** `gdd_wait(selector)` after `gdd_navigate` — page is NOT loaded when navigate returns. Screenshot without wait = incomplete/blank page |
+| Tap by selectors, not coordinates | Selectors are reliable across all devices. Screenshot coordinates are CSS pixels and can be used as fallback |
 | `gdd_execute_js` is a last resort | Only for reading state (localStorage, JS variables). Never for `fetch`/`XHR`/API calls |
 | Scroll before tap | Elements below the fold need `gdd_scroll` before interaction |
 | Don't diagnose bugs from screenshots | Verify data format and logic first, then claim a bug |
-| Wait after navigation | `gdd_wait` after `gdd_navigate` or any page-changing action |
 | Multi-window awareness | `gdd_list_windows` to see all instances, then use correct `player_id` |
 | Watch for error beacons | Every tool response appends console error warnings for ALL players. Act on them immediately |
 
@@ -399,7 +401,7 @@ When you see an error beacon, call `gdd_get_console` to inspect the errors befor
 | `gdd_execute_js` with `fetch()` or `XMLHttpRequest` | Bypasses UI, invisible to user, breaks test validity |
 | Multi-line JS without IIFE wrapper | Returns `null` — wrap in `(function(){ ... })()` |
 | Async JS expecting a return value | Promises don't resolve in `execute_js` context |
-| Taps by coordinates on high-DPR screens | Coordinates are physical pixels, not CSS pixels — breaks on 2x/3x displays |
+| Screenshot then immediate action without wait | After `gdd_navigate`, always `gdd_wait` first — otherwise you interact with a blank/loading page |
 | Assumptions about data format without verification | Always `gdd_read` or `gdd_screenshot` to confirm actual state |
 
 ---
@@ -512,7 +514,9 @@ Agent:
 10. gdd_navigate(2, "https://app.example.com")
 11. gdd_navigate(3, "https://app.example.com")
 12. gdd_wait(1, "h1")
-13. gdd_read(1, "h1")                        → "Welcome"
+13. gdd_wait(2, "h1")
+14. gdd_wait(3, "h1")
+15. gdd_read(1, "h1")                        → "Welcome"
 14. gdd_read(2, "h1")                        → "Добро пожаловать"
 15. gdd_read(3, "h1")                        → "ようこそ"
 16. gdd_screenshot(1)                        → [English UI]
@@ -561,7 +565,9 @@ Agent:
 5. gdd_navigate(2, "https://app.example.com/profile")
 6. gdd_navigate(3, "https://app.example.com/profile")
 7. gdd_wait(1, ".profile-name")
-8. gdd_read(1, ".profile-name")              → "gdd_player1"
+8. gdd_wait(2, ".profile-name")
+9. gdd_wait(3, ".profile-name")
+10. gdd_read(1, ".profile-name")              → "gdd_player1"
 9. gdd_read(2, ".profile-name")              → "gdd_player2"
 10. gdd_read(3, ".profile-name")             → "gdd_player3"
 

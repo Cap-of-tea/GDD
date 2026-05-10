@@ -78,8 +78,9 @@ The `.mcp.json` in this project connects you to GDD. GDD auto-launches when you 
 1. gdd_add_players(3)              → [1, 2, 3]
 2. Wait 3-5 seconds for browser init
 3. gdd_navigate(1, "https://myapp.com")
-4. gdd_screenshot(1)               → see the page
-5. gdd_read(1, "h1")              → read heading text
+4. gdd_wait(1, "body")            → wait for page to load
+5. gdd_screenshot(1)               → see the page
+6. gdd_read(1, "h1")              → read heading text
 ```
 
 ### Cross-device testing
@@ -117,10 +118,13 @@ Every MCP tool response automatically appends console error warnings for all pla
 
 When you see an error beacon, call `gdd_get_console` to inspect the errors before continuing. Don't ignore beacons — they indicate real problems.
 
-## Important Notes
+## Critical Rules
 
+- **ALWAYS `gdd_wait` after `gdd_navigate`** — never screenshot or interact immediately after navigation. The page needs time to load. Use `gdd_wait(player_id, "selector")` to wait for the expected content to appear, THEN screenshot or interact.
+- **Correct sequence:** `gdd_navigate` → `gdd_wait` → `gdd_screenshot` / `gdd_tap` / `gdd_read`
+- **Wrong sequence:** `gdd_navigate` → `gdd_screenshot` (page may not be loaded yet!)
 - After `gdd_add_players`, wait 3-5 seconds before navigating — the browser needs time to initialize.
+- Screenshot coordinates are in CSS pixels — they match `gdd_tap(x, y)` coordinates directly.
 - `player_id` starts from 1 and increments. Use `gdd_list_windows()` to see current IDs.
-- Screenshots capture the browser viewport content, not the application window frame.
-- Console and network logs are captured automatically once a player is created. Use `gdd_get_console` and `gdd_get_network` to read them at any time.
+- Console and network logs are captured automatically. Use `gdd_get_console` and `gdd_get_network` to read them at any time.
 - All emulation (device, location, network, language) persists until changed or the player is removed.
