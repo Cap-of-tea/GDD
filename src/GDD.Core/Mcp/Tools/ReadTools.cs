@@ -78,13 +78,14 @@ public static class ReadTools
             new McpToolDefinition
             {
                 Name = "gdd_screenshot",
-                Description = "Take a screenshot of a browser window. Returns base64 PNG image.",
+                Description = "Take a screenshot of a browser window. Returns JPEG image at CSS pixel resolution (coordinates match CSS pixels for accurate tapping).",
                 InputSchema = new
                 {
                     type = "object",
                     properties = new
                     {
-                        player_id = new { type = "integer", description = "Player ID" }
+                        player_id = new { type = "integer", description = "Player ID" },
+                        quality = new { type = "integer", description = "JPEG quality 1-100 (default 80). Lower = smaller/faster.", @default = 80 }
                     },
                     required = new[] { "player_id" }
                 }
@@ -92,11 +93,14 @@ public static class ReadTools
             async args =>
             {
                 var playerId = args?.GetProperty("player_id").GetInt32() ?? 0;
+                var quality = 80;
+                if (args?.TryGetProperty("quality", out var qEl) == true)
+                    quality = Math.Clamp(qEl.GetInt32(), 1, 100);
                 var player = playerManager.GetPlayer(playerId);
                 if (player?.Engine is null)
                     return McpResult.Error($"Player {playerId} not found or not initialized");
 
-                var screenshotBytes = await player.Engine.CaptureScreenshotAsync();
+                var screenshotBytes = await player.Engine.CaptureScreenshotAsync(quality);
                 var base64 = Convert.ToBase64String(screenshotBytes);
 
                 return new McpToolResult
@@ -107,7 +111,7 @@ public static class ReadTools
                         {
                             Type = "image",
                             Data = base64,
-                            MimeType = "image/png"
+                            MimeType = "image/jpeg"
                         }
                     }
                 };

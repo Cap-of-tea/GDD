@@ -21,7 +21,7 @@ public interface IBrowserEngine : IAsyncDisposable
     Task<string> ExecuteJavaScriptAsync(string script);
     Task CallCdpMethodAsync(string methodName, string parametersJson);
     Task<string> CallCdpMethodWithResultAsync(string methodName, string parametersJson);
-    Task<byte[]> CaptureScreenshotAsync();
+    Task<byte[]> CaptureScreenshotAsync(int quality = 80);
     Task InjectScriptOnDocumentCreatedAsync(string script);
     ICdpEventSubscription SubscribeToCdpEvent(string eventName);
 

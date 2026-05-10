@@ -166,10 +166,15 @@ public sealed class PlaywrightEngine : IBrowserEngine
         return result.HasValue ? result.Value.GetRawText() : "{}";
     }
 
-    public async Task<byte[]> CaptureScreenshotAsync()
+    public async Task<byte[]> CaptureScreenshotAsync(int quality = 80)
     {
         if (_page is null) return [];
-        return await _page.ScreenshotAsync(new PageScreenshotOptions { Type = ScreenshotType.Png });
+        return await _page.ScreenshotAsync(new PageScreenshotOptions
+        {
+            Type = ScreenshotType.Jpeg,
+            Quality = quality,
+            Scale = ScreenshotScale.Css
+        });
     }
 
     public async Task InjectScriptOnDocumentCreatedAsync(string script)

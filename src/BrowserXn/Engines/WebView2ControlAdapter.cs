@@ -62,11 +62,20 @@ public sealed class WebView2ControlAdapter : IBrowserEngine
         => _dispatcher.InvokeAsync(() =>
             _webView.CallDevToolsProtocolMethodAsync(methodName, parametersJson)).Task.Unwrap();
 
-    public Task<byte[]> CaptureScreenshotAsync()
+    public Task<byte[]> CaptureScreenshotAsync(int quality = 80)
         => _dispatcher.InvokeAsync(async () =>
         {
+            var sizeJson = await _webView.ExecuteScriptAsync(
+                "JSON.stringify({w:window.innerWidth,h:window.innerHeight})");
+            var size = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement>(
+                System.Text.Json.JsonSerializer.Deserialize<string>(sizeJson)!);
+            var w = size.GetProperty("w").GetInt32();
+            var h = size.GetProperty("h").GetInt32();
+
+            var cdpParams = $"{{\"format\":\"jpeg\",\"quality\":{quality}," +
+                $"\"clip\":{{\"x\":0,\"y\":0,\"width\":{w},\"height\":{h},\"scale\":1}}}}";
             var resultJson = await _webView.CallDevToolsProtocolMethodAsync(
-                "Page.captureScreenshot", "{\"format\":\"png\"}");
+                "Page.captureScreenshot", cdpParams);
             using var doc = System.Text.Json.JsonDocument.Parse(resultJson);
             var base64 = doc.RootElement.GetProperty("data").GetString()!;
             return Convert.FromBase64String(base64);
