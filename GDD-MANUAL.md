@@ -210,7 +210,7 @@ Returns `textContent` of first matching element.
 Returns JSON array of `textContent` from all matching elements.
 
 #### `gdd_screenshot(player_id)`
-Captures viewport as base64 PNG image. Claude sees the screenshot directly — no file saved.
+Captures viewport as JPEG at CSS pixel resolution (1x scale, quality 80 by default). Coordinates in the image match CSS pixels directly — use them for `gdd_tap(x, y)`. Optional `quality` parameter (1-100).
 
 #### `gdd_execute_js(player_id, script)`
 Execute JavaScript, return result.

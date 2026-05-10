@@ -174,7 +174,7 @@ Claude will use GDD tools to add players, set devices, navigate, interact, and r
 |------|-------------|
 | `gdd_read` | Read text content of an element |
 | `gdd_read_all` | Read text from all matching elements |
-| `gdd_screenshot` | Capture screenshot as base64 PNG |
+| `gdd_screenshot` | Capture screenshot as JPEG at CSS pixel resolution |
 
 ### Emulation
 

@@ -38,7 +38,7 @@ The `.mcp.json` in this project connects you to GDD. GDD auto-launches when you 
 ### Reading Content
 - `gdd_read(player_id, selector)` — Read text content of one element.
 - `gdd_read_all(player_id, selector)` — Read text of all matching elements (JSON array).
-- `gdd_screenshot(player_id)` — Take a screenshot (returns base64 PNG image).
+- `gdd_screenshot(player_id, quality?)` — Take a screenshot (JPEG at CSS pixel resolution, quality 1-100, default 80). Coordinates match CSS pixels.
 - `gdd_execute_js(player_id, script)` — Execute JavaScript and return the result.
 
 ### Device Emulation

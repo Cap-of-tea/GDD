@@ -25,6 +25,7 @@ All notable changes to GDD are documented here.
 
 ### Changed
 
+- **Screenshots switched to JPEG at CSS pixel resolution** — ~5-10x smaller (50KB vs 500KB), coordinates in the image match CSS pixels directly for accurate `gdd_tap(x, y)`. Optional `quality` parameter (1-100, default 80)
 - Default `FrontendUrl` changed from `http://localhost:5173` to `about:blank` (faster startup, no dependency on dev server)
 - Main window opens at 30% of screen size (was maximized)
 - Overlay window title and size update on device change

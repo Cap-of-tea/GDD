@@ -204,7 +204,7 @@ interface IBrowserEngine : IAsyncDisposable
 - Собственный `CoreWebView2Environment` + `CoreWebView2Controller`
 - Настройки: отключены статусбар, контекстное меню, зум, devtools
 - Автоматическое разрешение Notifications и Geolocation
-- Скриншоты через `Page.captureScreenshot` CDP (base64 PNG)
+- Скриншоты через `Page.captureScreenshot` CDP (JPEG, CSS pixel resolution)
 
 ### 5.2 MCP Server
 
