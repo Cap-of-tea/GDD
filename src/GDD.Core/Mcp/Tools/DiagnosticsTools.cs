@@ -212,5 +212,166 @@ public static class DiagnosticsTools
                 await Task.CompletedTask;
                 return McpResult.Text($"Cleared {target} logs for player {playerId}");
             });
+
+        registry.Register(
+            new McpToolDefinition
+            {
+                Name = "gdd_storage",
+                Description = "Read, write, or clear localStorage/sessionStorage.",
+                InputSchema = new
+                {
+                    type = "object",
+                    properties = new
+                    {
+                        player_id = new { type = "integer", description = "Player ID" },
+                        action = new
+                        {
+                            type = "string",
+                            description = "Action to perform",
+                            @enum = new[] { "get", "set", "remove", "clear", "keys" }
+                        },
+                        storage = new
+                        {
+                            type = "string",
+                            description = "Storage type (default: local)",
+                            @enum = new[] { "local", "session" }
+                        },
+                        key = new { type = "string", description = "Key name (for get/set/remove)" },
+                        value = new { type = "string", description = "Value to set (for set action)" }
+                    },
+                    required = new[] { "player_id", "action" }
+                }
+            },
+            async args =>
+            {
+                var playerId = args?.GetProperty("player_id").GetInt32() ?? 0;
+                var action = args?.GetProperty("action").GetString() ?? "keys";
+                var storageType = args?.TryGetProperty("storage", out var stEl) == true
+                    ? stEl.GetString() ?? "local" : "local";
+                var player = playerManager.GetPlayer(playerId);
+                if (player?.Engine is null)
+                    return McpResult.Error($"Player {playerId} not found or not initialized");
+
+                var store = storageType == "session" ? "sessionStorage" : "localStorage";
+
+                switch (action)
+                {
+                    case "get":
+                    {
+                        var key = args?.TryGetProperty("key", out var kEl) == true ? kEl.GetString() : null;
+                        if (string.IsNullOrEmpty(key))
+                            return McpResult.Error("'key' is required for get action");
+                        var escapedKey = JsonSerializer.Serialize(key);
+                        var result = await player.Engine.ExecuteJavaScriptAsync($"{store}.getItem({escapedKey})");
+                        return McpResult.Text(result);
+                    }
+                    case "set":
+                    {
+                        var key = args?.TryGetProperty("key", out var kEl) == true ? kEl.GetString() : null;
+                        var value = args?.TryGetProperty("value", out var vEl) == true ? vEl.GetString() : null;
+                        if (string.IsNullOrEmpty(key))
+                            return McpResult.Error("'key' is required for set action");
+                        var ek = JsonSerializer.Serialize(key);
+                        var ev = JsonSerializer.Serialize(value ?? "");
+                        await player.Engine.ExecuteJavaScriptAsync($"{store}.setItem({ek}, {ev})");
+                        return McpResult.Text($"Set {store}[{key}] on player {playerId}");
+                    }
+                    case "remove":
+                    {
+                        var key = args?.TryGetProperty("key", out var kEl) == true ? kEl.GetString() : null;
+                        if (string.IsNullOrEmpty(key))
+                            return McpResult.Error("'key' is required for remove action");
+                        var ek = JsonSerializer.Serialize(key);
+                        await player.Engine.ExecuteJavaScriptAsync($"{store}.removeItem({ek})");
+                        return McpResult.Text($"Removed {store}[{key}] on player {playerId}");
+                    }
+                    case "clear":
+                        await player.Engine.ExecuteJavaScriptAsync($"{store}.clear()");
+                        return McpResult.Text($"Cleared {store} on player {playerId}");
+                    case "keys":
+                    {
+                        var result = await player.Engine.ExecuteJavaScriptAsync(
+                            $"JSON.stringify(Object.keys({store}))");
+                        return McpResult.Text(result);
+                    }
+                    default:
+                        return McpResult.Error($"Unknown action: {action}");
+                }
+            });
+
+        registry.Register(
+            new McpToolDefinition
+            {
+                Name = "gdd_cookies",
+                Description = "Read or clear browser cookies for the current page.",
+                InputSchema = new
+                {
+                    type = "object",
+                    properties = new
+                    {
+                        player_id = new { type = "integer", description = "Player ID" },
+                        action = new
+                        {
+                            type = "string",
+                            description = "Action to perform",
+                            @enum = new[] { "get", "clear" }
+                        },
+                        name = new { type = "string", description = "Filter by cookie name (optional, for get)" }
+                    },
+                    required = new[] { "player_id", "action" }
+                }
+            },
+            async args =>
+            {
+                var playerId = args?.GetProperty("player_id").GetInt32() ?? 0;
+                var action = args?.GetProperty("action").GetString() ?? "get";
+                var player = playerManager.GetPlayer(playerId);
+                if (player?.Engine is null)
+                    return McpResult.Error($"Player {playerId} not found or not initialized");
+
+                if (action == "clear")
+                {
+                    var cookiesJson = await cdpService.CallWithResultAsync(
+                        player.Engine, "Network.getAllCookies", new { });
+                    using var cDoc = JsonDocument.Parse(cookiesJson);
+                    var cookies = cDoc.RootElement.GetProperty("cookies");
+                    foreach (var c in cookies.EnumerateArray())
+                    {
+                        var cName = c.GetProperty("name").GetString();
+                        var cDomain = c.GetProperty("domain").GetString();
+                        await cdpService.CallAsync(player.Engine, "Network.deleteCookies",
+                            new { name = cName, domain = cDomain });
+                    }
+                    return McpResult.Text($"Cleared {cookies.GetArrayLength()} cookies on player {playerId}");
+                }
+
+                var json = await cdpService.CallWithResultAsync(
+                    player.Engine, "Network.getAllCookies", new { });
+                using var doc = JsonDocument.Parse(json);
+                var allCookies = doc.RootElement.GetProperty("cookies");
+
+                string? filterName = null;
+                if (args?.TryGetProperty("name", out var nEl) == true)
+                    filterName = nEl.GetString();
+
+                var result = new List<object>();
+                foreach (var c in allCookies.EnumerateArray())
+                {
+                    var n = c.GetProperty("name").GetString() ?? "";
+                    if (filterName is not null && !n.Equals(filterName, StringComparison.OrdinalIgnoreCase))
+                        continue;
+                    result.Add(new
+                    {
+                        name = n,
+                        value = c.GetProperty("value").GetString(),
+                        domain = c.GetProperty("domain").GetString(),
+                        path = c.GetProperty("path").GetString(),
+                        httpOnly = c.GetProperty("httpOnly").GetBoolean(),
+                        secure = c.GetProperty("secure").GetBoolean()
+                    });
+                }
+
+                return McpResult.Text(JsonSerializer.Serialize(result, new JsonSerializerOptions { WriteIndented = true }));
+            });
     }
 }

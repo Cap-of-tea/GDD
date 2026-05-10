@@ -2,7 +2,7 @@
 
 ## 1. What is GDD
 
-GDD (Giggly-Dazzling-Duckling) — кроссплатформенный инструмент для мультибраузерного тестирования. Управляет N изолированными Chromium-инстансами и выставляет 26 MCP-инструментов для Claude Code.
+GDD (Giggly-Dazzling-Duckling) — кроссплатформенный инструмент для мультибраузерного тестирования. Управляет N изолированными Chromium-инстансами и выставляет 33 MCP-инструмента для Claude Code.
 
 Два режима: **Windows GUI** (WPF + WebView2, с визуальным превью) и **Headless** (Playwright, работает на Windows/Linux/macOS). Оба режима предоставляют идентичный набор MCP-инструментов.
 
@@ -73,7 +73,7 @@ GDD запускает MCP HTTP сервер на порту 9700 (auto-fallback
 
 Откройте **новый чат** в Claude Code (или Reload Window). MCP клиент читает `.mcp.json` только при старте сессии.
 
-26 tools должны появиться с `mcp__gdd__` префиксом.
+33 tools должны появиться с `mcp__gdd__` префиксом.
 
 ### Troubleshooting
 
@@ -133,6 +133,19 @@ Wait for CSS selector to appear. Polls every 200ms.
 
 Returns: `"Found '.btn-submit' after 800ms"` or `"Timeout: '.btn-submit' not found after 5000ms"`
 
+#### `gdd_reload(player_id, hard?)`
+Reload the current page.
+
+| Param | Type | Default | Description |
+|-------|------|---------|-------------|
+| `hard` | boolean | false | Hard reload (bypass cache, like Ctrl+Shift+R) |
+
+#### `gdd_back(player_id)`
+Navigate back in browser history.
+
+#### `gdd_forward(player_id)`
+Navigate forward in browser history.
+
 ---
 
 ### 3.3 Interaction
@@ -163,6 +176,28 @@ Type text into input/textarea.
 | `clear` | boolean | true |
 
 Uses native value setter + dispatches `input` and `change` events. Set `clear=false` to append.
+
+#### `gdd_hover(player_id, selector)`
+Hover over an element (triggers `mouseover`/`mouseenter` events). Useful for tooltips, dropdown menus, and hover states.
+
+#### `gdd_select(player_id, selector, value?, text?)`
+Select an option from a `<select>` dropdown.
+
+| Param | Type | Description |
+|-------|------|-------------|
+| `selector` | string | CSS selector of the `<select>` element |
+| `value` | string | Select by option `value` attribute |
+| `text` | string | Select by visible text |
+
+Provide either `value` or `text` (not both).
+
+#### `gdd_dialog(player_id, accept?, text?)`
+Handle JavaScript alert/confirm/prompt dialogs.
+
+| Param | Type | Default | Description |
+|-------|------|---------|-------------|
+| `accept` | boolean | true | Accept (OK) or dismiss (Cancel) the dialog |
+| `text` | string | — | Text to enter in prompt dialogs |
 
 ---
 
@@ -299,6 +334,28 @@ Clear logs. Target: `"console"`, `"network"`, or `"all"` (default). Resets error
 
 ---
 
+### 3.9 Browser Storage
+
+#### `gdd_storage(player_id, action, storage?, key?, value?)`
+Read, write, or clear localStorage/sessionStorage.
+
+| Param | Type | Default | Description |
+|-------|------|---------|-------------|
+| `action` | string | — | `get`, `set`, `remove`, `clear`, `keys` |
+| `storage` | string | `"local"` | `"local"` (localStorage) or `"session"` (sessionStorage) |
+| `key` | string | — | Key name (required for `get`, `set`, `remove`) |
+| `value` | string | — | Value to store (required for `set`) |
+
+#### `gdd_cookies(player_id, action, name?)`
+Read or clear browser cookies.
+
+| Param | Type | Description |
+|-------|------|-------------|
+| `action` | string | `get` (read cookies) or `clear` (delete cookies) |
+| `name` | string | Cookie name filter (optional, for `get`/`clear` a specific cookie) |
+
+---
+
 ## 4. Claude Agent Rules
 
 ### Core Principle
@@ -323,6 +380,17 @@ Always screenshot **before and after** every significant action. Never guess UI 
 | Don't diagnose bugs from screenshots | Verify data format and logic first, then claim a bug |
 | Wait after navigation | `gdd_wait` after `gdd_navigate` or any page-changing action |
 | Multi-window awareness | `gdd_list_windows` to see all instances, then use correct `player_id` |
+| Watch for error beacons | Every tool response appends console error warnings for ALL players. Act on them immediately |
+
+### Error Beacon
+
+Every MCP tool response automatically appends console error warnings for all players that have errors. Format:
+
+```
+⚠ Player 2: 3 console errors. Use gdd_get_console(player_id) to inspect.
+```
+
+When you see an error beacon, call `gdd_get_console` to inspect the errors before continuing. Don't ignore beacons — they indicate real problems that may affect your testing.
 
 ### Anti-patterns (forbidden)
 
@@ -507,7 +575,7 @@ Report: "All 3 players have isolated sessions. Each sees their own profile name.
 ```
 Claude Code ──JSON-RPC──→ mcp-proxy.ps1 ──HTTP──→ GDD (port 9700)
                                                     │
-                                          McpToolRegistry (26 tools)
+                                          McpToolRegistry (33 tools)
                                                     │
                                             MainViewModel
                                           ┌────┬────┬────┐

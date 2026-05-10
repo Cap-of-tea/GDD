@@ -6,7 +6,7 @@
 
 <p align="center">
   <strong>Cross-platform multi-browser testing tool powered by AI</strong><br>
-  Control N isolated Chromium instances from Claude Code via 26 MCP tools
+  Control N isolated Chromium instances from Claude Code via 33 MCP tools
 </p>
 
 <p align="center">
@@ -23,7 +23,7 @@
 
 GDD is a cross-platform tool that lets an AI agent (Claude Code) see and control multiple browser windows simultaneously — just like a human tester would, but faster and programmable.
 
-Each browser is an isolated Chromium instance with its own profile, cookies, device emulation, geolocation, and network conditions. Claude connects via [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) and operates browsers through 26 specialized tools.
+Each browser is an isolated Chromium instance with its own profile, cookies, device emulation, geolocation, and network conditions. Claude connects via [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) and operates browsers through 33 specialized tools.
 
 **Two modes:**
 
@@ -32,7 +32,7 @@ Each browser is an isolated Chromium instance with its own profile, cookies, dev
 | Browser engine | WebView2 | Playwright (Chromium) |
 | UI | WPF desktop with video wall | No UI — fully controlled via MCP |
 | Use case | Visual testing with live preview | CI/CD, servers, cross-platform |
-| MCP tools | 26 | 26 (identical) |
+| MCP tools | 33 | 33 (identical) |
 
 **Use cases:**
 - Automated multi-device responsive testing
@@ -136,7 +136,7 @@ Claude will use GDD tools to add players, set devices, navigate, interact, and r
 
 ---
 
-## MCP Tools (26)
+## MCP Tools (33)
 
 ### Player Management
 
@@ -152,6 +152,9 @@ Claude will use GDD tools to add players, set devices, navigate, interact, and r
 |------|-------------|
 | `gdd_navigate` | Navigate a browser to a URL |
 | `gdd_wait` | Wait for a CSS selector to appear (with timeout) |
+| `gdd_reload` | Reload current page (hard=true bypasses cache) |
+| `gdd_back` | Navigate back in browser history |
+| `gdd_forward` | Navigate forward in browser history |
 
 ### Interaction
 
@@ -161,6 +164,9 @@ Claude will use GDD tools to add players, set devices, navigate, interact, and r
 | `gdd_swipe` | Simulate swipe gestures |
 | `gdd_scroll` | Scroll page or specific element |
 | `gdd_type` | Type text into input fields |
+| `gdd_hover` | Hover over element (triggers mouseover/mouseenter) |
+| `gdd_select` | Select option from `<select>` dropdown |
+| `gdd_dialog` | Handle JS alert/confirm/prompt dialogs |
 
 ### Reading & Screenshots
 
@@ -197,6 +203,13 @@ Claude will use GDD tools to add players, set devices, navigate, interact, and r
 |------|-------------|
 | `gdd_quick_auth` | Auto-register and login with generated credentials |
 | `gdd_execute_js` | Execute arbitrary JavaScript and return result |
+
+### Browser Storage
+
+| Tool | Description |
+|------|-------------|
+| `gdd_storage` | Read/write/clear localStorage/sessionStorage |
+| `gdd_cookies` | Read or clear browser cookies |
 
 ### Help
 
@@ -270,7 +283,7 @@ Claude will use GDD tools to add players, set devices, navigate, interact, and r
 └────────────────────┬─────────────────────────────┘
                      │
 ┌────────────────────▼─────────────────────────────┐
-│           McpToolRegistry (26 tools)             │
+│           McpToolRegistry (33 tools)             │
 │  Player · Navigation · Interaction · Read        │
 │  Emulation · Auth · State · Diagnostics · Help   │
 └────────────────────┬─────────────────────────────┘

@@ -38,13 +38,25 @@ public sealed class HeadlessPlayerManager : IPlayerManager, IAsyncDisposable
     public IPlayerContext? GetPlayer(int playerId) =>
         _players.FirstOrDefault(p => p.PlayerId == playerId);
 
-    public IReadOnlyList<int> AddPlayers(int count)
+    public IReadOnlyList<int> AddPlayers(int count, string? devicePreset = null)
     {
+        var device = DevicePresets.Default;
+        if (!string.IsNullOrEmpty(devicePreset))
+        {
+            var found = DevicePresets.All.FirstOrDefault(d =>
+                d.Name.Equals(devicePreset, StringComparison.OrdinalIgnoreCase));
+            if (found is not null)
+                device = found;
+        }
+
         var ids = new List<int>();
         for (var i = 0; i < count; i++)
         {
             var playerId = _nextPlayerId++;
-            var ctx = new HeadlessPlayerContext(playerId, _config.FrontendUrl);
+            var ctx = new HeadlessPlayerContext(playerId, _config.FrontendUrl)
+            {
+                SelectedDevice = device
+            };
             _players.Add(ctx);
             ids.Add(playerId);
             _ = InitializePlayerAsync(ctx);

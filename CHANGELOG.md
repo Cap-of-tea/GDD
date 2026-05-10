@@ -6,6 +6,15 @@ All notable changes to GDD are documented here.
 
 ### Added
 
+- **`gdd_reload`** — reload current page with optional hard reload (bypass cache, like Ctrl+Shift+R)
+- **`gdd_back`** — navigate back in browser history
+- **`gdd_forward`** — navigate forward in browser history
+- **`gdd_hover`** — hover over element (triggers mouseover/mouseenter, for tooltips/dropdowns)
+- **`gdd_select`** — select option from `<select>` dropdown by value or visible text
+- **`gdd_dialog`** — handle JS alert/confirm/prompt dialogs (accept/dismiss, enter text)
+- **`gdd_storage`** — read/write/clear localStorage/sessionStorage (actions: get, set, remove, clear, keys)
+- **`gdd_cookies`** — read or clear browser cookies (actions: get, clear)
+- **Error beacon** — every MCP tool response now appends console error warnings for all players that have errors (format: `⚠ Player 2: 3 console errors. Use gdd_get_console(player_id) to inspect.`)
 - **`gdd_add_players` device parameter** — create players with a specific device preset immediately (`gdd_add_players(3, device="iPad Air")`) instead of creating with default then switching
 - **`gdd_set_viewport`** — set arbitrary viewport dimensions (width, height, scale, mobile flag, user agent)
 - **`gdd_set_language`** — set browser language/locale, changes `navigator.language`, `navigator.languages`, and `Accept-Language` header
@@ -33,9 +42,9 @@ All notable changes to GDD are documented here.
 - **PlaywrightSetup** — automatic Chromium browser installation on first run
 - **mcp-proxy.sh** — Bash auto-launch proxy for Linux/macOS
 - **mcp-proxy.ps1** — PowerShell auto-launch proxy for headless Windows
-- **26th MCP tool**: `gdd_get_manual` — returns the full manual for M2M self-learning
+- **`gdd_get_manual`** MCP tool — returns the full manual for M2M self-learning
 - **CI/CD pipeline** — GitHub Actions builds for 5 targets: Windows GUI, headless win-x64, linux-x64, osx-arm64, osx-x64
-- **Smoke tests in CI** — each headless build verifies 26 tools via HTTP
+- **Smoke tests in CI** — each headless build verifies 33 tools via HTTP
 - **Auto-release** — `v*` tags trigger GitHub Releases with tar.gz archives
 
 ### Changed

@@ -2,7 +2,7 @@
 
 ## 1. What is GDD
 
-GDD (Giggly-Dazzling-Duckling) — кроссплатформенное приложение для мультибраузерного тестирования веб-приложений. Управляет N изолированными Chromium-инстансами ("players") через Chrome DevTools Protocol и предоставляет 26 MCP-инструментов для автоматизации через Claude Code или любой MCP-клиент.
+GDD (Giggly-Dazzling-Duckling) — кроссплатформенное приложение для мультибраузерного тестирования веб-приложений. Управляет N изолированными Chromium-инстансами ("players") через Chrome DevTools Protocol и предоставляет 33 MCP-инструмента для автоматизации через Claude Code или любой MCP-клиент.
 
 Два режима: **Windows GUI** (WPF + WebView2) и **Headless** (Playwright, Windows/Linux/macOS). Общее ядро GDD.Core содержит все сервисы и MCP-инструменты, работающие через абстракции `IBrowserEngine` и `IPlayerManager`.
 
@@ -42,7 +42,7 @@ GDD (Giggly-Dazzling-Duckling) — кроссплатформенное прил
 └─────────────────────┬────────────────────────────────┘
                       │
 ┌─────────────────────▼────────────────────────────────┐
-│              McpToolRegistry (26 tools)               │
+│              McpToolRegistry (33 tools)               │
 │  PlayerTools · NavigationTools · InteractionTools     │
 │  ReadTools · EmulationTools · AuthTools               │
 │  StateTools · DiagnosticsTools                        │
@@ -78,7 +78,7 @@ App.OnStartup()
   → LoadConfig("appsettings.json") → AppConfig
   → ConfigureSerilog()
   → RegisterServices(DI container)
-  → RegisterMcpTools() — 26 tools → McpToolRegistry
+  → RegisterMcpTools() — 33 tools → McpToolRegistry
   → StartMcpServer() — HttpListener on :9700
   → new MainWindow { DataContext = MainViewModel }
 ```
@@ -114,14 +114,15 @@ src/BrowserXn/
 │   ├── McpResult.cs        Helper for building tool results
 │   └── Tools/
 │       ├── PlayerTools.cs       add_players, remove_player, list_windows
-│       ├── NavigationTools.cs   navigate, wait
-│       ├── InteractionTools.cs  tap, swipe, scroll, type
+│       ├── NavigationTools.cs   navigate, wait, reload, back, forward
+│       ├── InteractionTools.cs  tap, swipe, scroll, type, hover, select, dialog
 │       ├── ReadTools.cs         read, read_all, screenshot
 │       ├── ExecutionTools.cs    execute_js
 │       ├── AuthTools.cs         quick_auth
 │       ├── EmulationTools.cs    set_device/viewport/location/network/language
 │       ├── StateTools.cs        get_state, get_notifications
-│       └── DiagnosticsTools.cs  get_console, get_network, get_performance, clear_logs
+│       ├── DiagnosticsTools.cs  get_console, get_network, get_performance, clear_logs, storage, cookies
+│       └── HelpTools.cs         get_manual
 ├── Models/
 │   ├── AppConfig.cs             FrontendUrl, BackendUrl, McpPort, etc.
 │   ├── DevicePreset.cs          22 presets (phones/tablets/desktops)

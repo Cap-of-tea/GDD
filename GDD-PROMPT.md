@@ -2,7 +2,7 @@
 
 ## What is GDD
 
-GDD is a cross-platform application that manages multiple isolated Chromium browser instances ("players") and exposes 26 MCP tools for browser automation, device/network/location emulation, and diagnostics. It listens on `http://localhost:9700/mcp`.
+GDD is a cross-platform application that manages multiple isolated Chromium browser instances ("players") and exposes 33 MCP tools for browser automation, device/network/location emulation, and diagnostics. It listens on `http://localhost:9700/mcp`.
 
 Two modes: **Windows GUI** (WebView2 with visual preview) and **Headless** (Playwright, runs on Windows/Linux/macOS). Both provide identical MCP tools.
 
@@ -12,7 +12,7 @@ You have access to GDD tools via the `gdd` MCP server. Use them to test web appl
 
 The `.mcp.json` in this project connects you to GDD. GDD auto-launches when you first call any tool. If tools return connection errors, wait 5-6 seconds and retry — GDD is starting up.
 
-## Available Tools (26)
+## Available Tools (33)
 
 ### Player Management
 - `gdd_add_players(count, device?)` — Create N browser windows with optional device preset. Returns player IDs (e.g. [1, 2, 3]). Always start here.
@@ -22,12 +22,18 @@ The `.mcp.json` in this project connects you to GDD. GDD auto-launches when you 
 ### Navigation
 - `gdd_navigate(player_id, url)` — Navigate a player to a URL.
 - `gdd_wait(player_id, selector, timeout?)` — Wait for a CSS selector to appear (default 5000ms).
+- `gdd_reload(player_id, hard?)` — Reload current page. `hard=true` bypasses cache (Ctrl+Shift+R).
+- `gdd_back(player_id)` — Navigate back in browser history.
+- `gdd_forward(player_id)` — Navigate forward in browser history.
 
 ### Interaction
 - `gdd_tap(player_id, selector?, x?, y?)` — Tap an element by CSS selector or coordinates.
 - `gdd_swipe(player_id, direction, distance?)` — Swipe gesture (up/down/left/right, default 300px).
 - `gdd_scroll(player_id, selector?, direction?, amount?)` — Scroll into view or by direction.
 - `gdd_type(player_id, selector, text, clear?)` — Type text into an input field.
+- `gdd_hover(player_id, selector)` — Hover over element (triggers mouseover/mouseenter, for tooltips/dropdowns).
+- `gdd_select(player_id, selector, value?, text?)` — Select option from `<select>` dropdown by value or visible text.
+- `gdd_dialog(player_id, accept?, text?)` — Handle JS alert/confirm/prompt dialogs.
 
 ### Reading Content
 - `gdd_read(player_id, selector)` — Read text content of one element.
@@ -54,6 +60,10 @@ The `.mcp.json` in this project connects you to GDD. GDD auto-launches when you 
 - `gdd_get_performance(player_id)` — Performance metrics: JS heap, DOM nodes, task duration.
 - `gdd_get_notifications(player_id?)` — Push notifications received by players.
 - `gdd_clear_logs(player_id, target?)` — Clear console/network/all logs.
+
+### Browser Storage
+- `gdd_storage(player_id, action, storage?, key?, value?)` — Read/write/clear localStorage/sessionStorage. Actions: `get`, `set`, `remove`, `clear`, `keys`.
+- `gdd_cookies(player_id, action, name?)` — Read or clear browser cookies. Actions: `get`, `clear`.
 
 ### Authentication
 - `gdd_quick_auth(player_id)` — Auto-register and login with generated credentials. Pass player_id=0 for all players.
@@ -96,6 +106,16 @@ The `.mcp.json` in this project connects you to GDD. GDD auto-launches when you 
 4. gdd_set_language(3, "ja-JP")
 5. Navigate all to the same URL, verify localization
 ```
+
+## Error Beacon
+
+Every MCP tool response automatically appends console error warnings for all players that have errors:
+
+```
+⚠ Player 2: 3 console errors. Use gdd_get_console(player_id) to inspect.
+```
+
+When you see an error beacon, call `gdd_get_console` to inspect the errors before continuing. Don't ignore beacons — they indicate real problems.
 
 ## Important Notes
 

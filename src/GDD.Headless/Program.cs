@@ -77,6 +77,8 @@ var consoleService = host.Services.GetRequiredService<ConsoleInterceptionService
 var networkMonitorService = host.Services.GetRequiredService<NetworkMonitoringService>();
 var cdpService = host.Services.GetRequiredService<CdpService>();
 
+registry.SetPlayerManager(playerManager);
+
 PlayerTools.Register(registry, playerManager);
 NavigationTools.Register(registry, playerManager);
 InteractionTools.Register(registry, playerManager);

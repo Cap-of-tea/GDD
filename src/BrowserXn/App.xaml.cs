@@ -76,6 +76,8 @@ public partial class App : Application
         var networkMonitorService = _host.Services.GetRequiredService<NetworkMonitoringService>();
         var cdpService = _host.Services.GetRequiredService<CdpService>();
 
+        registry.SetPlayerManager(playerManager);
+
         PlayerTools.Register(registry, playerManager);
         NavigationTools.Register(registry, playerManager);
         InteractionTools.Register(registry, playerManager);

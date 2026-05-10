@@ -261,5 +261,150 @@ public static class InteractionTools
 
                 return McpResult.Text($"Typed into '{selector}' on player {playerId}");
             });
+
+        registry.Register(
+            new McpToolDefinition
+            {
+                Name = "gdd_hover",
+                Description = "Hover over an element by CSS selector. Triggers mouseover/mouseenter events (useful for tooltips, dropdowns, menus).",
+                InputSchema = new
+                {
+                    type = "object",
+                    properties = new
+                    {
+                        player_id = new { type = "integer", description = "Player ID" },
+                        selector = new { type = "string", description = "CSS selector of element to hover" }
+                    },
+                    required = new[] { "player_id", "selector" }
+                }
+            },
+            async args =>
+            {
+                var playerId = args?.GetProperty("player_id").GetInt32() ?? 0;
+                var selector = args?.GetProperty("selector").GetString() ?? "";
+                var player = playerManager.GetPlayer(playerId);
+                if (player?.Engine is null)
+                    return McpResult.Error($"Player {playerId} not found or not initialized");
+
+                var escapedSelector = selector.Replace("'", "\\'");
+                var rectJson = await player.Engine.ExecuteJavaScriptAsync(
+                    $@"(function() {{ var el = document.querySelector('{escapedSelector}'); if (!el) return null; var r = el.getBoundingClientRect(); return {{x: r.x + r.width/2, y: r.y + r.height/2}}; }})()");
+
+                if (rectJson == "null" || rectJson == "\"null\"")
+                    return McpResult.Error($"Element '{selector}' not found");
+
+                var json = rectJson;
+                if (json.StartsWith("\""))
+                    json = JsonSerializer.Deserialize<string>(json) ?? json;
+                using var doc = JsonDocument.Parse(json);
+                var x = doc.RootElement.GetProperty("x").GetDouble();
+                var y = doc.RootElement.GetProperty("y").GetDouble();
+
+                await player.Engine.CallCdpMethodAsync("Input.dispatchMouseEvent",
+                    JsonSerializer.Serialize(new { type = "mouseMoved", x, y, button = "none", buttons = 0 }));
+
+                return McpResult.Text($"Hovered over '{selector}' at ({x:F0}, {y:F0}) on player {playerId}");
+            });
+
+        registry.Register(
+            new McpToolDefinition
+            {
+                Name = "gdd_select",
+                Description = "Select an option from a <select> dropdown by value or visible text.",
+                InputSchema = new
+                {
+                    type = "object",
+                    properties = new
+                    {
+                        player_id = new { type = "integer", description = "Player ID" },
+                        selector = new { type = "string", description = "CSS selector of <select> element" },
+                        value = new { type = "string", description = "Option value to select (matches value attribute)" },
+                        text = new { type = "string", description = "Option visible text to select (if value not provided)" }
+                    },
+                    required = new[] { "player_id", "selector" }
+                }
+            },
+            async args =>
+            {
+                var playerId = args?.GetProperty("player_id").GetInt32() ?? 0;
+                var selector = args?.GetProperty("selector").GetString() ?? "";
+                var player = playerManager.GetPlayer(playerId);
+                if (player?.Engine is null)
+                    return McpResult.Error($"Player {playerId} not found or not initialized");
+
+                var escapedSelector = selector.Replace("'", "\\'");
+                string matchExpr;
+                if (args?.TryGetProperty("value", out var valEl) == true)
+                {
+                    var val = JsonSerializer.Serialize(valEl.GetString());
+                    matchExpr = $"o.value === {val}";
+                }
+                else if (args?.TryGetProperty("text", out var txtEl) == true)
+                {
+                    var txt = JsonSerializer.Serialize(txtEl.GetString());
+                    matchExpr = $"o.textContent.trim() === {txt}";
+                }
+                else
+                {
+                    return McpResult.Error("Either 'value' or 'text' is required");
+                }
+
+                var script = $@"(function() {{
+                    var sel = document.querySelector('{escapedSelector}');
+                    if (!sel) return 'not_found';
+                    var opts = sel.options;
+                    for (var i = 0; i < opts.length; i++) {{
+                        var o = opts[i];
+                        if ({matchExpr}) {{
+                            sel.value = o.value;
+                            sel.dispatchEvent(new Event('input', {{bubbles:true}}));
+                            sel.dispatchEvent(new Event('change', {{bubbles:true}}));
+                            return o.textContent.trim();
+                        }}
+                    }}
+                    return 'option_not_found';
+                }})()";
+
+                var result = await player.Engine.ExecuteJavaScriptAsync(script);
+                if (result.Contains("not_found") && !result.Contains("option"))
+                    return McpResult.Error($"Element '{selector}' not found");
+                if (result.Contains("option_not_found"))
+                    return McpResult.Error($"Option not found in '{selector}'");
+
+                return McpResult.Text($"Selected '{result.Trim('"')}' in '{selector}' on player {playerId}");
+            });
+
+        registry.Register(
+            new McpToolDefinition
+            {
+                Name = "gdd_dialog",
+                Description = "Handle JavaScript dialog (alert/confirm/prompt). Must be called after a dialog appears.",
+                InputSchema = new
+                {
+                    type = "object",
+                    properties = new
+                    {
+                        player_id = new { type = "integer", description = "Player ID" },
+                        accept = new { type = "boolean", description = "Accept (true) or dismiss (false) the dialog (default true)" },
+                        text = new { type = "string", description = "Text to enter in prompt dialog (optional)" }
+                    },
+                    required = new[] { "player_id" }
+                }
+            },
+            async args =>
+            {
+                var playerId = args?.GetProperty("player_id").GetInt32() ?? 0;
+                var accept = !(args?.TryGetProperty("accept", out var aEl) == true && !aEl.GetBoolean());
+                var promptText = args?.TryGetProperty("text", out var tEl) == true ? tEl.GetString() ?? "" : "";
+                var player = playerManager.GetPlayer(playerId);
+                if (player?.Engine is null)
+                    return McpResult.Error($"Player {playerId} not found or not initialized");
+
+                await player.Engine.CallCdpMethodAsync("Page.handleJavaScriptDialog",
+                    JsonSerializer.Serialize(new { accept, promptText }));
+
+                var action = accept ? "Accepted" : "Dismissed";
+                return McpResult.Text($"{action} dialog on player {playerId}");
+            });
     }
 }
