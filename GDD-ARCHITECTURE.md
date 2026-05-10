@@ -2,7 +2,7 @@
 
 ## 1. What is GDD
 
-GDD (Giggly-Dazzling-Duckling) — кроссплатформенное приложение для мультибраузерного тестирования веб-приложений. Управляет N изолированными Chromium-инстансами ("players") через Chrome DevTools Protocol и предоставляет 33 MCP-инструмента для автоматизации через Claude Code или любой MCP-клиент.
+GDD (Giggly-Dazzling-Duckling) — кроссплатформенное приложение для мультибраузерного тестирования веб-приложений. Управляет N изолированными Chromium-инстансами ("players") через Chrome DevTools Protocol и предоставляет 34 MCP-инструмента для автоматизации через Claude Code или любой MCP-клиент.
 
 Два режима: **Windows GUI** (WPF + WebView2) и **Headless** (Playwright, Windows/Linux/macOS). Общее ядро GDD.Core содержит все сервисы и MCP-инструменты, работающие через абстракции `IBrowserEngine` и `IPlayerManager`.
 
@@ -42,7 +42,7 @@ GDD (Giggly-Dazzling-Duckling) — кроссплатформенное прил
 └─────────────────────┬────────────────────────────────┘
                       │
 ┌─────────────────────▼────────────────────────────────┐
-│              McpToolRegistry (33 tools)               │
+│              McpToolRegistry (34 tools)               │
 │  PlayerTools · NavigationTools · InteractionTools     │
 │  ReadTools · EmulationTools · AuthTools               │
 │  StateTools · DiagnosticsTools                        │
@@ -78,7 +78,7 @@ App.OnStartup()
   → LoadConfig("appsettings.json") → AppConfig
   → ConfigureSerilog()
   → RegisterServices(DI container)
-  → RegisterMcpTools() — 33 tools → McpToolRegistry
+  → RegisterMcpTools() — 34 tools → McpToolRegistry
   → StartMcpServer() — HttpListener on :9700
   → new MainWindow { DataContext = MainViewModel }
 ```
@@ -100,65 +100,74 @@ Claude Code → POST /mcp {"method":"tools/call","params":{"name":"gdd_navigate"
 ## 4. Project Structure
 
 ```
-src/BrowserXn/
-├── Abstractions/           IBrowserEngine, IBrowserEngineFactory
-├── Collections/            RingBuffer<T> (circular buffer, 500 entries)
-├── Controls/               VideoWallPanel (custom WPF layout panel)
-├── Converters/             BoolToVisibilityConverter
-├── Engines/                WebView2Engine, WebView2EngineFactory
-├── Interop/                DwmApi (P/Invoke: DWM thumbnails, User32)
-├── Mcp/
-│   ├── McpServer.cs        HTTP server (SSE + Streamable HTTP)
-│   ├── McpProtocol.cs      JSON-RPC 2.0 DTOs
-│   ├── McpToolRegistry.cs  Tool name → handler registry
-│   ├── McpResult.cs        Helper for building tool results
-│   └── Tools/
-│       ├── PlayerTools.cs       add_players, remove_player, list_windows
-│       ├── NavigationTools.cs   navigate, wait, reload, back, forward
-│       ├── InteractionTools.cs  tap, swipe, scroll, type, hover, select, dialog
-│       ├── ReadTools.cs         read, read_all, screenshot
-│       ├── ExecutionTools.cs    execute_js
-│       ├── AuthTools.cs         quick_auth
-│       ├── EmulationTools.cs    set_device/viewport/location/network/language
-│       ├── StateTools.cs        get_state, get_notifications
-│       ├── DiagnosticsTools.cs  get_console, get_network, get_performance, clear_logs, storage, cookies
-│       └── HelpTools.cs         get_manual
-├── Models/
-│   ├── AppConfig.cs             FrontendUrl, BackendUrl, McpPort, etc.
-│   ├── DevicePreset.cs          22 presets (phones/tablets/desktops)
-│   ├── LocationPreset.cs        5 city presets
-│   ├── NetworkPreset.cs         5 network conditions
-│   ├── ConsoleEntry.cs          Console log record
-│   ├── NetworkEntry.cs          Network request record
-│   ├── AuthResult.cs            Token + user data
-│   ├── NoiseAuthState.cs        Frontend auth state shape
-│   ├── PushNotification.cs      Push notification record
-│   ├── TelegramUserConfig.cs    Telegram WebApp user
-│   └── ApiEnvelope.cs           Backend API response wrapper
-├── Services/
-│   ├── CdpService.cs                     CDP method caller wrapper
-│   ├── DeviceEmulationService.cs          Device metrics + UA via CDP
-│   ├── LocationEmulationService.cs        Geolocation + timezone + locale via CDP
-│   ├── NetworkEmulationService.cs         Network throttling via CDP
-│   ├── QuickAuthService.cs                Auto-register/login via backend API
-│   ├── TokenInjectionService.cs           localStorage injection of auth tokens
-│   ├── TelegramInitDataService.cs         HMAC-SHA256 signed initData
-│   ├── TelegramInjectionService.cs        window.Telegram.WebApp API injection
-│   ├── ConsoleInterceptionService.cs      CDP Runtime.consoleAPICalled listener
-│   ├── NetworkMonitoringService.cs        CDP Network.* event listener
-│   ├── NotificationInterceptionService.cs Push notification capture
-│   └── IServiceCollectionExtensions.cs    DI registration
-├── ViewModels/
-│   ├── MainViewModel.cs           Player orchestration, commands, services
-│   ├── BrowserCellViewModel.cs    Per-player state (URL, device, errors, etc.)
-│   └── OverlayViewModel.cs        Floating browser window
-├── Views/
-│   ├── MainWindow.xaml/.cs        Main grid: toolbar + player cells + status bar
-│   ├── OverlayWindow.xaml/.cs     Floating window with live WebView2
-│   ├── CellSettingsWindow.xaml/.cs Device/location/network settings dialog
-│   └── BrowserCellControl.xaml/.cs Player thumbnail with DWM rendering
-└── Themes/
-    └── Generic.xaml               Color scheme, button styles
+BrowserXn.sln
+├── src/
+│   ├── GDD.Core/                          ← Shared library (net8.0)
+│   │   ├── Abstractions/
+│   │   │   ├── IBrowserEngine.cs              Browser engine interface
+│   │   │   ├── IBrowserEngineFactory.cs       Factory interface
+│   │   │   ├── ICdpEventSubscription.cs       CDP event subscription abstraction
+│   │   │   ├── IMainThreadDispatcher.cs       Thread dispatcher abstraction
+│   │   │   ├── IPlayerManager.cs              Player management interface
+│   │   │   └── IPlayerContext.cs              Per-player state interface
+│   │   ├── Collections/
+│   │   │   └── RingBuffer.cs                  Thread-safe circular buffer (500 entries)
+│   │   ├── Mcp/
+│   │   │   ├── McpServer.cs                   HTTP server (SSE + Streamable HTTP)
+│   │   │   ├── McpProtocol.cs                 JSON-RPC 2.0 DTOs
+│   │   │   ├── McpToolRegistry.cs             Tool registry + error beacon
+│   │   │   ├── McpResult.cs                   Tool result builder
+│   │   │   └── Tools/
+│   │   │       ├── PlayerTools.cs             add_players, remove_player, list_windows
+│   │   │       ├── NavigationTools.cs         navigate, wait, reload, back, forward
+│   │   │       ├── InteractionTools.cs        tap, swipe, scroll, type, hover, select, dialog
+│   │   │       ├── ReadTools.cs               read, read_all, screenshot
+│   │   │       ├── ExecutionTools.cs          execute_js
+│   │   │       ├── AuthTools.cs               quick_auth
+│   │   │       ├── EmulationTools.cs          set_device/viewport/location/network/language
+│   │   │       ├── StateTools.cs              get_state, get_notifications
+│   │   │       ├── DiagnosticsTools.cs        get_console, get_network, get_performance, clear_logs, storage, cookies
+│   │   │       └── HelpTools.cs               get_manual
+│   │   ├── Models/
+│   │   │   ├── AppConfig.cs                   FrontendUrl, BackendUrl, McpPort, etc.
+│   │   │   ├── DevicePreset.cs                22 presets (phones/tablets/desktops)
+│   │   │   ├── LocationPreset.cs              5 city presets
+│   │   │   ├── NetworkPreset.cs               5 network conditions
+│   │   │   ├── ConsoleEntry.cs                Console log record
+│   │   │   ├── NetworkEntry.cs                Network request record
+│   │   │   ├── AuthResult.cs                  Token + user data
+│   │   │   ├── NoiseAuthState.cs              Frontend auth state shape
+│   │   │   ├── PushNotification.cs            Push notification record
+│   │   │   ├── TelegramUserConfig.cs          Telegram WebApp user
+│   │   │   └── ApiEnvelope.cs                 Backend API response wrapper
+│   │   └── Services/
+│   │       ├── CdpService.cs                  CDP method caller wrapper
+│   │       ├── DeviceEmulationService.cs      Device metrics + UA via CDP
+│   │       ├── LocationEmulationService.cs    Geolocation + timezone + locale via CDP
+│   │       ├── NetworkEmulationService.cs     Network throttling via CDP
+│   │       ├── QuickAuthService.cs            Auto-register/login via backend API
+│   │       ├── TokenInjectionService.cs       localStorage injection of auth tokens
+│   │       ├── TelegramInitDataService.cs     HMAC-SHA256 signed initData
+│   │       ├── TelegramInjectionService.cs    window.Telegram.WebApp API injection
+│   │       ├── ConsoleInterceptionService.cs  CDP Runtime.consoleAPICalled listener
+│   │       ├── NetworkMonitoringService.cs    CDP Network.* event listener
+│   │       └── NotificationInterceptionService.cs  Push notification capture
+│   │
+│   ├── BrowserXn/                         ← Windows GUI (net8.0-windows, WPF)
+│   │   ├── Engines/                           WebView2ControlAdapter
+│   │   ├── Platform/                          WpfDispatcher, WebView2CdpSubscription
+│   │   ├── ViewModels/                        MVVM (MainViewModel : IPlayerManager)
+│   │   ├── Views/                             WPF XAML (MainWindow, OverlayWindow, etc.)
+│   │   ├── Interop/                           Win32 P/Invoke (DWM, User32)
+│   │   ├── Controls/                          VideoWallPanel
+│   │   └── Themes/                            Dark theme styles
+│   │
+│   └── GDD.Headless/                     ← Headless runner (net8.0, cross-platform)
+│       ├── Engines/                           PlaywrightEngine
+│       ├── Platform/                          ConsoleDispatcher, HeadlessPlayerManager
+│       └── Scripts/                           mcp-proxy.sh, mcp-proxy.ps1
+│
+└── .github/workflows/                    ← CI/CD (build all platforms + release)
 ```
 
 ---
@@ -307,168 +316,100 @@ interface IBrowserEngine : IAsyncDisposable
 
 ---
 
-## 7. Cross-Platform Refactoring Strategy
+## 7. Cross-Platform Architecture (Implemented)
 
-### 7.1 Target Architecture
+### 7.1 Current Architecture
 
 ```
 ┌──────────────────────────────────────────────────┐
-│                  GDD.Core (netstandard2.1)        │
+│                  GDD.Core (net8.0)                │
 │  Models · Services · MCP Server · MCP Tools       │
 │  Abstractions · Collections                       │
 └──────────────────────┬───────────────────────────┘
                        │
-        ┌──────────────┼──────────────┐
-        ▼              ▼              ▼
-┌──────────────┐ ┌───────────┐ ┌────────────┐
-│ GDD.Desktop  │ │ GDD.Mac   │ │ GDD.Linux  │
-│ (WPF+WV2)   │ │ (Avalonia │ │ (Avalonia  │
-│ Windows      │ │ +WKWebView│ │ +CEF/GTK)  │
-│              │ │ or CEF)   │ │            │
-└──────────────┘ └───────────┘ └────────────┘
+        ┌──────────────┴──────────────┐
+        ▼                             ▼
+┌──────────────┐              ┌────────────────┐
+│ BrowserXn    │              │ GDD.Headless   │
+│ (WPF+WV2)   │              │ (Playwright)   │
+│ Windows GUI  │              │ Win/Linux/macOS│
+└──────────────┘              └────────────────┘
 ```
 
-### 7.2 Phase 1 — Extract GDD.Core (shared library)
+GDD.Core is the shared library containing all platform-independent code. Both BrowserXn (Windows GUI) and GDD.Headless (cross-platform) reference it and provide platform-specific implementations of `IBrowserEngine`, `IPlayerManager`, and `IMainThreadDispatcher`.
 
-**Цель:** вынести platform-agnostic код в отдельную сборку.
-
-```
-GDD.Core/
-├── Abstractions/
-│   ├── IBrowserEngine.cs          # убрать nint parentHwnd → object hostHandle
-│   ├── IBrowserEngineFactory.cs
-│   ├── ICdpTransport.cs           # NEW: абстракция CDP вызовов
-│   └── IMainThreadDispatcher.cs   # NEW: замена WPF Dispatcher
-├── Collections/
-│   └── RingBuffer.cs
-├── Mcp/                           # весь MCP as-is
-├── Models/                        # все модели as-is
-└── Services/                      # все сервисы, но через ICdpTransport
-```
-
-**Ключевые новые абстракции:**
+### 7.2 Key Abstractions
 
 ```csharp
-// Замена прямых CoreWebView2 CDP вызовов
-interface ICdpTransport
+interface IBrowserEngine : IAsyncDisposable
 {
-    Task CallAsync(string method, string parametersJson);
-    Task<string> CallWithResultAsync(string method, string parametersJson);
-    Task SubscribeEventAsync(string eventName, Action<string> handler);
+    Task InitializeAsync(object? hostHandle, string startUrl);
+    Task NavigateAsync(string url);
+    Task<string> ExecuteJavaScriptAsync(string script);
+    Task CallCdpMethodAsync(string methodName, string parametersJson);
+    Task<byte[]> CaptureScreenshotAsync();
+    ICdpEventSubscription SubscribeCdpEvent(string eventName);
 }
 
-// Замена WPF Dispatcher
+interface IPlayerManager
+{
+    Task AddPlayers(int count, string? devicePreset = null);
+    IReadOnlyList<IPlayerContext> GetPlayers();
+    IPlayerContext? GetPlayer(int playerId);
+}
+
 interface IMainThreadDispatcher
 {
     Task InvokeAsync(Func<Task> action);
 }
 ```
 
-**Объем:** ~35 файлов перенести без изменений, ~15 файлов — мелкий рефакторинг (заменить прямые CDP вызовы на ICdpTransport).
+### 7.3 Platform Implementations
 
-### 7.3 Phase 2 — Browser Engine Alternatives
+| Abstraction | BrowserXn (Windows GUI) | GDD.Headless (Cross-platform) |
+|-------------|------------------------|-------------------------------|
+| `IBrowserEngine` | `WebView2ControlAdapter` — WebView2 + HWND | `PlaywrightEngine` — Playwright Chromium |
+| `IPlayerManager` | `MainViewModel` — WPF MVVM | `HeadlessPlayerManager` — console |
+| `IMainThreadDispatcher` | `WpfDispatcher` — WPF UI thread | `ConsoleDispatcher` — direct execution |
+| `ICdpEventSubscription` | `WebView2CdpSubscription` — WebView2 events | `PlaywrightCdpSubscription` — CDP session |
 
-| Platform | Engine | CDP Support | Maturity |
-|----------|--------|-------------|----------|
-| **Windows** | WebView2 (current) | Built-in | Production |
-| **macOS** | WKWebView + WebKit Remote Debug | Partial | Experimental |
-| **macOS/Linux** | CEFSharp / CefGlue | Full CDP | Production |
-| **All platforms** | Playwright .NET | Full CDP | Production |
-| **All platforms** | Puppeteer-Sharp | Full CDP | Production |
-| **Headless** | Chrome/Chromium + CDP WebSocket | Full CDP | Production |
+### 7.4 Future — GUI on All Platforms
 
-**Рекомендация:** Playwright .NET или headless Chromium + CDP WebSocket.
-
-**Playwright .NET:**
-- Кроссплатформенный из коробки
-- Управляет Chromium/Firefox/WebKit
-- Полный CDP доступ: `page.Context.NewCDPSession()`
-- Скриншоты, навигация, JS execution — всё через единый API
-- Недостаток: headless по умолчанию, headed mode ограничен
-
-**Headless Chromium + CDP WebSocket:**
-- Запуск `chrome --remote-debugging-port=9222`
-- Подключение через WebSocket к CDP endpoint
-- Полный контроль, как с WebView2
-- Работает на всех платформах
-- Недостаток: нужен установленный Chrome/Chromium
-
-### 7.4 Phase 3 — UI Framework
-
-| Framework | Platforms | WebView Support | Effort |
-|-----------|-----------|----------------|--------|
-| **Avalonia UI** | Windows, macOS, Linux | CefGlue / WebView control | High |
-| **MAUI** | Windows, macOS, (Linux limited) | WebView2 / WKWebView | Medium |
-| **Terminal UI (Spectre.Console)** | All | Headless only | Low |
-| **Headless (no UI)** | All | n/a | Minimal |
-
-**Рекомендация:** два варианта в зависимости от приоритетов:
-
-**Вариант A — Headless-first (минимальный effort):**
-- GDD.Core + Playwright/CDP WebSocket
-- Без GUI, только MCP-сервер
-- Управление исключительно через Claude Code
-- Console app на всех платформах
-- Effort: 2-3 недели
-
-**Вариант B — Avalonia UI (полный port):**
-- GDD.Core + Avalonia + CefGlue
-- Полноценный GUI на всех платформах
-- Live preview, thumbnails (без DWM — fallback на screenshot-based)
-- Effort: 6-8 недель
-
-### 7.5 Phase 4 — DWM Thumbnails Replacement
-
-DWM live thumbnails — уникальная Windows-фича. Кроссплатформенные альтернативы:
+DWM live thumbnails are Windows-only. Cross-platform GUI alternatives:
 
 | Approach | Quality | Performance | Complexity |
 |----------|---------|-------------|------------|
 | Periodic screenshot polling (500ms) | Medium | Low CPU | Simple |
 | CDP `Page.screencastFrame` stream | High | Medium CPU | Medium |
 | Offscreen rendering (CEF) | High | High CPU | Complex |
-
-Рекомендация: `Page.screencastFrame` CDP — real-time stream скриншотов прямо через CDP, работает на всех платформах.
+| Avalonia UI + CefGlue | Full GUI | Medium | High |
 
 ---
 
-## 8. Migration Roadmap
+## 8. Build & CI/CD
 
-```
-Phase 1: Extract GDD.Core          [2 weeks]
-  ├─ Create GDD.Core class library
-  ├─ Move Models, Services, MCP, Collections
-  ├─ Introduce ICdpTransport, IMainThreadDispatcher
-  ├─ Refactor Services to use ICdpTransport
-  └─ Windows version works as before (WebView2 implements interfaces)
+GitHub Actions builds 5 targets on every push to master:
 
-Phase 2: Headless Cross-Platform    [2-3 weeks]
-  ├─ Create GDD.Headless console app
-  ├─ Implement PlaywrightBrowserEngine : IBrowserEngine
-  ├─ Or ChromeCdpEngine (raw WebSocket CDP)
-  ├─ MCP server starts, tools work
-  └─ Test on macOS + Linux
+| Target | Runner | Output |
+|--------|--------|--------|
+| `gdd-windows-gui` | windows-latest | WPF + WebView2 single-file EXE |
+| `gdd-headless-win-x64` | windows-latest | Playwright headless |
+| `gdd-headless-linux-x64` | ubuntu-22.04 | Playwright headless |
+| `gdd-headless-macos-arm64` | macos-14 | Apple Silicon |
+| `gdd-headless-macos-x64` | macos-13 | Intel Mac |
 
-Phase 3: Avalonia UI (optional)     [4-6 weeks]
-  ├─ Create GDD.Avalonia project
-  ├─ Port MainWindow, OverlayWindow
-  ├─ Replace DWM thumbnails with CDP screencast
-  ├─ CefGlue integration for embedded browser
-  └─ Full-featured desktop app on all platforms
+Each headless build runs a smoke test: starts GDD.Headless, queries `tools/list` via HTTP, verifies 34 tools are registered.
 
-Phase 4: Polish                     [1-2 weeks]
-  ├─ Platform-specific packaging (DMG, AppImage, MSI)
-  ├─ Auto-launch configuration
-  └─ CI/CD for all platforms
-```
+Tags matching `v*` trigger GitHub Releases with `tar.gz` archives for all targets.
 
 ---
 
 ## 9. Summary
 
-**Текущее состояние:** ~60% кода уже platform-agnostic. Архитектура с интерфейсом `IBrowserEngine` заложила фундамент для портирования, но прямые зависимости от WebView2 API в сервисах и WPF Dispatcher в MCP tools требуют рефакторинга.
+**Текущее состояние:** GDD.Core содержит всю platform-independent логику (~75% кодовой базы). BrowserXn (Windows GUI) и GDD.Headless (кроссплатформенный) реализуют platform-specific абстракции.
 
-**Минимальный path к кроссплатформенности:** headless mode через Playwright .NET — 2-3 недели работы, покрывает 100% MCP-функциональности без UI.
+**Headless mode** через Playwright .NET работает на Windows, Linux и macOS с идентичным набором из 34 MCP-инструментов.
 
-**Полный port с GUI:** Avalonia + CefGlue — 10-14 недель, но даёт полноценное десктопное приложение на Windows/macOS/Linux.
+**Windows GUI** предоставляет визуальный превью с DWM-миниатюрами и live WebView2 окнами.
 
-**Критический выбор:** browser engine. Playwright .NET даёт кроссплатформенность из коробки и активно поддерживается Microsoft. Headless Chromium + CDP WebSocket — максимальная гибкость и контроль. CEFSharp/CefGlue — для embedded browser в GUI.
+**Потенциальное развитие:** Avalonia UI для кроссплатформенного GUI с CDP screencast вместо DWM thumbnails.

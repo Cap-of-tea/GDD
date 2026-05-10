@@ -44,7 +44,7 @@ BrowserXn.sln
 │   │   ├── Abstractions/        ← IBrowserEngine, IPlayerManager, IPlayerContext,
 │   │   │                          IMainThreadDispatcher, ICdpEventSubscription
 │   │   ├── Mcp/                 ← MCP server, tool registry, JSON-RPC protocol
-│   │   │   └── Tools/           ← 33 MCP tools organized by category
+│   │   │   └── Tools/           ← 34 MCP tools organized by category
 │   │   ├── Models/              ← Device, Location, Network presets, AppConfig
 │   │   ├── Services/            ← CDP, Emulation, Interception, Monitoring
 │   │   └── Collections/         ← RingBuffer

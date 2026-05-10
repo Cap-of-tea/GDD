@@ -2,7 +2,7 @@
 
 ## 1. What is GDD
 
-GDD (Giggly-Dazzling-Duckling) — кроссплатформенный инструмент для мультибраузерного тестирования. Управляет N изолированными Chromium-инстансами и выставляет 33 MCP-инструмента для Claude Code.
+GDD (Giggly-Dazzling-Duckling) — кроссплатформенный инструмент для мультибраузерного тестирования. Управляет N изолированными Chromium-инстансами и выставляет 34 MCP-инструмента для Claude Code.
 
 Два режима: **Windows GUI** (WPF + WebView2, с визуальным превью) и **Headless** (Playwright, работает на Windows/Linux/macOS). Оба режима предоставляют идентичный набор MCP-инструментов.
 
@@ -73,7 +73,7 @@ GDD запускает MCP HTTP сервер на порту 9700 (auto-fallback
 
 Откройте **новый чат** в Claude Code (или Reload Window). MCP клиент читает `.mcp.json` только при старте сессии.
 
-33 tools должны появиться с `mcp__gdd__` префиксом.
+34 tools должны появиться с `mcp__gdd__` префиксом.
 
 ### Troubleshooting
 
@@ -575,7 +575,7 @@ Report: "All 3 players have isolated sessions. Each sees their own profile name.
 ```
 Claude Code ──JSON-RPC──→ mcp-proxy.ps1 ──HTTP──→ GDD (port 9700)
                                                     │
-                                          McpToolRegistry (33 tools)
+                                          McpToolRegistry (34 tools)
                                                     │
                                             MainViewModel
                                           ┌────┬────┬────┐

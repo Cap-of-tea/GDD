@@ -6,7 +6,7 @@
 
 <p align="center">
   <strong>Cross-platform multi-browser testing tool powered by AI</strong><br>
-  Control N isolated Chromium instances from Claude Code via 33 MCP tools
+  Control N isolated Chromium instances from Claude Code via 34 MCP tools
 </p>
 
 <p align="center">
@@ -23,7 +23,7 @@
 
 GDD is a cross-platform tool that lets an AI agent (Claude Code) see and control multiple browser windows simultaneously — just like a human tester would, but faster and programmable.
 
-Each browser is an isolated Chromium instance with its own profile, cookies, device emulation, geolocation, and network conditions. Claude connects via [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) and operates browsers through 33 specialized tools.
+Each browser is an isolated Chromium instance with its own profile, cookies, device emulation, geolocation, and network conditions. Claude connects via [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) and operates browsers through 34 specialized tools.
 
 **Two modes:**
 
@@ -32,7 +32,7 @@ Each browser is an isolated Chromium instance with its own profile, cookies, dev
 | Browser engine | WebView2 | Playwright (Chromium) |
 | UI | WPF desktop with video wall | No UI — fully controlled via MCP |
 | Use case | Visual testing with live preview | CI/CD, servers, cross-platform |
-| MCP tools | 33 | 33 (identical) |
+| MCP tools | 34 | 34 (identical) |
 
 **Use cases:**
 - Automated multi-device responsive testing
@@ -136,7 +136,7 @@ Claude will use GDD tools to add players, set devices, navigate, interact, and r
 
 ---
 
-## MCP Tools (33)
+## MCP Tools (34)
 
 ### Player Management
 
@@ -283,7 +283,7 @@ Claude will use GDD tools to add players, set devices, navigate, interact, and r
 └────────────────────┬─────────────────────────────┘
                      │
 ┌────────────────────▼─────────────────────────────┐
-│           McpToolRegistry (33 tools)             │
+│           McpToolRegistry (34 tools)             │
 │  Player · Navigation · Interaction · Read        │
 │  Emulation · Auth · State · Diagnostics · Help   │
 └────────────────────┬─────────────────────────────┘

@@ -44,7 +44,7 @@ All notable changes to GDD are documented here.
 - **mcp-proxy.ps1** — PowerShell auto-launch proxy for headless Windows
 - **`gdd_get_manual`** MCP tool — returns the full manual for M2M self-learning
 - **CI/CD pipeline** — GitHub Actions builds for 5 targets: Windows GUI, headless win-x64, linux-x64, osx-arm64, osx-x64
-- **Smoke tests in CI** — each headless build verifies 33 tools via HTTP
+- **Smoke tests in CI** — each headless build verifies tools via HTTP
 - **Auto-release** — `v*` tags trigger GitHub Releases with tar.gz archives
 
 ### Changed

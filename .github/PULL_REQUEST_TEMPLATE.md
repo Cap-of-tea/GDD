@@ -12,7 +12,7 @@
 - [ ] Windows GUI: GDD launches and MCP server responds on :9700
 - [ ] Headless: GDD.Headless launches and MCP server responds on :9700
 - [ ] Affected MCP tools tested via Claude Code or manual HTTP
-- [ ] No regressions in existing tools (33 tools expected)
+- [ ] No regressions in existing tools (34 tools expected)
 
 ## Screenshots (if UI changes)
 
