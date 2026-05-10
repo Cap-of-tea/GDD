@@ -88,12 +88,19 @@ public sealed class WebView2Engine : IBrowserEngine
     public async Task<byte[]> CaptureScreenshotAsync(int quality = 80)
     {
         EnsureInitialized();
-        var sizeJson = await _webView!.ExecuteScriptAsync(
-            "JSON.stringify({w:window.innerWidth,h:window.innerHeight})");
-        var size = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement>(
-            System.Text.Json.JsonSerializer.Deserialize<string>(sizeJson)!);
-        var w = size.GetProperty("w").GetInt32();
-        var h = size.GetProperty("h").GetInt32();
+        for (var i = 0; i < 10; i++)
+        {
+            var state = await _webView!.ExecuteScriptAsync("document.readyState");
+            if (state.Contains("complete")) break;
+            await Task.Delay(200);
+        }
+
+        var metricsJson = await _webView!.CallDevToolsProtocolMethodAsync(
+            "Page.getLayoutMetrics", "{}");
+        using var metrics = System.Text.Json.JsonDocument.Parse(metricsJson);
+        var viewport = metrics.RootElement.GetProperty("cssLayoutViewport");
+        var w = viewport.GetProperty("clientWidth").GetInt32();
+        var h = viewport.GetProperty("clientHeight").GetInt32();
 
         var cdpParams = $"{{\"format\":\"jpeg\",\"quality\":{quality}," +
             $"\"clip\":{{\"x\":0,\"y\":0,\"width\":{w},\"height\":{h},\"scale\":1}}}}";
