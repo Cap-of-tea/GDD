@@ -169,13 +169,11 @@ public sealed class PlaywrightEngine : IBrowserEngine
     public async Task<byte[]> CaptureScreenshotAsync(int quality = 80)
     {
         if (_page is null) return [];
-        for (var i = 0; i < 10; i++)
+        try
         {
-            var state = await _page.EvaluateAsync<string>("document.readyState");
-            if (state == "complete") break;
-            await Task.Delay(200);
+            await _page.WaitForLoadStateAsync(LoadState.Load, new() { Timeout = 5000 });
         }
-        await Task.Delay(150);
+        catch (TimeoutException) { }
         return await _page.ScreenshotAsync(new PageScreenshotOptions
         {
             Type = ScreenshotType.Jpeg,

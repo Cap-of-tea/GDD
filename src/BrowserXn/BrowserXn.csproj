@@ -12,6 +12,7 @@
     <StartupObject>GDD.App</StartupObject>
     <Company>https://github.com/Cap-of-tea/GDD</Company>
     <Product>GDD</Product>
+    <Copyright>imVS©, freeware for private use.</Copyright>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(PublishSingleFile)' == 'true'">
