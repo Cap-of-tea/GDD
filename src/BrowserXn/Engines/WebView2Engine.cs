@@ -112,14 +112,14 @@ public sealed class WebView2Engine : IBrowserEngine
             await Task.WhenAny(tcs.Task, Task.Delay(5000));
         }
 
-        var metricsJson = await _webView!.CallDevToolsProtocolMethodAsync(
-            "Page.getLayoutMetrics", "{}");
-        using var metrics = System.Text.Json.JsonDocument.Parse(metricsJson);
-        var viewport = metrics.RootElement.GetProperty("cssLayoutViewport");
-        var x = viewport.GetProperty("pageX").GetDouble();
-        var y = viewport.GetProperty("pageY").GetDouble();
-        var w = viewport.GetProperty("clientWidth").GetInt32();
-        var h = viewport.GetProperty("clientHeight").GetInt32();
+        var viewportJson = await _webView!.ExecuteScriptAsync(
+            "[window.innerWidth,window.innerHeight,window.scrollX,window.scrollY]");
+        using var viewportDoc = System.Text.Json.JsonDocument.Parse(viewportJson);
+        var vp = viewportDoc.RootElement;
+        var w = vp[0].GetInt32();
+        var h = vp[1].GetInt32();
+        var x = vp[2].GetDouble();
+        var y = vp[3].GetDouble();
 
         var cdpParams = $"{{\"format\":\"jpeg\",\"quality\":{quality}," +
             $"\"clip\":{{\"x\":{x},\"y\":{y},\"width\":{w},\"height\":{h},\"scale\":1}}}}";
