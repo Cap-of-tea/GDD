@@ -118,6 +118,7 @@ public sealed class WebView2Engine : IBrowserEngine
         var vp = viewportDoc.RootElement;
         var w = vp[0].GetInt32();
         var h = vp[1].GetInt32();
+        if (w <= 0 || h <= 0) { w = 393; h = 852; }
         var x = vp[2].GetDouble();
         var y = vp[3].GetDouble();
 
