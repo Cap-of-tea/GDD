@@ -11,6 +11,8 @@ using GDD.Mcp.Tools;
 using GDD.Models;
 using GDD.Services;
 
+var headed = args.Any(a => a.Equals("--headed", StringComparison.OrdinalIgnoreCase));
+
 var host = Host.CreateDefaultBuilder(args)
     .ConfigureAppConfiguration((_, config) =>
     {
@@ -28,6 +30,7 @@ var host = Host.CreateDefaultBuilder(args)
     {
         var config = new AppConfig();
         context.Configuration.GetSection("GDD").Bind(config);
+        if (headed) config.Headed = true;
         services.AddSingleton(config);
 
         services.AddSingleton<IMainThreadDispatcher, ConsoleDispatcher>();
@@ -93,8 +96,9 @@ HelpTools.Register(registry);
 var mcpServer = host.Services.GetRequiredService<McpServer>();
 mcpServer.Start();
 
-Log.Information("GDD Headless MCP server at http://localhost:{Port}/mcp", mcpServer.ActualPort);
-Console.WriteLine($"GDD Headless — MCP server at http://localhost:{mcpServer.ActualPort}/mcp");
+var mode = appConfig.Headed ? "headed" : "headless";
+Log.Information("GDD {Mode} MCP server at http://localhost:{Port}/mcp", mode, mcpServer.ActualPort);
+Console.WriteLine($"GDD ({mode}) — MCP server at http://localhost:{mcpServer.ActualPort}/mcp");
 Console.WriteLine("Press Ctrl+C to stop.");
 
 await host.WaitForShutdownAsync();

@@ -135,9 +135,9 @@ public sealed class HeadlessPlayerManager : IPlayerManager, IAsyncDisposable
             _playwright = await Playwright.CreateAsync();
             _browser = await _playwright.Chromium.LaunchAsync(new BrowserTypeLaunchOptions
             {
-                Headless = true
+                Headless = !_config.Headed
             });
-            Logger.Information("Chromium launched (headless)");
+            Logger.Information("Chromium launched ({Mode})", _config.Headed ? "headed" : "headless");
         }
         finally
         {

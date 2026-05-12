@@ -1,8 +1,10 @@
 $ErrorActionPreference = 'Stop'
-$scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+$scriptDir = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
 $gddExe = Join-Path $scriptDir "GDD.Headless.exe"
 $baseUrl = "http://localhost:9700/mcp"
 $gddProcess = $null
+$gddArgs = @()
+if ($args -contains '--headed') { $gddArgs += '--headed' }
 
 [Console]::InputEncoding = [System.Text.Encoding]::UTF8
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
@@ -36,7 +38,7 @@ function Ensure-GddRunning {
         exit 1
     }
 
-    $script:gddProcess = Start-Process $gddExe -WorkingDirectory $scriptDir -PassThru
+    $script:gddProcess = Start-Process $gddExe -ArgumentList $gddArgs -WorkingDirectory $scriptDir -PassThru
 
     for ($i = 0; $i -lt 20; $i++) {
         Start-Sleep -Seconds 1

@@ -9,6 +9,7 @@ public sealed class AppConfig
     public string BotToken { get; set; } = string.Empty;
     public int McpPort { get; set; } = 9700;
     public string DataFolderRoot { get; set; } = string.Empty;
+    public bool Headed { get; set; }
 
     public string GetDataFolderRoot()
     {

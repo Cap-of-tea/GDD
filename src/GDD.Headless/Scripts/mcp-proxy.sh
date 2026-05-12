@@ -1,10 +1,16 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 GDD_EXE="$SCRIPT_DIR/GDD.Headless"
 BASE_URL="http://localhost:9700/mcp"
 GDD_PID=""
+GDD_ARGS=""
+for arg in "$@"; do
+    case "$arg" in
+        --headed) GDD_ARGS="$GDD_ARGS --headed" ;;
+    esac
+done
 
 cleanup() {
     if [ -n "$GDD_PID" ] && kill -0 "$GDD_PID" 2>/dev/null; then
@@ -28,7 +34,7 @@ ensure_running() {
         exit 1
     fi
 
-    "$GDD_EXE" &
+    "$GDD_EXE" $GDD_ARGS &
     GDD_PID=$!
 
     for i in $(seq 1 20); do
