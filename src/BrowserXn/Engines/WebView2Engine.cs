@@ -116,11 +116,13 @@ public sealed class WebView2Engine : IBrowserEngine
             "Page.getLayoutMetrics", "{}");
         using var metrics = System.Text.Json.JsonDocument.Parse(metricsJson);
         var viewport = metrics.RootElement.GetProperty("cssLayoutViewport");
+        var x = viewport.GetProperty("pageX").GetDouble();
+        var y = viewport.GetProperty("pageY").GetDouble();
         var w = viewport.GetProperty("clientWidth").GetInt32();
         var h = viewport.GetProperty("clientHeight").GetInt32();
 
         var cdpParams = $"{{\"format\":\"jpeg\",\"quality\":{quality}," +
-            $"\"clip\":{{\"x\":0,\"y\":0,\"width\":{w},\"height\":{h},\"scale\":1}}}}";
+            $"\"clip\":{{\"x\":{x},\"y\":{y},\"width\":{w},\"height\":{h},\"scale\":1}}}}";
         var resultJson = await _webView!.CallDevToolsProtocolMethodAsync(
             "Page.captureScreenshot", cdpParams);
 
