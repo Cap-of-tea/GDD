@@ -9,6 +9,7 @@
     <AssemblyName>GDD.Headless</AssemblyName>
     <Company>https://github.com/Cap-of-tea/GDD</Company>
     <Product>GDD</Product>
+    <Copyright>imVS©, freeware for private use.</Copyright>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(SelfContained)' == 'true'">
@@ -29,18 +30,18 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="appsettings.json">
+    <Content Include="appsettings.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="..\..\GDD-MANUAL.md" Link="GDD-MANUAL.md">
+    </Content>
+    <Content Include="..\..\GDD-MANUAL.md" Link="GDD-MANUAL.md">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="Scripts\mcp-proxy.sh">
+    </Content>
+    <Content Include="Scripts\mcp-proxy.sh">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="Scripts\mcp-proxy.ps1">
+    </Content>
+    <Content Include="Scripts\mcp-proxy.ps1">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
+    </Content>
   </ItemGroup>
 
 </Project>
