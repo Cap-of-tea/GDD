@@ -13,6 +13,9 @@ using GDD.Services;
 
 var headed = args.Any(a => a.Equals("--headed", StringComparison.OrdinalIgnoreCase));
 
+var browsersPath = Path.Combine(AppContext.BaseDirectory, ".browsers");
+Environment.SetEnvironmentVariable("PLAYWRIGHT_BROWSERS_PATH", browsersPath);
+
 var host = Host.CreateDefaultBuilder(args)
     .ConfigureAppConfiguration((_, config) =>
     {

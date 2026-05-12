@@ -58,6 +58,8 @@ jobs:
       - name: Install Playwright browsers
         if: matrix.rid != 'osx-x64' || runner.arch != 'ARM64'
         run: pwsh publish/${{ matrix.rid }}/playwright.ps1 install chromium
+        env:
+          PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/publish/${{ matrix.rid }}/.browsers
 
       - name: Smoke test
         if: matrix.rid != 'osx-x64' || runner.arch != 'ARM64'

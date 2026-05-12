@@ -26,10 +26,16 @@ internal static class PlaywrightSetup
             Console.Error.WriteLine("Please install manually:");
             Console.Error.WriteLine();
 
+            var browsersPath = Environment.GetEnvironmentVariable("PLAYWRIGHT_BROWSERS_PATH") ?? ".browsers";
             if (OperatingSystem.IsWindows())
+            {
+                Console.Error.WriteLine($"  $env:PLAYWRIGHT_BROWSERS_PATH=\"{browsersPath}\"");
                 Console.Error.WriteLine("  powershell -File playwright.ps1 install chromium");
+            }
             else
-                Console.Error.WriteLine("  pwsh playwright.ps1 install chromium");
+            {
+                Console.Error.WriteLine($"  PLAYWRIGHT_BROWSERS_PATH=\"{browsersPath}\" pwsh playwright.ps1 install chromium");
+            }
 
             if (OperatingSystem.IsLinux())
             {

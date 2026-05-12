@@ -65,8 +65,6 @@ Each browser is an isolated Chromium instance with its own profile, cookies, dev
    # MCP server starts on http://localhost:9700/mcp
    ```
 
-3. First run installs Chromium automatically via Playwright
-
 ### Linux
 
 1. Download `gdd-linux-x64.tar.gz` from [Releases](https://github.com/Cap-of-tea/GDD/releases/latest)
@@ -77,7 +75,7 @@ Each browser is an isolated Chromium instance with its own profile, cookies, dev
    ./GDD.Headless
    ```
 
-3. First run installs Chromium. On Ubuntu/Debian you may need:
+3. On Ubuntu/Debian you may need system libraries:
 
    ```bash
    sudo apt install -y libnss3 libatk-bridge2.0-0 libdrm2 libxkbcommon0 libgbm1
@@ -104,6 +102,8 @@ Each browser is an isolated Chromium instance with its own profile, cookies, dev
    xattr -dr com.apple.quarantine .    # unblock Gatekeeper
    ./GDD.Headless
    ```
+
+3. First run will auto-install Chromium (Intel build does not bundle it)
 
 ### Headed Mode (visible browser windows)
 
