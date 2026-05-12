@@ -90,6 +90,7 @@ jobs:
         with:
           name: ${{ matrix.artifact }}
           path: publish/${{ matrix.rid }}/
+          include-hidden-files: true
 
   release:
     if: startsWith(github.ref, 'refs/tags/v')
