@@ -29,16 +29,16 @@ jobs:
         include:
           - os: windows-latest
             rid: win-x64
-            artifact: gdd-headless-win-x64
+            artifact: gdd-win-x64
           - os: ubuntu-22.04
             rid: linux-x64
-            artifact: gdd-headless-linux-x64
+            artifact: gdd-linux-x64
           - os: macos-14
             rid: osx-arm64
-            artifact: gdd-headless-macos-arm64
+            artifact: gdd-macos-arm64
           - os: macos-14
             rid: osx-x64
-            artifact: gdd-headless-macos-x64
+            artifact: gdd-macos-x64
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
