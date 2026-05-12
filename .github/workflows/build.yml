@@ -56,24 +56,16 @@ jobs:
           -o publish/${{ matrix.rid }}
 
       - name: Install Playwright browsers
-        shell: bash
-        run: |
-          if [[ "${{ matrix.rid }}" == osx-x64 && "$(uname -m)" == arm64 ]]; then
-            arch -x86_64 pwsh publish/${{ matrix.rid }}/playwright.ps1 install chromium
-          else
-            pwsh publish/${{ matrix.rid }}/playwright.ps1 install chromium
-          fi
+        if: matrix.rid != 'osx-x64' || runner.arch != 'ARM64'
+        run: pwsh publish/${{ matrix.rid }}/playwright.ps1 install chromium
 
       - name: Smoke test
+        if: matrix.rid != 'osx-x64' || runner.arch != 'ARM64'
         shell: bash
         run: |
           cd publish/${{ matrix.rid }}
           if [[ "${{ matrix.rid }}" == win-* ]]; then
             ./GDD.Headless.exe &
-          elif [[ "${{ matrix.rid }}" == osx-x64 && "$(uname -m)" == arm64 ]]; then
-            chmod +x GDD.Headless
-            chmod +x Scripts/mcp-proxy.sh
-            arch -x86_64 ./GDD.Headless &
           else
             chmod +x GDD.Headless
             chmod +x Scripts/mcp-proxy.sh
