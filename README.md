@@ -103,8 +103,6 @@ Each browser is an isolated Chromium instance with its own profile, cookies, dev
    ./GDD.Headless
    ```
 
-3. First run will auto-install Chromium (Intel build does not bundle it)
-
 ### Headed Mode (visible browser windows)
 
 On any platform, pass `--headed` to launch visible Chromium windows instead of headless:

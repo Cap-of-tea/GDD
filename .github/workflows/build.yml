@@ -61,6 +61,22 @@ jobs:
         env:
           PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/publish/${{ matrix.rid }}/.browsers
 
+      - name: Install Playwright browsers (cross-compile)
+        if: matrix.rid == 'osx-x64' && runner.arch == 'ARM64'
+        shell: bash
+        run: |
+          BROWSERS_DIR="${{ github.workspace }}/publish/osx-x64/.browsers"
+          BROWSERS_JSON="${{ github.workspace }}/publish/osx-x64/.playwright/package/browsers.json"
+          CR=$(python3 -c "import json; d=json.load(open('$BROWSERS_JSON')); print(next(b['revision'] for b in d['browsers'] if b['name']=='chromium'))")
+          FR=$(python3 -c "import json; d=json.load(open('$BROWSERS_JSON')); print(next(b['revision'] for b in d['browsers'] if b['name']=='ffmpeg'))")
+          echo "Chromium revision: $CR, FFMPEG revision: $FR"
+          mkdir -p "$BROWSERS_DIR/chromium-$CR" "$BROWSERS_DIR/ffmpeg-$FR"
+          curl -sL "https://playwright.azureedge.net/builds/chromium/$CR/chromium-mac.zip" -o /tmp/chromium.zip
+          unzip -q /tmp/chromium.zip -d "$BROWSERS_DIR/chromium-$CR"
+          curl -sL "https://playwright.azureedge.net/builds/ffmpeg/$FR/ffmpeg-mac.zip" -o /tmp/ffmpeg.zip
+          unzip -q /tmp/ffmpeg.zip -d "$BROWSERS_DIR/ffmpeg-$FR"
+          echo "Chromium x64 installed to $BROWSERS_DIR"
+
       - name: Smoke test
         if: matrix.rid != 'osx-x64' || runner.arch != 'ARM64'
         shell: bash
