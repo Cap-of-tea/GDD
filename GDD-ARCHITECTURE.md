@@ -32,7 +32,7 @@ GDD (Giggly-Dazzling-Duckling) — кроссплатформенное прил
 
 ```text
 ┌──────────────────────────────────────────────────────┐
-│                   MCP Client (Claude Code)           │
+│       Client (AI agent / curl / script / MCP)        │
 │              POST /mcp  ←→  JSON-RPC 2.0             │
 └─────────────────────┬────────────────────────────────┘
                       │
@@ -45,22 +45,22 @@ GDD (Giggly-Dazzling-Duckling) — кроссплатформенное прил
 ┌─────────────────────▼────────────────────────────────┐
 │              McpToolRegistry (34 tools)               │
 │  PlayerTools · NavigationTools · InteractionTools     │
-│  ReadTools · EmulationTools · AuthTools               │
-│  StateTools · DiagnosticsTools                        │
+│  ReadTools · ExecutionTools · EmulationTools          │
+│  AuthTools · StateTools · DiagnosticsTools · HelpTools│
 └─────────────────────┬────────────────────────────────┘
                       │  Dispatcher.InvokeAsync
 ┌─────────────────────▼────────────────────────────────┐
-│              MainViewModel (MVVM)                     │
-│  Players: ObservableCollection<BrowserCellViewModel>  │
+│           IPlayerManager (abstraction)                │
+│  MainViewModel (WPF) / HeadlessPlayerManager (CLI)    │
 │  Orchestrates all services                            │
 └───┬─────────┬──────────┬────────────┬────────────────┘
     │         │          │            │
     ▼         ▼          ▼            ▼
 ┌────────┐ ┌──────────┐ ┌──────────┐ ┌───────────────┐
-│WebView2│ │Emulation │ │   Auth   │ │  Diagnostics  │
+│IBrowser│ │Emulation │ │   Auth   │ │  Diagnostics  │
 │Engine  │ │Services  │ │Services  │ │  Services     │
-│(CDP)   │ │Device    │ │QuickAuth │ │Console        │
-│        │ │Location  │ │TokenInj. │ │Network        │
+│WV2 or  │ │Device    │ │QuickAuth │ │Console        │
+│Playwr. │ │Location  │ │TokenInj. │ │Network        │
 │        │ │Network   │ │Telegram  │ │Performance    │
 │        │ │Language  │ │          │ │Notifications  │
 └────┬───┘ └────┬─────┘ └────┬─────┘ └───────┬───────┘
@@ -68,7 +68,7 @@ GDD (Giggly-Dazzling-Duckling) — кроссплатформенное прил
      └──────────┴────────────┴────────────────┘
                       │
          Chrome DevTools Protocol (CDP)
-         CoreWebView2.CallDevToolsProtocolMethodAsync()
+         IBrowserEngine.CallCdpMethodAsync()
 ```
 
 ### Startup Flow
@@ -87,13 +87,13 @@ App.OnStartup()
 ### Request Flow (MCP tool call)
 
 ```text
-Claude Code → POST /mcp {"method":"tools/call","params":{"name":"gdd_navigate",...}}
+Client → POST /mcp {"method":"tools/call","params":{"name":"gdd_navigate",...}}
   → McpServer.HandleStreamableHttp()
   → McpToolRegistry.InvokeAsync("gdd_navigate", args)
-  → Dispatcher.InvokeAsync (→ WPF UI thread)
-  → MainViewModel.Players[id].Engine.NavigateAsync(url)
-  → CoreWebView2.Navigate(url)
-  → JSON-RPC response → Claude Code
+  → Dispatcher.InvokeAsync (→ UI thread or direct)
+  → IPlayerManager.GetPlayer(id).Engine.NavigateAsync(url)
+  → WebView2.Navigate() or Playwright.GotoAsync()
+  → JSON-RPC response → Client
 ```
 
 ---
@@ -155,14 +155,16 @@ BrowserXn.sln
 │   │       └── NotificationInterceptionService.cs  Push notification capture
 │   │
 │   ├── BrowserXn/                         ← Windows GUI (net8.0-windows, WPF)
+│   │   ├── Converters/                        XAML value converters
 │   │   ├── Engines/                           WebView2ControlAdapter
-│   │   ├── Platform/                          WpfDispatcher, WebView2CdpSubscription
-│   │   ├── ViewModels/                        MVVM (MainViewModel : IPlayerManager)
-│   │   ├── Views/                             WPF XAML + VideoWallPanel
 │   │   ├── Interop/                           Win32 P/Invoke (DWM, User32)
-│   │   └── Themes/                            Dark theme styles
+│   │   ├── Platform/                          WpfDispatcher, WebView2CdpSubscription
+│   │   ├── Services/                          DI registration
+│   │   ├── Themes/                            Dark theme styles
+│   │   ├── ViewModels/                        MVVM (MainViewModel : IPlayerManager)
+│   │   └── Views/                             WPF XAML (5 views) + VideoWallPanel
 │   │
-│   └── GDD.Headless/                     ← Headless runner (net8.0, cross-platform)
+│   └── GDD.Headless/                     ← CLI runner (headless/headed, net8.0, cross-platform)
 │       ├── Engines/                           PlaywrightEngine
 │       ├── Platform/                          ConsoleDispatcher, HeadlessPlayerManager
 │       └── Scripts/                           mcp-proxy.sh, mcp-proxy.ps1
@@ -306,27 +308,27 @@ interface IBrowserEngine : IAsyncDisposable
 | `DwmApi.cs` | dwmapi.dll, user32.dll | DWM thumbnail API, window management |
 | `BrowserCellControl` | DWM thumbnails | Live миниатюры через Win32 |
 | `OverlayWindow` | HwndSource, WndProc | Win32 message loop interop |
-| XAML Views (4 файла) | WPF | Windows-only UI framework |
+| XAML Views (5 файлов) | WPF | Windows-only UI framework |
 | `MainViewModel` | Dispatcher, SystemParameters | WPF threading model |
 
 ### Platform-Agnostic (59% codebase)
 
 | Component | Files | Notes |
 | --------- | ----- | ----- |
-| Services (CDP, auth, emulation) | 12 | Pure C#, оперируют CDP JSON commands |
+| Services (CDP, auth, emulation) | 11 | Pure C#, оперируют CDP JSON commands |
 | Models (presets, DTOs) | 11 | POCOs |
-| MCP Server + Protocol | 3 | HTTP/JSON-RPC, no OS dependencies |
-| MCP Tools | 8 | Business logic → ViewModel calls |
+| MCP Server + Protocol | 4 | HTTP/JSON-RPC, no OS dependencies |
+| MCP Tools | 10 | Business logic → IPlayerManager calls |
 | Collections (RingBuffer) | 1 | Thread-safe generic collection |
 | Abstractions (interfaces) | 6 | IBrowserEngine, IBrowserEngineFactory, IPlayerManager, IPlayerContext, IMainThreadDispatcher, ICdpEventSubscription |
 
-### Coupled but Portable (25%)
+### Abstracted (25%)
 
-| Component | Issue | Fix |
-| --------- | ----- | --- |
-| MCP Tools → MainViewModel | Dispatcher.InvokeAsync для UI thread | Абстрагировать через ISynchronizationContext |
-| Services → CoreWebView2 | Прямые CDP вызовы через WebView2 API | Абстрагировать CDP transport layer |
-| AppConfig | `Environment.SpecialFolder.LocalApplicationData` | Уже кроссплатформенный |
+| Component | Abstraction | Implementations |
+| --------- | ----------- | --------------- |
+| MCP Tools → IPlayerManager | Dispatcher.InvokeAsync | WpfDispatcher (GUI) / ConsoleDispatcher (CLI) |
+| Services → IBrowserEngine | CallCdpMethodAsync | WebView2 CDP / Playwright CDPSession |
+| AppConfig | `Environment.SpecialFolder.LocalApplicationData` | Кроссплатформенный (.NET) |
 
 ---
 
@@ -357,13 +359,23 @@ GDD.Core is the shared library containing all platform-independent code. Both Br
 ```csharp
 interface IBrowserEngine : IAsyncDisposable
 {
+    int PlayerId { get; }
+    string UserDataFolder { get; }
+    bool IsInitialized { get; }
+    string CurrentUrl { get; }
+
     Task InitializeAsync(object? hostHandle, string startUrl);
     Task NavigateAsync(string url);
     Task<string> ExecuteJavaScriptAsync(string script);
     Task CallCdpMethodAsync(string methodName, string parametersJson);
     Task<string> CallCdpMethodWithResultAsync(string methodName, string parametersJson);
     Task<byte[]> CaptureScreenshotAsync(int quality = 80);
+    Task InjectScriptOnDocumentCreatedAsync(string script);
     ICdpEventSubscription SubscribeToCdpEvent(string eventName);
+
+    event EventHandler<NotificationEventArgs>? NotificationReceived;
+    event EventHandler<string>? NavigationCompleted;
+    event EventHandler<string>? TitleChanged;
 }
 
 interface IPlayerManager
@@ -416,7 +428,7 @@ GitHub Actions builds 5 targets on every push to master:
 | `gdd-win-x64` | windows-latest | Playwright (headless/headed) |
 | `gdd-linux-x64` | ubuntu-22.04 | Playwright (headless/headed) |
 | `gdd-macos-arm64` | macos-14 | Apple Silicon (M1/M2/M3/M4) |
-| `gdd-macos-x64` | macos-14 | Intel Mac (cross-compiled via Rosetta) |
+| `gdd-macos-x64` | macos-14 | Intel Mac (cross-compiled on ARM, Chromium from CDN) |
 
 Each build runs a smoke test: starts GDD.Headless, queries `tools/list` via HTTP, verifies 34 tools are registered. The osx-x64 target is cross-compiled on an ARM runner (macos-14) and skips the smoke test since ARM `pwsh` cannot load x64 .NET assemblies.
 

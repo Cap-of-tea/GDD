@@ -2,7 +2,7 @@
 
 ## 1. What is GDD
 
-GDD (Giggly-Dazzling-Duckling) — кроссплатформенный инструмент для мультибраузерного тестирования. Управляет N изолированными Chromium-инстансами и выставляет 34 MCP-инструмента для Claude Code.
+GDD (Giggly-Dazzling-Duckling) — кроссплатформенный инструмент для мультибраузерного тестирования. Управляет N изолированными Chromium-инстансами и выставляет 34 MCP-инструмента. Работает как HTTP API сервер — управляется через AI-агентов (Claude Code и др.), скрипты, curl или любой HTTP-клиент.
 
 Три режима: **Windows GUI** (WPF + WebView2, с визуальным превью), **Headless** (Playwright, работает на Windows/Linux/macOS) и **Headed** (`--headed` — видимые окна Chromium на любой платформе). Все режимы предоставляют идентичный набор MCP-инструментов.
 
@@ -34,7 +34,7 @@ Claude видит и управляет браузерами как челове
 .\GDD.exe
 ```
 
-**Headless (любая платформа):**
+**Cross-platform (Windows/Linux/macOS):**
 
 ```bash
 ./GDD.Headless
@@ -150,7 +150,7 @@ Returns JSON array of all active players:
 
 #### `gdd_navigate(player_id, url)`
 
-Navigate to URL. Includes 500ms settle delay. Always follow with `gdd_wait` before interacting.
+Navigate to URL. Always follow with `gdd_wait` before interacting.
 
 #### `gdd_wait(player_id, selector, timeout?)`
 
@@ -265,7 +265,8 @@ Execute JavaScript, return result.
 - Returns raw result (string, number, or JSON for objects)
 - `null` results return the string `"null"`
 - Multi-line scripts must be wrapped in IIFE: `(function(){ ... })()`
-- Async/await **does not work** — promises don't resolve in this context
+- **Windows GUI:** async/await does not work — promises don't resolve in WebView2 context
+- **Headless/Headed:** async/await works (Playwright resolves promises)
 - **Don't use for API calls** (`fetch`, `XMLHttpRequest`) — use for reading state only
 
 ---
@@ -627,7 +628,7 @@ Agent:
 6. gdd_navigate(3, "https://app.example.com/profile")
 7. gdd_wait(1, ".profile-name")
 8. gdd_wait(2, ".profile-name")
-9. gdd_wait(3, "profile-name")
+9. gdd_wait(3, ".profile-name")
 10. gdd_read(1, ".profile-name")             → "gdd_player1"
 11. gdd_read(2, ".profile-name")             → "gdd_player2"
 12. gdd_read(3, ".profile-name")             → "gdd_player3"
@@ -640,19 +641,19 @@ Report: "All 3 players have isolated sessions. Each sees their own profile name.
 ## 6. Architecture Overview
 
 ```text
-Claude Code ──JSON-RPC──→ mcp-proxy ──HTTP──→ GDD (port 9700)
-                                                │
-                                      McpToolRegistry (34 tools)
-                                                │
-                                        IPlayerManager
-                                      ┌────┬────┬────┐
-                                      │    │    │    │
-                                    [P1] [P2] [P3] [P4]  ← IBrowserEngine instances
-                                      │    │    │    │    (WebView2 or Playwright)
-                                  Chrome DevTools Protocol (CDP)
+Client (AI agent / curl / script) ──HTTP POST──→ GDD (port 9700/mcp)
+                                                      │
+                                            McpToolRegistry (34 tools)
+                                                      │
+                                              IPlayerManager
+                                            ┌────┬────┬────┐
+                                            │    │    │    │
+                                          [P1] [P2] [P3] [P4]  ← IBrowserEngine instances
+                                            │    │    │    │    (WebView2 or Playwright)
+                                        Chrome DevTools Protocol (CDP)
 ```
 
-**Transport:** Claude Code spawns `mcp-proxy.ps1` (Windows) or `mcp-proxy.sh` (Linux/macOS) as a stdio subprocess. Скрипт конвертирует stdin JSON-RPC в HTTP POST → `http://localhost:9700/mcp` → HTTP response → stdout JSON-RPC. При необходимости автоматически запускает GDD.
+**Transport:** GDD — HTTP-сервер на `localhost:9700/mcp`. Любой HTTP-клиент отправляет JSON-RPC 2.0 запросы напрямую. Для MCP-клиентов (Claude Code и др.) есть прокси-скрипты `mcp-proxy.ps1` / `mcp-proxy.sh`, которые конвертируют stdin JSON-RPC в HTTP POST и обратно. Прокси автоматически запускает GDD при необходимости.
 
 **Threading:** MCP requests arrive on HttpListener threads. `tools/call` dispatches через `IMainThreadDispatcher` — `WpfDispatcher` (GUI, WPF UI thread) или `ConsoleDispatcher` (Headless, прямое выполнение).
 

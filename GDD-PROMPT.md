@@ -61,7 +61,7 @@ The `.mcp.json` in this project connects you to GDD. GDD auto-launches when you 
 
 ### Diagnostics
 
-- `gdd_get_state(player_id)` — Full state: URL, title, device, auth, errors, language.
+- `gdd_get_state(player_id)` — Full state: URL, status, device, console/network errors, language.
 - `gdd_get_console(player_id, level?, last?)` — Console output (log/warn/error) and uncaught exceptions.
 - `gdd_get_network(player_id, failed_only?, resource_type?, last?)` — Network requests with status, timing, errors.
 - `gdd_get_performance(player_id)` — Performance metrics: JS heap, DOM nodes, task duration.
