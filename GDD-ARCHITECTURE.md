@@ -30,7 +30,7 @@ GDD (Giggly-Dazzling-Duckling) — кроссплатформенное прил
 
 ## 3. Architecture
 
-```
+```text
 ┌──────────────────────────────────────────────────────┐
 │                   MCP Client (Claude Code)           │
 │              POST /mcp  ←→  JSON-RPC 2.0             │
@@ -73,7 +73,7 @@ GDD (Giggly-Dazzling-Duckling) — кроссплатформенное прил
 
 ### Startup Flow
 
-```
+```text
 App.OnStartup()
   → Host.CreateDefaultBuilder()
   → LoadConfig("appsettings.json") → AppConfig
@@ -86,7 +86,7 @@ App.OnStartup()
 
 ### Request Flow (MCP tool call)
 
-```
+```text
 Claude Code → POST /mcp {"method":"tools/call","params":{"name":"gdd_navigate",...}}
   → McpServer.HandleStreamableHttp()
   → McpToolRegistry.InvokeAsync("gdd_navigate", args)
@@ -100,7 +100,7 @@ Claude Code → POST /mcp {"method":"tools/call","params":{"name":"gdd_navigate"
 
 ## 4. Project Structure
 
-```
+```text
 BrowserXn.sln
 ├── src/
 │   ├── GDD.Core/                          ← Shared library (net8.0)
@@ -332,7 +332,7 @@ interface IBrowserEngine : IAsyncDisposable
 
 ### 7.1 Current Architecture
 
-```
+```text
 ┌──────────────────────────────────────────────────┐
 │                  GDD.Core (net8.0)                │
 │  Models · Services · MCP Server · MCP Tools       │

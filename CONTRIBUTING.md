@@ -5,16 +5,22 @@ Thanks for your interest in contributing to GDD!
 ## Getting Started
 
 1. Fork the repository
+
 2. Clone your fork:
+
    ```bash
    git clone https://github.com/YOUR_USERNAME/GDD.git
    ```
+
 3. Install prerequisites:
+
    - [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
    - Windows GUI only: [WebView2 Runtime](https://developer.microsoft.com/en-us/microsoft-edge/webview2/)
    - Linux headless: `sudo apt install -y libnss3 libatk-bridge2.0-0 libdrm2 libxkbcommon0 libgbm1`
    - macOS: unblock Gatekeeper after build: `xattr -dr com.apple.quarantine .`
+
 4. Build:
+
    ```bash
    # Shared core library
    dotnet build src/GDD.Core/GDD.Core.csproj
@@ -29,9 +35,11 @@ Thanks for your interest in contributing to GDD!
 ## Development Workflow
 
 1. Create a feature branch from `master`:
-   ```
+
+   ```bash
    git checkout -b feature/your-feature
    ```
+
 2. Make your changes
 3. Test locally — run GDD and verify MCP tools work via HTTP
 4. Commit with a clear message
@@ -39,7 +47,7 @@ Thanks for your interest in contributing to GDD!
 
 ## Project Structure
 
-```
+```text
 BrowserXn.sln
 ├── src/
 │   ├── GDD.Core/                ← Shared library (net8.0, cross-platform)
@@ -67,7 +75,9 @@ BrowserXn.sln
 ## Adding a New MCP Tool
 
 1. Create or update a file in `src/GDD.Core/Mcp/Tools/`
+
 2. Follow the existing pattern:
+
    ```csharp
    registry.Register(
        new McpToolDefinition
@@ -78,6 +88,7 @@ BrowserXn.sln
        },
        async args => { /* implementation using IPlayerManager */ });
    ```
+
 3. Register in tool registration code (see `App.xaml.cs` for GUI, `Program.cs` for Headless)
 4. Update `GDD-MANUAL.md` with the new tool
 5. Update the smoke test tool count in `.github/workflows/build.yml`
@@ -125,6 +136,7 @@ dotnet publish src/GDD.Headless/GDD.Headless.csproj -c Release -r win-x64 --self
 ## Reporting Issues
 
 Use [GitHub Issues](https://github.com/Cap-of-tea/GDD/issues) with the provided templates:
+
 - **Bug Report** — for crashes, incorrect behavior, or broken tools
 - **Feature Request** — for new tools, presets, or capabilities
 
