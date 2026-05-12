@@ -36,9 +36,9 @@ GDD exposes 34 tools via HTTP API ([MCP protocol](https://modelcontextprotocol.i
 | --- | --- | --- | --- |
 | Binary | `GDD.exe` (BrowserXn) | `GDD.Headless` | `GDD.Headless --headed` |
 | Browser engine | WebView2 | Playwright (Chromium) | Playwright (Chromium) |
-| UI | WPF desktop with video wall | No UI — MCP only | Visible Chromium windows |
+| UI | WPF desktop with video wall | No UI — HTTP API only | Visible Chromium windows |
 | Platforms | Windows only | Windows, Linux, macOS | Windows, Linux, macOS |
-| Use case | Visual testing with live preview | CI/CD, servers, automation | Visual testing without WPF |
+| Use case | Manual testing with live preview | CI/CD, scripted automation | Visual testing on any platform |
 | MCP tools | 34 | 34 (identical) | 34 (identical) |
 
 **Use cases:**
