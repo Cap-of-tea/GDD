@@ -429,7 +429,7 @@ Single-file publish:
 dotnet publish src/BrowserXn/BrowserXn.csproj -c Release -p:PublishSingleFile=true -o ./publish/win-gui
 ```
 
-### Headless (any platform)
+### Cross-platform (Windows, Linux, macOS)
 
 ```bash
 dotnet build src/GDD.Headless/GDD.Headless.csproj
