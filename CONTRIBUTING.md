@@ -28,7 +28,7 @@ Thanks for your interest in contributing to GDD!
    # Windows GUI (Windows only)
    dotnet build src/BrowserXn/BrowserXn.csproj
 
-   # Headless (any platform)
+   # Cross-platform (headless by default, --headed for visible browser)
    dotnet build src/GDD.Headless/GDD.Headless.csproj
    ```
 
@@ -59,12 +59,16 @@ BrowserXn.sln
 │   │   ├── Services/            ← CDP, Emulation, Interception, Monitoring
 │   │   └── Collections/         ← RingBuffer
 │   ├── BrowserXn/               ← Windows GUI (net8.0-windows, WPF + WebView2)
+│   │   ├── Controls/            ← Custom WPF controls
+│   │   ├── Converters/          ← XAML value converters
 │   │   ├── Engines/             ← WebView2ControlAdapter : IBrowserEngine
+│   │   ├── Interop/             ← Win32 P/Invoke (DWM, DarkTitleBar)
 │   │   ├── Platform/            ← WpfDispatcher, WebView2CdpSubscription
+│   │   ├── Services/            ← DI registration
+│   │   ├── Themes/              ← WPF theme resources
 │   │   ├── ViewModels/          ← MainViewModel : IPlayerManager
-│   │   ├── Views/               ← WPF XAML views
-│   │   └── Interop/             ← Win32 P/Invoke (DWM, DarkTitleBar)
-│   └── GDD.Headless/            ← Headless runner (net8.0, cross-platform)
+│   │   └── Views/               ← WPF XAML views
+│   └── GDD.Headless/            ← CLI runner (net8.0, headless/headed)
 │       ├── Engines/             ← PlaywrightEngine : IBrowserEngine
 │       ├── Platform/            ← ConsoleDispatcher, HeadlessPlayerManager,
 │       │                          HeadlessPlayerContext, PlaywrightSetup
@@ -89,7 +93,7 @@ BrowserXn.sln
        async args => { /* implementation using IPlayerManager */ });
    ```
 
-3. Register in tool registration code (see `App.xaml.cs` for GUI, `Program.cs` for Headless)
+3. Add a `YourTools.Register(registry, ...)` call in both `App.xaml.cs` (GUI) and `Program.cs` (Headless)
 4. Update `GDD-MANUAL.md` with the new tool
 5. Update the smoke test tool count in `.github/workflows/build.yml`
 
@@ -122,6 +126,7 @@ dotnet run --project src/GDD.Headless/GDD.Headless.csproj -- --headed
 ```bash
 dotnet publish src/GDD.Headless/GDD.Headless.csproj -c Release -r linux-x64 --self-contained -o publish/linux-x64
 dotnet publish src/GDD.Headless/GDD.Headless.csproj -c Release -r osx-arm64 --self-contained -o publish/osx-arm64
+dotnet publish src/GDD.Headless/GDD.Headless.csproj -c Release -r osx-x64 --self-contained -o publish/osx-x64
 dotnet publish src/GDD.Headless/GDD.Headless.csproj -c Release -r win-x64 --self-contained -o publish/win-x64
 ```
 
