@@ -25,14 +25,15 @@ GDD is a cross-platform tool that lets an AI agent (Claude Code) see and control
 
 Each browser is an isolated Chromium instance with its own profile, cookies, device emulation, geolocation, and network conditions. Claude connects via [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) and operates browsers through 34 specialized tools.
 
-**Two modes:**
+**Three modes:**
 
-| | Windows GUI | Headless (Windows, Linux, macOS) |
-|---|---|---|
-| Browser engine | WebView2 | Playwright (Chromium) |
-| UI | WPF desktop with video wall | No UI — fully controlled via MCP |
-| Use case | Visual testing with live preview | CI/CD, servers, cross-platform |
-| MCP tools | 34 | 34 (identical) |
+| | Windows GUI | Headless | Headed (Linux/macOS) |
+|---|---|---|---|
+| Browser engine | WebView2 | Playwright (Chromium) | Playwright (Chromium) |
+| UI | WPF desktop with video wall | No UI — MCP only | Visible Chromium windows |
+| Platforms | Windows | Windows, Linux, macOS | Linux, macOS, Windows |
+| Use case | Visual testing with live preview | CI/CD, servers, automation | Visual testing on Linux/macOS |
+| MCP tools | 34 | 34 (identical) | 34 (identical) |
 
 **Use cases:**
 - Automated multi-device responsive testing
@@ -81,8 +82,19 @@ Each browser is an isolated Chromium instance with its own profile, cookies, dev
 2. Extract and run:
    ```bash
    chmod +x GDD.Headless
+   xattr -dr com.apple.quarantine .    # unblock Gatekeeper
    ./GDD.Headless
    ```
+
+### Headed Mode (visible browser windows)
+
+On any platform, pass `--headed` to launch visible Chromium windows instead of headless:
+
+```bash
+./GDD.Headless --headed
+```
+
+Useful for visual testing on Linux/macOS where the Windows GUI is not available. MCP tools work identically in both modes.
 
 ### Connect Claude Code
 
@@ -363,7 +375,8 @@ BrowserXn.sln
 | `BackendUrl` | Backend API for auth service | `http://localhost:8080/api/v1` |
 | `BotToken` | Telegram bot token (for TG testing) | — |
 | `McpPort` | MCP server port (auto-fallback +1..+9) | `9700` |
-| `DataFolderRoot` | Browser profile storage root | OS-specific app data dir |
+| `DataFolderRoot` | Browser profile storage root | `%LOCALAPPDATA%/GDD/Profiles` (Win), `~/.local/share/GDD/Profiles` (Linux), `~/Library/Application Support/GDD/Profiles` (macOS) |
+| `Headed` | Launch visible browser windows (headless only) | `false` (or use `--headed` CLI flag) |
 
 ---
 
@@ -415,7 +428,9 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ## License
 
-**Source Available — Non-Commercial.** Free for personal use, education, and research. Commercial use, beta testing services, and use in commercial projects require a paid license. See [LICENSE](LICENSE) for full terms.
+**imVS©, freeware for private use.**
+
+Source Available — Non-Commercial. Free for personal use, education, and research. Commercial use, beta testing services, and use in commercial projects require a paid license. See [LICENSE](LICENSE) for full terms.
 
 For commercial licensing inquiries: **[2vsmirnov@gmail.com](mailto:2vsmirnov@gmail.com)**
 

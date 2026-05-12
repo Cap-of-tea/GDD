@@ -14,16 +14,17 @@ GDD (Giggly-Dazzling-Duckling) — кроссплатформенное прил
 
 | Layer | Technology | Version |
 |-------|-----------|---------|
-| Runtime | .NET 8.0-windows | net8.0-windows TFM |
-| UI Framework | WPF (XAML) | built-in |
-| Browser Engine | Microsoft WebView2 | 1.0.2739.15 |
+| Runtime | .NET 8.0 (GDD.Core, GDD.Headless), .NET 8.0-windows (BrowserXn) | net8.0 / net8.0-windows TFM |
+| UI Framework | WPF (Windows GUI only) | built-in |
+| Browser (Windows GUI) | Microsoft WebView2 | 1.0.2739.15 |
+| Browser (Headless/Headed) | Microsoft Playwright (Chromium) | 1.49.0 |
 | MVVM | CommunityToolkit.Mvvm | 8.3.2 |
 | DI / Hosting | Microsoft.Extensions.Hosting | 8.0.1 |
 | HTTP Client | Microsoft.Extensions.Http | 8.0.1 |
-| Logging | Serilog (File sink, daily rolling) | 8.0.0 |
+| Logging | Serilog (File + Console sinks) | 8.0.0 |
 | Protocol | MCP (Model Context Protocol) via HTTP | 2024-11-05 |
-| Browser Control | Chrome DevTools Protocol (CDP) | via WebView2 |
-| Window Mgmt | Win32 P/Invoke (DWM, User32) | — |
+| Browser Control | Chrome DevTools Protocol (CDP) | via WebView2 / Playwright CDPSession |
+| Window Mgmt | Win32 P/Invoke (DWM, User32) | Windows GUI only |
 
 ---
 
@@ -185,13 +186,14 @@ interface IBrowserEngine : IAsyncDisposable
     bool IsInitialized { get; }
     string CurrentUrl { get; }
 
-    Task InitializeAsync(nint parentHwnd, string startUrl);
+    Task InitializeAsync(object? hostHandle, string startUrl);
     Task NavigateAsync(string url);
     Task<string> ExecuteJavaScriptAsync(string script);
     Task CallCdpMethodAsync(string methodName, string parametersJson);
     Task<string> CallCdpMethodWithResultAsync(string methodName, string parametersJson);
-    Task<byte[]> CaptureScreenshotAsync();
+    Task<byte[]> CaptureScreenshotAsync(int quality = 80);
     Task InjectScriptOnDocumentCreatedAsync(string script);
+    ICdpEventSubscription SubscribeToCdpEvent(string eventName);
 
     event EventHandler<NotificationEventArgs>? NotificationReceived;
     event EventHandler<string>? NavigationCompleted;
@@ -199,12 +201,22 @@ interface IBrowserEngine : IAsyncDisposable
 }
 ```
 
-**WebView2Engine** — единственная реализация. Каждый player получает:
+Две реализации:
+
+**WebView2ControlAdapter** (Windows GUI) — каждый player получает:
 - Изолированный user data folder (`%LOCALAPPDATA%\GDD\Profiles\Player_{id}`)
 - Собственный `CoreWebView2Environment` + `CoreWebView2Controller`
 - Настройки: отключены статусбар, контекстное меню, зум, devtools
 - Автоматическое разрешение Notifications и Geolocation
-- Скриншоты через `Page.captureScreenshot` CDP (JPEG, CSS pixel resolution)
+- Скриншоты через CDP `Page.captureScreenshot` (JPEG, CSS pixel resolution, clip с scroll offset `pageX/pageY`)
+- Ожидание загрузки через CDP `Page.loadEventFired`
+
+**PlaywrightEngine** (Headless/Headed, cross-platform) — каждый player получает:
+- Изолированный `BrowserContext` с viewport, user agent, touch
+- CDP session через `context.NewCDPSessionAsync(page)`
+- Скриншоты через `page.ScreenshotAsync()` с `ScreenshotScale.Css` (JPEG)
+- Ожидание загрузки через `WaitForLoadStateAsync(LoadState.Load)`
+- Режим `--headed` запускает видимые окна Chromium (для GUI на Linux/macOS)
 
 ### 5.2 MCP Server
 
@@ -373,15 +385,18 @@ interface IMainThreadDispatcher
 | `IMainThreadDispatcher` | `WpfDispatcher` — WPF UI thread | `ConsoleDispatcher` — direct execution |
 | `ICdpEventSubscription` | `WebView2CdpSubscription` — WebView2 events | `PlaywrightCdpSubscription` — CDP session |
 
-### 7.4 Future — GUI on All Platforms
+### 7.4 Headed Mode (GUI on Linux/macOS)
 
-DWM live thumbnails are Windows-only. Cross-platform GUI alternatives:
+`GDD.Headless --headed` launches Playwright with `Headless = false`, opening visible Chromium windows. MCP tools work identically — no code changes needed. This provides GUI-like visual testing on Linux/macOS without WPF or CefGlue.
+
+Configuration: `AppConfig.Headed` property or `--headed` CLI flag. Proxy scripts also support `--headed`.
+
+**Future — Full Management UI on All Platforms:**
 
 | Approach | Quality | Performance | Complexity |
 |----------|---------|-------------|------------|
 | Periodic screenshot polling (500ms) | Medium | Low CPU | Simple |
 | CDP `Page.screencastFrame` stream | High | Medium CPU | Medium |
-| Offscreen rendering (CEF) | High | High CPU | Complex |
 | Avalonia UI + CefGlue | Full GUI | Medium | High |
 
 ---

@@ -12,6 +12,8 @@ Thanks for your interest in contributing to GDD!
 3. Install prerequisites:
    - [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
    - Windows GUI only: [WebView2 Runtime](https://developer.microsoft.com/en-us/microsoft-edge/webview2/)
+   - Linux headless: `sudo apt install -y libnss3 libatk-bridge2.0-0 libdrm2 libxkbcommon0 libgbm1`
+   - macOS: unblock Gatekeeper after build: `xattr -dr com.apple.quarantine .`
 4. Build:
    ```bash
    # Shared core library
@@ -99,7 +101,26 @@ dotnet run --project src/GDD.Headless/GDD.Headless.csproj &
 curl -X POST http://localhost:9700/mcp \
   -H "Content-Type: application/json" \
   -d '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}'
+
+# Headed mode (visible browser windows):
+dotnet run --project src/GDD.Headless/GDD.Headless.csproj -- --headed
 ```
+
+## Cross-Platform Publish
+
+```bash
+dotnet publish src/GDD.Headless/GDD.Headless.csproj -c Release -r linux-x64 --self-contained -o publish/linux-x64
+dotnet publish src/GDD.Headless/GDD.Headless.csproj -c Release -r osx-arm64 --self-contained -o publish/osx-arm64
+dotnet publish src/GDD.Headless/GDD.Headless.csproj -c Release -r win-x64 --self-contained -o publish/win-x64
+```
+
+## Release Process
+
+1. Commit and push all changes to `master`
+2. Create a version tag: `git tag v1.x.0 && git push origin v1.x.0`
+3. GitHub Actions builds all 5 targets (Windows GUI, headless win-x64/linux-x64/osx-arm64/osx-x64)
+4. Each headless build runs a smoke test (verifies 34 tools via HTTP)
+5. On success, `tar.gz` archives are uploaded to GitHub Releases
 
 ## Reporting Issues
 

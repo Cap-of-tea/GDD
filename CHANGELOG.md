@@ -2,7 +2,7 @@
 
 All notable changes to GDD are documented here.
 
-## [1.2.0] - 2026-05-09
+## [1.2.0] - 2026-05-12
 
 ### Added
 
@@ -19,6 +19,8 @@ All notable changes to GDD are documented here.
 - **`gdd_set_viewport`** — set arbitrary viewport dimensions (width, height, scale, mobile flag, user agent)
 - **`gdd_set_language`** — set browser language/locale, changes `navigator.language`, `navigator.languages`, and `Accept-Language` header
 - **`gdd_set_device` expanded** — now exposes all 22 device presets (was 5 in enum)
+- **`--headed` mode** — `GDD.Headless --headed` launches visible Chromium windows on Linux/macOS instead of headless. MCP proxy scripts also support `--headed` flag
+- **Copyright** — assembly copyright `imVS©, freeware for private use.` in both BrowserXn and GDD.Headless
 - **Console & network diagnostics on ViewModel** — ConsoleErrorCount, NetworkErrorCount, LastError fields on BrowserCellViewModel
 - **Stdout port output** — GDD prints `GDD MCP server listening on http://localhost:{port}` on startup
 - **MCP endpoint in status bar** — moved from toolbar to bottom-left for cleaner UI
@@ -26,11 +28,17 @@ All notable changes to GDD are documented here.
 ### Changed
 
 - **Screenshots switched to JPEG at CSS pixel resolution** — ~5-10x smaller (50KB vs 500KB), coordinates in the image match CSS pixels directly for accurate `gdd_tap(x, y)`. Optional `quality` parameter (1-100, default 80)
+- **Deterministic page load** — screenshot waits for CDP `Page.loadEventFired` event (WebView2) or `WaitForLoadStateAsync(LoadState.Load)` (Playwright) instead of readyState polling + arbitrary delay
+- **Screenshot scroll fix** — CDP clip coordinates now use `cssLayoutViewport.pageX/pageY` as origin, fixing intermittent black top half when page is scrolled
 - Default `FrontendUrl` changed from `http://localhost:5173` to `about:blank` (faster startup, no dependency on dev server)
 - Main window opens at 30% of screen size (was maximized)
 - Overlay window title and size update on device change
 - `gdd_set_device` now calls `NavigateAsync` after applying device metrics (page reloads with correct viewport)
 - WebView2ControlAdapter uses Dispatcher marshaling for all CDP calls
+
+### Fixed
+
+- mcp-proxy scripts (`.sh`, `.ps1`) and content files not included in `dotnet publish` output — changed from `None` to `Content` items in csproj
 
 ## [1.1.0] - 2026-05-09
 
