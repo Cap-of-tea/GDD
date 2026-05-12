@@ -5,8 +5,8 @@
 <h1 align="center">GDD — Giggly-Dazzling-Duckling</h1>
 
 <p align="center">
-  <strong>Cross-platform multi-browser testing tool powered by AI</strong><br>
-  Control N isolated Chromium instances from Claude Code via 34 MCP tools
+  <strong>Cross-platform multi-browser testing tool</strong><br>
+  Control N isolated Chromium instances via HTTP API, AI agents, or scripts
 </p>
 
 <p align="center">
@@ -21,9 +21,14 @@
 
 ## What is GDD?
 
-GDD is a cross-platform tool that lets an AI agent (Claude Code) see and control multiple browser windows simultaneously — just like a human tester would, but faster and programmable.
+GDD is a cross-platform multi-browser manager — run N isolated Chromium instances, each with its own profile, cookies, device emulation, geolocation, and network conditions.
 
-Each browser is an isolated Chromium instance with its own profile, cookies, device emulation, geolocation, and network conditions. Claude connects via [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) and operates browsers through 34 specialized tools.
+GDD exposes 34 tools via HTTP API ([MCP protocol](https://modelcontextprotocol.io/) on `localhost:9700`). You can control browsers from:
+
+- **AI agents** — Claude Code, Cursor, or any MCP-compatible client
+- **Scripts & automation** — `curl`, Python, Node.js, or any HTTP client via JSON-RPC
+- **CI/CD pipelines** — headless browser testing on any platform
+- **Manual testing** — Windows GUI with live video wall of all browser instances
 
 **Three modes:**
 
@@ -38,12 +43,13 @@ Each browser is an isolated Chromium instance with its own profile, cookies, dev
 
 **Use cases:**
 
-- Automated multi-device responsive testing
+- Multi-device responsive testing (AI-driven or scripted)
 - Multi-user scenario testing (chat, real-time apps, multiplayer)
 - Cross-device visual regression checking
 - Network condition testing (4G, 3G, offline)
-- Geolocation-dependent feature testing
-- CI/CD browser testing on Linux/macOS
+- Geolocation and language-dependent feature testing
+- CI/CD browser testing on any platform
+- Manual multi-browser testing with live preview (Windows GUI)
 
 ---
 
