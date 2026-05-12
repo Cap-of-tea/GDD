@@ -312,7 +312,7 @@ curl -X POST http://localhost:9700/mcp -H "Content-Type: application/json" \
 
 ```text
 ┌──────────────────────────────────────────────────┐
-│            Claude Code (MCP Client)              │
+│         Client (AI agent / curl / script)        │
 │         POST /mcp  <->  JSON-RPC 2.0            │
 └────────────────────┬─────────────────────────────┘
                      │ stdio proxy or direct HTTP
@@ -329,13 +329,13 @@ curl -X POST http://localhost:9700/mcp -H "Content-Type: application/json" \
                      │ IMainThreadDispatcher
 ┌────────────────────▼─────────────────────────────┐
 │              IPlayerManager                      │
-│      MainViewModel (WPF) / HeadlessManager       │
+│   MainViewModel (WPF) / HeadlessPlayerManager    │
 └────────────────────┬─────────────────────────────┘
                      │
 ┌────────────────────▼─────────────────────────────┐
 │          IBrowserEngine Instances (Players)       │
-│   WebView2ControlAdapter  |  PlaywrightEngine    │
-│   (Windows GUI)           |  (Headless, x-plat)  │
+│  WebView2ControlAdapter  |  PlaywrightEngine     │
+│  (Windows GUI)           |  (Headless/Headed)    │
 │    Each: own profile, CDP session, emulation     │
 └──────────────────────────────────────────────────┘
 ```
@@ -355,8 +355,11 @@ BrowserXn.sln
 │   │   ├── Engines/           ← WebView2ControlAdapter
 │   │   ├── Platform/          ← WpfDispatcher, WebView2CdpSubscription
 │   │   ├── ViewModels/        ← MVVM (MainViewModel : IPlayerManager)
-│   │   ├── Views/             ← WPF XAML
-│   │   └── Interop/           ← Win32 P/Invoke
+│   │   ├── Views/             ← WPF XAML + VideoWallPanel
+│   │   ├── Controls/          ← BrowserCellControl, OverlayWindow
+│   │   ├── Converters/        ← XAML value converters
+│   │   ├── Themes/            ← Dark theme styles
+│   │   └── Interop/           ← Win32 P/Invoke (DWM, User32)
 │   └── GDD.Headless/          ← Headless runner (net8.0, cross-platform)
 │       ├── Engines/           ← PlaywrightEngine
 │       ├── Platform/          ← ConsoleDispatcher, HeadlessPlayerManager
