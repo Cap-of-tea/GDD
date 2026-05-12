@@ -68,7 +68,7 @@ GDD exposes 34 tools via HTTP API ([MCP protocol](https://modelcontextprotocol.i
 
    ```powershell
    .\GDD.Headless.exe
-   # MCP server starts on http://localhost:9700/mcp
+   # HTTP API starts on http://localhost:9700/mcp
    ```
 
 ### Linux
@@ -111,19 +111,27 @@ GDD exposes 34 tools via HTTP API ([MCP protocol](https://modelcontextprotocol.i
 
 ### Headed Mode (visible browser windows)
 
-On any platform, pass `--headed` to launch visible Chromium windows instead of headless:
+On any platform, pass `--headed` to launch visible Chromium windows:
 
 ```bash
 ./GDD.Headless --headed
 ```
 
-Useful for visual testing on Linux/macOS where the Windows GUI is not available. MCP tools work identically in both modes.
+All tools work identically in headless and headed modes.
 
-### Connect Claude Code
+### Connect
 
-Add to your project's `.mcp.json`. Proxy scripts auto-launch GDD if it's not running.
+**Direct HTTP** — send JSON-RPC requests to GDD without any proxy or AI:
 
-**Windows (GUI or Headless):**
+```bash
+curl -X POST http://localhost:9700/mcp \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}'
+```
+
+**Claude Code / Cursor / MCP clients** — add to `.mcp.json`. Proxy scripts auto-launch GDD if it's not running:
+
+Windows:
 
 ```json
 {
@@ -136,7 +144,7 @@ Add to your project's `.mcp.json`. Proxy scripts auto-launch GDD if it's not run
 }
 ```
 
-**Linux / macOS (Headless):**
+Linux / macOS:
 
 ```json
 {
@@ -149,26 +157,21 @@ Add to your project's `.mcp.json`. Proxy scripts auto-launch GDD if it's not run
 }
 ```
 
-**Linux / macOS (Headed — visible browser windows):**
-
-```json
-{
-  "mcpServers": {
-    "gdd": {
-      "command": "bash",
-      "args": ["/path/to/Scripts/mcp-proxy.sh", "--headed"]
-    }
-  }
-}
-```
+For headed mode, add `"--headed"` to the `args` array.
 
 ### Use
 
-Tell Claude:
+**With AI:** Tell Claude — *"Open 3 phones and a desktop, navigate to my app, test the login flow on all devices"*
 
-> *"Open 3 phones and a desktop, navigate to my app, test the login flow on all devices"*
+**Without AI:** Call any of the 34 tools via HTTP. Example — create a browser and navigate:
 
-Claude will use GDD tools to add players, set devices, navigate, interact, and report results.
+```bash
+curl -X POST http://localhost:9700/mcp -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"gdd_add_players","arguments":{"count":1}}}'
+
+curl -X POST http://localhost:9700/mcp -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"gdd_navigate","arguments":{"player_id":1,"url":"https://example.com"}}}'
+```
 
 ---
 
