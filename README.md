@@ -28,7 +28,7 @@ GDD exposes 34 tools via HTTP API ([MCP protocol](https://modelcontextprotocol.i
 - **AI agents** — Claude Code, Cursor, or any MCP-compatible client
 - **Scripts & automation** — `curl`, Python, Node.js, or any HTTP client via JSON-RPC
 - **CI/CD pipelines** — headless browser testing on any platform
-- **Manual testing** — Windows GUI with live video wall of all browser instances
+- **Manual testing** — visible browser windows on any OS (`--headed`), or Windows GUI with video wall
 
 **Three modes:**
 
@@ -49,7 +49,7 @@ GDD exposes 34 tools via HTTP API ([MCP protocol](https://modelcontextprotocol.i
 - Network condition testing (4G, 3G, offline)
 - Geolocation and language-dependent feature testing
 - CI/CD browser testing on any platform
-- Manual multi-browser testing with live preview (Windows GUI)
+- Manual multi-browser testing with visible windows on any platform
 
 ---
 
