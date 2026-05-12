@@ -27,12 +27,13 @@ Each browser is an isolated Chromium instance with its own profile, cookies, dev
 
 **Three modes:**
 
-| | Windows GUI | Headless | Headed (Linux/macOS) |
+| | Windows GUI | Headless | Headed |
 | --- | --- | --- | --- |
+| Binary | `GDD.exe` (BrowserXn) | `GDD.Headless` | `GDD.Headless --headed` |
 | Browser engine | WebView2 | Playwright (Chromium) | Playwright (Chromium) |
 | UI | WPF desktop with video wall | No UI — MCP only | Visible Chromium windows |
-| Platforms | Windows | Windows, Linux, macOS | Linux, macOS, Windows |
-| Use case | Visual testing with live preview | CI/CD, servers, automation | Visual testing on Linux/macOS |
+| Platforms | Windows only | Windows, Linux, macOS | Windows, Linux, macOS |
+| Use case | Visual testing with live preview | CI/CD, servers, automation | Visual testing without WPF |
 | MCP tools | 34 | 34 (identical) | 34 (identical) |
 
 **Use cases:**
@@ -54,9 +55,9 @@ Each browser is an isolated Chromium instance with its own profile, cookies, dev
 2. Extract and run `GDD.exe` (self-contained, ~70 MB)
 3. **Prerequisite:** [WebView2 Runtime](https://developer.microsoft.com/en-us/microsoft-edge/webview2/) (checked on startup)
 
-### Headless (Windows)
+### Windows (Headless)
 
-1. Download `gdd-headless-win-x64.tar.gz` from [Releases](https://github.com/Cap-of-tea/GDD/releases/latest)
+1. Download `gdd-win-x64.tar.gz` from [Releases](https://github.com/Cap-of-tea/GDD/releases/latest)
 2. Extract and run:
 
    ```powershell
@@ -66,9 +67,9 @@ Each browser is an isolated Chromium instance with its own profile, cookies, dev
 
 3. First run installs Chromium automatically via Playwright
 
-### Headless (Linux)
+### Linux
 
-1. Download `gdd-headless-linux-x64.tar.gz` from [Releases](https://github.com/Cap-of-tea/GDD/releases/latest)
+1. Download `gdd-linux-x64.tar.gz` from [Releases](https://github.com/Cap-of-tea/GDD/releases/latest)
 2. Extract and run:
 
    ```bash
@@ -82,9 +83,20 @@ Each browser is an isolated Chromium instance with its own profile, cookies, dev
    sudo apt install -y libnss3 libatk-bridge2.0-0 libdrm2 libxkbcommon0 libgbm1
    ```
 
-### Headless (macOS)
+### macOS — Apple Silicon (M1/M2/M3/M4)
 
-1. Download `gdd-headless-macos-arm64.tar.gz` (Apple Silicon) or `gdd-headless-macos-x64.tar.gz` (Intel) from [Releases](https://github.com/Cap-of-tea/GDD/releases/latest)
+1. Download `gdd-macos-arm64.tar.gz` from [Releases](https://github.com/Cap-of-tea/GDD/releases/latest)
+2. Extract and run:
+
+   ```bash
+   chmod +x GDD.Headless
+   xattr -dr com.apple.quarantine .    # unblock Gatekeeper
+   ./GDD.Headless
+   ```
+
+### macOS — Intel
+
+1. Download `gdd-macos-x64.tar.gz` from [Releases](https://github.com/Cap-of-tea/GDD/releases/latest)
 2. Extract and run:
 
    ```bash

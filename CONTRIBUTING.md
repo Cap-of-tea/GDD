@@ -129,8 +129,8 @@ dotnet publish src/GDD.Headless/GDD.Headless.csproj -c Release -r win-x64 --self
 
 1. Commit and push all changes to `master`
 2. Create a version tag: `git tag v1.x.0 && git push origin v1.x.0`
-3. GitHub Actions builds all 5 targets (Windows GUI, headless win-x64/linux-x64/osx-arm64/osx-x64)
-4. Each headless build runs a smoke test (verifies 34 tools via HTTP)
+3. GitHub Actions builds all 5 targets (Windows GUI, win-x64, linux-x64, macOS ARM64, macOS x64)
+4. Each build runs a smoke test (verifies 34 tools via HTTP)
 5. On success, `tar.gz` archives are uploaded to GitHub Releases
 
 ## Reporting Issues

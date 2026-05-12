@@ -413,12 +413,12 @@ GitHub Actions builds 5 targets on every push to master:
 | Target | Runner | Output |
 | ------ | ------ | ------ |
 | `gdd-windows-gui` | windows-latest | WPF + WebView2 single-file EXE |
-| `gdd-headless-win-x64` | windows-latest | Playwright headless |
-| `gdd-headless-linux-x64` | ubuntu-22.04 | Playwright headless |
-| `gdd-headless-macos-arm64` | macos-14 | Apple Silicon |
-| `gdd-headless-macos-x64` | macos-13 | Intel Mac |
+| `gdd-win-x64` | windows-latest | Playwright (headless/headed) |
+| `gdd-linux-x64` | ubuntu-22.04 | Playwright (headless/headed) |
+| `gdd-macos-arm64` | macos-14 | Apple Silicon (M1/M2/M3/M4) |
+| `gdd-macos-x64` | macos-14 | Intel Mac (cross-compiled via Rosetta) |
 
-Each headless build runs a smoke test: starts GDD.Headless, queries `tools/list` via HTTP, verifies 34 tools are registered.
+Each build runs a smoke test: starts GDD.Headless, queries `tools/list` via HTTP, verifies 34 tools are registered. The osx-x64 target is cross-compiled on an ARM runner (macos-14) and skips the smoke test since ARM `pwsh` cannot load x64 .NET assemblies.
 
 Tags matching `v*` trigger GitHub Releases with `tar.gz` archives for all targets.
 
