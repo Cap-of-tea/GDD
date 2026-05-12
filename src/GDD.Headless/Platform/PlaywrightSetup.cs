@@ -29,7 +29,7 @@ internal static class PlaywrightSetup
             if (OperatingSystem.IsWindows())
                 Console.Error.WriteLine("  powershell -File playwright.ps1 install chromium");
             else
-                Console.Error.WriteLine("  ./playwright.sh install chromium");
+                Console.Error.WriteLine("  pwsh playwright.ps1 install chromium");
 
             if (OperatingSystem.IsLinux())
             {
@@ -85,6 +85,7 @@ internal static class PlaywrightSetup
     {
         try
         {
+            Environment.SetEnvironmentVariable("PLAYWRIGHT_DRIVER_SEARCH_PATH", AppContext.BaseDirectory);
             var exitCode = Microsoft.Playwright.Program.Main(["install", "chromium"]);
             return exitCode == 0;
         }
@@ -99,12 +100,11 @@ internal static class PlaywrightSetup
     {
         try
         {
-            var baseDir = AppContext.BaseDirectory;
+            var script = Path.Combine(AppContext.BaseDirectory, "playwright.ps1");
             ProcessStartInfo psi;
 
             if (OperatingSystem.IsWindows())
             {
-                var script = Path.Combine(baseDir, "playwright.ps1");
                 psi = new ProcessStartInfo
                 {
                     FileName = "powershell",
@@ -116,8 +116,8 @@ internal static class PlaywrightSetup
             {
                 psi = new ProcessStartInfo
                 {
-                    FileName = "/bin/bash",
-                    Arguments = $"-c \"dotnet exec '{Path.Combine(baseDir, "Microsoft.Playwright.dll")}' install chromium\"",
+                    FileName = "pwsh",
+                    Arguments = $"-NoProfile -File \"{script}\" install chromium",
                     UseShellExecute = false
                 };
             }
