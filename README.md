@@ -405,7 +405,7 @@ BrowserXn.sln
 | `BackendUrl` | Backend API for auth service | `http://localhost:8080/api/v1` |
 | `BotToken` | Telegram bot token (for TG testing) | — |
 | `McpPort` | MCP server port (auto-fallback +1..+9) | `9700` |
-| `DataFolderRoot` | Browser profile storage root | `%LOCALAPPDATA%/GDD/Profiles` (Win), `~/.local/share/GDD/Profiles` (Linux), `~/Library/Application Support/GDD/Profiles` (macOS) |
+| `DataFolderRoot` | Browser profile storage root | `%LOCALAPPDATA%\GDD\Profiles` (Win), `~/.local/share/GDD/Profiles` (Linux/macOS) |
 | `Headed` | Launch visible browser windows (headless only) | `false` (or use `--headed` CLI flag) |
 
 ---
@@ -439,8 +439,8 @@ dotnet publish src/GDD.Headless/GDD.Headless.csproj -c Release -r linux-x64 --se
 dotnet publish src/GDD.Headless/GDD.Headless.csproj -c Release -r osx-arm64 --self-contained -o ./publish/osx-arm64
 dotnet publish src/GDD.Headless/GDD.Headless.csproj -c Release -r win-x64 --self-contained -o ./publish/win-x64
 
-# Install Chromium (first run):
-pwsh publish/linux-x64/playwright.ps1 install chromium
+# Install Chromium manually (auto-installed on first run):
+PLAYWRIGHT_BROWSERS_PATH=publish/linux-x64/.browsers pwsh publish/linux-x64/playwright.ps1 install chromium
 ```
 
 ---

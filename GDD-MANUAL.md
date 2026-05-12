@@ -682,7 +682,7 @@ Claude Code ──JSON-RPC──→ mcp-proxy ──HTTP──→ GDD (port 9700
 | `BackendUrl` | Backend API for `gdd_quick_auth` | `http://localhost:8080/api/v1` |
 | `BotToken` | Telegram Bot Token (for WebApp injection) | empty |
 | `McpPort` | MCP server port | 9700 |
-| `DataFolderRoot` | Browser profile storage | `%LOCALAPPDATA%\GDD\Profiles` (Win), `~/.local/share/GDD/Profiles` (Linux), `~/Library/Application Support/GDD/Profiles` (macOS) |
+| `DataFolderRoot` | Browser profile storage | `%LOCALAPPDATA%\GDD\Profiles` (Win), `~/.local/share/GDD/Profiles` (Linux/macOS) |
 | `Headed` | Launch visible browser windows (headless only) | `false` (or use `--headed` CLI flag) |
 
 ### Logs
