@@ -105,48 +105,46 @@ Useful for visual testing on Linux/macOS where the Windows GUI is not available.
 
 ### Connect Claude Code
 
-Add to your project's `.mcp.json`:
+Add to your project's `.mcp.json`. Proxy scripts auto-launch GDD if it's not running.
 
-**Windows (GUI with auto-launch):**
-
-```json
-{
-  "mcpServers": {
-    "gdd": {
-      "command": "powershell",
-      "args": ["-ExecutionPolicy", "Bypass", "-File", "path/to/Scripts/mcp-proxy.ps1"]
-    }
-  }
-}
-```
-
-**Windows (Headless with auto-launch):**
+**Windows (GUI or Headless):**
 
 ```json
 {
   "mcpServers": {
     "gdd": {
       "command": "powershell",
-      "args": ["-ExecutionPolicy", "Bypass", "-File", "path/to/Scripts/mcp-proxy.ps1"]
+      "args": ["-ExecutionPolicy", "Bypass", "-File", "C:/path/to/Scripts/mcp-proxy.ps1"]
     }
   }
 }
 ```
 
-**Linux / macOS (Headless with auto-launch):**
+**Linux / macOS (Headless):**
 
 ```json
 {
   "mcpServers": {
     "gdd": {
       "command": "bash",
-      "args": ["path/to/Scripts/mcp-proxy.sh"]
+      "args": ["/path/to/Scripts/mcp-proxy.sh"]
     }
   }
 }
 ```
 
-The proxy scripts auto-launch GDD if it's not running — no need to start it manually.
+**Linux / macOS (Headed — visible browser windows):**
+
+```json
+{
+  "mcpServers": {
+    "gdd": {
+      "command": "bash",
+      "args": ["/path/to/Scripts/mcp-proxy.sh", "--headed"]
+    }
+  }
+}
+```
 
 ### Use
 
@@ -293,7 +291,7 @@ Claude will use GDD tools to add players, set devices, navigate, interact, and r
 
 ## Architecture
 
-```
+```text
 ┌──────────────────────────────────────────────────┐
 │            Claude Code (MCP Client)              │
 │         POST /mcp  <->  JSON-RPC 2.0            │
@@ -325,7 +323,7 @@ Claude will use GDD tools to add players, set devices, navigate, interact, and r
 
 ### Project Structure
 
-```
+```text
 BrowserXn.sln
 ├── src/
 │   ├── GDD.Core/              ← Shared library (net8.0)
@@ -370,7 +368,7 @@ BrowserXn.sln
 ```json
 {
   "GDD": {
-    "FrontendUrl": "http://localhost:5173",
+    "FrontendUrl": "about:blank",
     "BackendUrl": "http://localhost:8080/api/v1",
     "BotToken": "",
     "McpPort": 9700,

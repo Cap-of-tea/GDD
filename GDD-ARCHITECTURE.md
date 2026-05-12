@@ -4,7 +4,7 @@
 
 GDD (Giggly-Dazzling-Duckling) — кроссплатформенное приложение для мультибраузерного тестирования веб-приложений. Управляет N изолированными Chromium-инстансами ("players") через Chrome DevTools Protocol и предоставляет 34 MCP-инструмента для автоматизации через Claude Code или любой MCP-клиент.
 
-Два режима: **Windows GUI** (WPF + WebView2) и **Headless** (Playwright, Windows/Linux/macOS). Общее ядро GDD.Core содержит все сервисы и MCP-инструменты, работающие через абстракции `IBrowserEngine` и `IPlayerManager`.
+Три режима: **Windows GUI** (WPF + WebView2), **Headless** (Playwright, Windows/Linux/macOS) и **Headed** (`--headed` — видимые окна Chromium на любой платформе). Общее ядро GDD.Core содержит все сервисы и MCP-инструменты, работающие через абстракции `IBrowserEngine` и `IPlayerManager`.
 
 **Ключевая идея:** один AI-агент (Claude) видит и управляет несколькими браузерами одновременно — навигация, клики, скриншоты, эмуляция устройств/сети/геолокации, мониторинг консоли и сетевых запросов.
 
@@ -13,7 +13,7 @@ GDD (Giggly-Dazzling-Duckling) — кроссплатформенное прил
 ## 2. Tech Stack
 
 | Layer | Technology | Version |
-|-------|-----------|---------|
+| ----- | ---------- | ------- |
 | Runtime | .NET 8.0 (GDD.Core, GDD.Headless), .NET 8.0-windows (BrowserXn) | net8.0 / net8.0-windows TFM |
 | UI Framework | WPF (Windows GUI only) | built-in |
 | Browser (Windows GUI) | Microsoft WebView2 | 1.0.2739.15 |
@@ -158,9 +158,8 @@ BrowserXn.sln
 │   │   ├── Engines/                           WebView2ControlAdapter
 │   │   ├── Platform/                          WpfDispatcher, WebView2CdpSubscription
 │   │   ├── ViewModels/                        MVVM (MainViewModel : IPlayerManager)
-│   │   ├── Views/                             WPF XAML (MainWindow, OverlayWindow, etc.)
+│   │   ├── Views/                             WPF XAML + VideoWallPanel
 │   │   ├── Interop/                           Win32 P/Invoke (DWM, User32)
-│   │   ├── Controls/                          VideoWallPanel
 │   │   └── Themes/                            Dark theme styles
 │   │
 │   └── GDD.Headless/                     ← Headless runner (net8.0, cross-platform)
@@ -183,6 +182,7 @@ BrowserXn.sln
 interface IBrowserEngine : IAsyncDisposable
 {
     int PlayerId { get; }
+    string UserDataFolder { get; }
     bool IsInitialized { get; }
     string CurrentUrl { get; }
 
@@ -204,6 +204,7 @@ interface IBrowserEngine : IAsyncDisposable
 Две реализации:
 
 **WebView2ControlAdapter** (Windows GUI) — каждый player получает:
+
 - Изолированный user data folder (`%LOCALAPPDATA%\GDD\Profiles\Player_{id}`)
 - Собственный `CoreWebView2Environment` + `CoreWebView2Controller`
 - Настройки: отключены статусбар, контекстное меню, зум, devtools
@@ -212,6 +213,7 @@ interface IBrowserEngine : IAsyncDisposable
 - Ожидание загрузки через CDP `Page.loadEventFired`
 
 **PlaywrightEngine** (Headless/Headed, cross-platform) — каждый player получает:
+
 - Изолированный `BrowserContext` с viewport, user agent, touch
 - CDP session через `context.NewCDPSessionAsync(page)`
 - Скриншоты через `page.ScreenshotAsync()` с `ScreenshotScale.Css` (JPEG)
@@ -223,7 +225,7 @@ interface IBrowserEngine : IAsyncDisposable
 Кастомный HTTP-сервер на `HttpListener` с двумя транспортами:
 
 | Transport | Endpoints | Протокол |
-|-----------|-----------|----------|
+| --------- | --------- | -------- |
 | Streamable HTTP | `POST /mcp` | Request → JSON response |
 | SSE | `GET /sse` + `POST /message?sessionId=` | Bidirectional SSE stream |
 
@@ -299,7 +301,7 @@ interface IBrowserEngine : IAsyncDisposable
 ### Windows-only (16% codebase)
 
 | Component | Dependency | Why Windows |
-|-----------|-----------|-------------|
+| --------- | ---------- | ----------- |
 | `WebView2Engine` | Microsoft.Web.WebView2 | Chromium control для Windows (HWND parenting) |
 | `DwmApi.cs` | dwmapi.dll, user32.dll | DWM thumbnail API, window management |
 | `BrowserCellControl` | DWM thumbnails | Live миниатюры через Win32 |
@@ -310,18 +312,18 @@ interface IBrowserEngine : IAsyncDisposable
 ### Platform-Agnostic (59% codebase)
 
 | Component | Files | Notes |
-|-----------|-------|-------|
+| --------- | ----- | ----- |
 | Services (CDP, auth, emulation) | 12 | Pure C#, оперируют CDP JSON commands |
 | Models (presets, DTOs) | 11 | POCOs |
 | MCP Server + Protocol | 3 | HTTP/JSON-RPC, no OS dependencies |
 | MCP Tools | 8 | Business logic → ViewModel calls |
 | Collections (RingBuffer) | 1 | Thread-safe generic collection |
-| Abstractions (interfaces) | 2 | IBrowserEngine, IBrowserEngineFactory |
+| Abstractions (interfaces) | 6 | IBrowserEngine, IBrowserEngineFactory, IPlayerManager, IPlayerContext, IMainThreadDispatcher, ICdpEventSubscription |
 
 ### Coupled but Portable (25%)
 
 | Component | Issue | Fix |
-|-----------|-------|-----|
+| --------- | ----- | --- |
 | MCP Tools → MainViewModel | Dispatcher.InvokeAsync для UI thread | Абстрагировать через ISynchronizationContext |
 | Services → CoreWebView2 | Прямые CDP вызовы через WebView2 API | Абстрагировать CDP transport layer |
 | AppConfig | `Environment.SpecialFolder.LocalApplicationData` | Уже кроссплатформенный |
@@ -359,27 +361,30 @@ interface IBrowserEngine : IAsyncDisposable
     Task NavigateAsync(string url);
     Task<string> ExecuteJavaScriptAsync(string script);
     Task CallCdpMethodAsync(string methodName, string parametersJson);
-    Task<byte[]> CaptureScreenshotAsync();
-    ICdpEventSubscription SubscribeCdpEvent(string eventName);
+    Task<string> CallCdpMethodWithResultAsync(string methodName, string parametersJson);
+    Task<byte[]> CaptureScreenshotAsync(int quality = 80);
+    ICdpEventSubscription SubscribeToCdpEvent(string eventName);
 }
 
 interface IPlayerManager
 {
-    Task AddPlayers(int count, string? devicePreset = null);
+    IReadOnlyList<int> AddPlayers(int count, string? devicePreset = null);
     IReadOnlyList<IPlayerContext> GetPlayers();
     IPlayerContext? GetPlayer(int playerId);
+    void RemovePlayer(int playerId);
 }
 
 interface IMainThreadDispatcher
 {
     Task InvokeAsync(Func<Task> action);
+    Task InvokeAsync(Action action);
 }
 ```
 
 ### 7.3 Platform Implementations
 
 | Abstraction | BrowserXn (Windows GUI) | GDD.Headless (Cross-platform) |
-|-------------|------------------------|-------------------------------|
+| ----------- | ----------------------- | ----------------------------- |
 | `IBrowserEngine` | `WebView2ControlAdapter` — WebView2 + HWND | `PlaywrightEngine` — Playwright Chromium |
 | `IPlayerManager` | `MainViewModel` — WPF MVVM | `HeadlessPlayerManager` — console |
 | `IMainThreadDispatcher` | `WpfDispatcher` — WPF UI thread | `ConsoleDispatcher` — direct execution |
@@ -394,7 +399,7 @@ Configuration: `AppConfig.Headed` property or `--headed` CLI flag. Proxy scripts
 **Future — Full Management UI on All Platforms:**
 
 | Approach | Quality | Performance | Complexity |
-|----------|---------|-------------|------------|
+| -------- | ------- | ----------- | ---------- |
 | Periodic screenshot polling (500ms) | Medium | Low CPU | Simple |
 | CDP `Page.screencastFrame` stream | High | Medium CPU | Medium |
 | Avalonia UI + CefGlue | Full GUI | Medium | High |
@@ -406,7 +411,7 @@ Configuration: `AppConfig.Headed` property or `--headed` CLI flag. Proxy scripts
 GitHub Actions builds 5 targets on every push to master:
 
 | Target | Runner | Output |
-|--------|--------|--------|
+| ------ | ------ | ------ |
 | `gdd-windows-gui` | windows-latest | WPF + WebView2 single-file EXE |
 | `gdd-headless-win-x64` | windows-latest | Playwright headless |
 | `gdd-headless-linux-x64` | ubuntu-22.04 | Playwright headless |
