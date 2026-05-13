@@ -20,6 +20,7 @@ public sealed class McpServer : IDisposable
     private readonly McpToolRegistry _registry;
     private readonly IMainThreadDispatcher _dispatcher;
     private readonly int _port;
+    private readonly string _bindAddress;
     private readonly ConcurrentDictionary<string, SseSession> _sessions = new();
     private HttpListener? _listener;
     private CancellationTokenSource? _cts;
@@ -28,11 +29,12 @@ public sealed class McpServer : IDisposable
 
     public int ActualPort { get; private set; }
 
-    public McpServer(McpToolRegistry registry, IMainThreadDispatcher dispatcher, int port)
+    public McpServer(McpToolRegistry registry, IMainThreadDispatcher dispatcher, int port, string bindAddress = "localhost")
     {
         _registry = registry;
         _dispatcher = dispatcher;
         _port = port;
+        _bindAddress = bindAddress;
     }
 
     public void Start()
@@ -44,11 +46,13 @@ public sealed class McpServer : IDisposable
             try
             {
                 _listener = new HttpListener();
-                _listener.Prefixes.Add($"http://localhost:{port}/");
+                var host = _bindAddress is "*" or "+" or "0.0.0.0" ? "+" : _bindAddress;
+                _listener.Prefixes.Add($"http://{host}:{port}/");
                 _listener.Start();
                 ActualPort = port;
-                Console.WriteLine($"GDD MCP server listening on http://localhost:{port}");
-                Logger.Information("MCP server started on http://localhost:{Port}", port);
+                var displayHost = host == "+" ? "0.0.0.0" : _bindAddress;
+                Console.WriteLine($"GDD MCP server listening on http://{displayHost}:{port}");
+                Logger.Information("MCP server started on http://{Host}:{Port}", displayHost, port);
                 break;
             }
             catch (HttpListenerException)
@@ -241,7 +245,8 @@ public sealed class McpServer : IDisposable
         response.Headers.Add("Connection", "keep-alive");
         response.Headers.Add("X-Accel-Buffering", "no");
 
-        var endpointUrl = $"http://localhost:{ActualPort}/message?sessionId={sessionId}";
+        var sseHost = _bindAddress is "*" or "+" or "0.0.0.0" ? "localhost" : _bindAddress;
+        var endpointUrl = $"http://{sseHost}:{ActualPort}/message?sessionId={sessionId}";
         await session.SendRawEventAsync("endpoint", endpointUrl);
 
         try

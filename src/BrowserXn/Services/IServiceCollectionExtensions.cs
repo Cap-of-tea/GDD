@@ -50,7 +50,8 @@ public static class IServiceCollectionExtensions
         services.AddSingleton(sp => new McpServer(
             sp.GetRequiredService<McpToolRegistry>(),
             sp.GetRequiredService<IMainThreadDispatcher>(),
-            config.McpPort));
+            config.McpPort,
+            config.BindAddress));
 
         services.AddHttpClient("GDDAuth", client =>
         {
