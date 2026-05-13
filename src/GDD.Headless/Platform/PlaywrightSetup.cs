@@ -10,6 +10,9 @@ internal static class PlaywrightSetup
 
     public static async Task EnsureBrowserAsync()
     {
+        if (!OperatingSystem.IsWindows())
+            FixUnixPermissions();
+
         if (await TryLaunchAsync())
         {
             Logger.Information("Chromium browser verified");
@@ -32,20 +35,31 @@ internal static class PlaywrightSetup
                 Console.Error.WriteLine($"  $env:PLAYWRIGHT_BROWSERS_PATH=\"{browsersPath}\"");
                 Console.Error.WriteLine("  powershell -File playwright.ps1 install chromium");
             }
+            else if (OperatingSystem.IsMacOS())
+            {
+                Console.Error.WriteLine("  First, ensure execute permissions:");
+                Console.Error.WriteLine("  chmod -R +x .browsers .playwright");
+                Console.Error.WriteLine();
+                Console.Error.WriteLine("  If Chromium is not bundled, install with PowerShell:");
+                Console.Error.WriteLine("  brew install powershell/tap/powershell");
+                Console.Error.WriteLine($"  PLAYWRIGHT_BROWSERS_PATH=\"{browsersPath}\" pwsh playwright.ps1 install chromium");
+                Console.Error.WriteLine();
+                Console.Error.WriteLine("  Then remove Gatekeeper quarantine:");
+                Console.Error.WriteLine("  xattr -dr com.apple.quarantine .");
+            }
             else
             {
                 Console.Error.WriteLine($"  PLAYWRIGHT_BROWSERS_PATH=\"{browsersPath}\" pwsh playwright.ps1 install chromium");
-            }
-
-            if (OperatingSystem.IsLinux())
-            {
                 Console.Error.WriteLine();
-                Console.Error.WriteLine("On Linux you may also need system dependencies:");
+                Console.Error.WriteLine("  You may also need system dependencies:");
                 Console.Error.WriteLine("  sudo apt install -y libnss3 libatk-bridge2.0-0 libdrm2 libxkbcommon0 libgbm1");
             }
 
             Environment.Exit(1);
         }
+
+        if (!OperatingSystem.IsWindows())
+            FixUnixPermissions();
 
         if (!await TryLaunchAsync())
         {
@@ -59,7 +73,8 @@ internal static class PlaywrightSetup
             }
             else if (OperatingSystem.IsMacOS())
             {
-                Console.Error.WriteLine("On macOS, ensure the app is not blocked by Gatekeeper.");
+                Console.Error.WriteLine("Try removing Gatekeeper quarantine:");
+                Console.Error.WriteLine("  xattr -dr com.apple.quarantine .");
             }
 
             Environment.Exit(1);
@@ -67,6 +82,33 @@ internal static class PlaywrightSetup
 
         Console.WriteLine("Chromium installed successfully.");
         Logger.Information("Chromium installed and verified");
+    }
+
+    private static void FixUnixPermissions()
+    {
+        try
+        {
+            var baseDir = AppContext.BaseDirectory;
+            foreach (var dir in new[] { ".browsers", ".playwright" })
+            {
+                var path = Path.Combine(baseDir, dir);
+                if (!Directory.Exists(path)) continue;
+
+                Logger.Debug("Fixing permissions on {Path}", path);
+                var psi = new ProcessStartInfo("chmod", ["-R", "+x", path])
+                {
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true
+                };
+                var proc = Process.Start(psi);
+                proc?.WaitForExit(10_000);
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.Debug("Failed to fix permissions: {Message}", ex.Message);
+        }
     }
 
     private static async Task<bool> TryLaunchAsync()
@@ -89,6 +131,9 @@ internal static class PlaywrightSetup
 
     private static bool InstallChromium()
     {
+        if (!OperatingSystem.IsWindows())
+            FixUnixPermissions();
+
         try
         {
             Environment.SetEnvironmentVariable("PLAYWRIGHT_DRIVER_SEARCH_PATH", AppContext.BaseDirectory);
