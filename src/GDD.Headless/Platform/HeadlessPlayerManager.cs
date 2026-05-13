@@ -1,5 +1,6 @@
 using GDD.Abstractions;
 using GDD.Headless.Engines;
+using GDD.Mcp;
 using GDD.Models;
 using GDD.Services;
 using Microsoft.Playwright;
@@ -33,12 +34,27 @@ public sealed class HeadlessPlayerManager : IPlayerManager, IAsyncDisposable
         _networkMonitorService = networkMonitorService;
     }
 
-    public IReadOnlyList<IPlayerContext> GetPlayers() => _players;
+    public IReadOnlyList<IPlayerContext> GetPlayers()
+    {
+        var sessionId = McpSessionContext.CurrentSessionId;
+        if (sessionId is null)
+            return _players;
+        return _players.Where(p => p.OwnerSessionId is null || p.OwnerSessionId == sessionId).ToList();
+    }
 
-    public IPlayerContext? GetPlayer(int playerId) =>
-        _players.FirstOrDefault(p => p.PlayerId == playerId);
+    public IPlayerContext? GetPlayer(int playerId)
+    {
+        var player = _players.FirstOrDefault(p => p.PlayerId == playerId);
+        if (player is null) return null;
 
-    public IReadOnlyList<int> AddPlayers(int count, string? devicePreset = null)
+        var sessionId = McpSessionContext.CurrentSessionId;
+        if (sessionId is not null && player.OwnerSessionId is not null && player.OwnerSessionId != sessionId)
+            return null;
+
+        return player;
+    }
+
+    public IReadOnlyList<int> AddPlayers(int count, string? devicePreset = null, string? sessionId = null)
     {
         var device = DevicePresets.Default;
         if (!string.IsNullOrEmpty(devicePreset))
@@ -55,7 +71,8 @@ public sealed class HeadlessPlayerManager : IPlayerManager, IAsyncDisposable
             var playerId = _nextPlayerId++;
             var ctx = new HeadlessPlayerContext(playerId, _config.FrontendUrl)
             {
-                SelectedDevice = device
+                SelectedDevice = device,
+                OwnerSessionId = sessionId
             };
             _players.Add(ctx);
             ids.Add(playerId);

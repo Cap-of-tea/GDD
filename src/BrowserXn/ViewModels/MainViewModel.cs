@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using GDD.Abstractions;
 using GDD.Engines;
+using GDD.Mcp;
 using GDD.Models;
 using GDD.Services;
 using GDD.Views;
@@ -71,12 +72,27 @@ public partial class MainViewModel : ObservableObject, IPlayerManager
 
     // ── IPlayerManager ────────────────────────────────────────────────
 
-    public IReadOnlyList<IPlayerContext> GetPlayers() => Players;
+    public IReadOnlyList<IPlayerContext> GetPlayers()
+    {
+        var sessionId = McpSessionContext.CurrentSessionId;
+        if (sessionId is null)
+            return Players;
+        return Players.Where(p => p.OwnerSessionId is null || p.OwnerSessionId == sessionId).ToList<IPlayerContext>();
+    }
 
-    public IPlayerContext? GetPlayer(int playerId) =>
-        Players.FirstOrDefault(p => p.PlayerId == playerId);
+    public IPlayerContext? GetPlayer(int playerId)
+    {
+        var player = Players.FirstOrDefault(p => p.PlayerId == playerId);
+        if (player is null) return null;
 
-    public IReadOnlyList<int> AddPlayers(int count, string? devicePreset = null)
+        var sessionId = McpSessionContext.CurrentSessionId;
+        if (sessionId is not null && player.OwnerSessionId is not null && player.OwnerSessionId != sessionId)
+            return null;
+
+        return player;
+    }
+
+    public IReadOnlyList<int> AddPlayers(int count, string? devicePreset = null, string? sessionId = null)
     {
         var device = DevicePresets.Default;
         if (!string.IsNullOrEmpty(devicePreset))
@@ -90,7 +106,7 @@ public partial class MainViewModel : ObservableObject, IPlayerManager
         var ids = new List<int>();
         for (var i = 0; i < count; i++)
         {
-            AddPlayerWithDevice(device);
+            AddPlayerWithDevice(device, sessionId);
             ids.Add(Players.Last().PlayerId);
         }
         return ids;
@@ -122,12 +138,13 @@ public partial class MainViewModel : ObservableObject, IPlayerManager
         StatusText = $"Added {preset.Devices.Length} players ({preset.Name})";
     }
 
-    private void AddPlayerWithDevice(DevicePreset device)
+    private void AddPlayerWithDevice(DevicePreset device, string? sessionId = null)
     {
         var playerId = _nextPlayerId++;
         var vm = new BrowserCellViewModel(playerId, _config, DefaultUrl)
         {
-            SelectedDevice = device
+            SelectedDevice = device,
+            OwnerSessionId = sessionId
         };
         vm.OnSettingsRequested = OnPlayerSettingsRequested;
         vm.OnOverlayRequested = OnPlayerOverlayRequested;

@@ -160,9 +160,11 @@ public sealed class McpServer : IDisposable
             return;
         }
 
+        var sessionId = request.Headers["Mcp-Session-Id"] ?? Guid.NewGuid().ToString("N");
+        McpSessionContext.CurrentSessionId = sessionId;
+
         var rpcResponse = await ProcessRequest(rpcRequest);
 
-        var sessionId = request.Headers["Mcp-Session-Id"] ?? Guid.NewGuid().ToString("N");
         response.Headers.Add("Mcp-Session-Id", sessionId);
 
         await WriteJsonResponse(response, rpcResponse);
@@ -219,6 +221,7 @@ public sealed class McpServer : IDisposable
         response.StatusCode = 202;
         response.Close();
 
+        McpSessionContext.CurrentSessionId = sessionId;
         var rpcResponse = await ProcessRequest(rpcRequest);
         try
         {
@@ -284,7 +287,7 @@ public sealed class McpServer : IDisposable
                         serverInfo = new
                         {
                             name = "gdd",
-                            version = "1.0.0"
+                            version = "1.3.0"
                         }
                     }
                 };

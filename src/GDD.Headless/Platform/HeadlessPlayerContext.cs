@@ -19,6 +19,7 @@ public sealed class HeadlessPlayerContext : IPlayerContext
     public int NetworkErrorCount { get; set; }
     public string LastError { get; set; } = "";
     public string Language { get; set; } = "";
+    public string? OwnerSessionId { get; set; }
     public IBrowserEngine? Engine { get; set; }
 
     public HeadlessPlayerContext(int playerId, string defaultUrl)

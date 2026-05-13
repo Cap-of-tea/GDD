@@ -18,5 +18,6 @@ public interface IPlayerContext
     int NetworkErrorCount { get; set; }
     string LastError { get; set; }
     string Language { get; set; }
+    string? OwnerSessionId { get; set; }
     IBrowserEngine? Engine { get; }
 }

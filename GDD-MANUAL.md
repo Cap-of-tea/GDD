@@ -659,6 +659,10 @@ Client (AI agent / curl / script) ──HTTP POST──→ GDD (port 9700/mcp)
 
 **Isolation:** Each player has its own browser profile folder, cookies, localStorage, and session. Players are fully independent.
 
+**Session isolation:** When multiple MCP clients connect to a shared GDD server (e.g. via `BindAddress: "*"`), each session's players are isolated. Players created by session A are invisible and inaccessible to session B. `gdd_list_windows` shows a `session` field (first 8 chars of session ID, or `"shared"`).
+
+> ⚠ **Warning:** Players created via the Windows GUI buttons (not through MCP) have no session owner and are accessible to ALL connected MCP sessions.
+
 ---
 
 ## 7. Configuration
@@ -672,6 +676,7 @@ Client (AI agent / curl / script) ──HTTP POST──→ GDD (port 9700/mcp)
     "BackendUrl": "http://localhost:8080/api/v1",
     "BotToken": "",
     "McpPort": 9700,
+    "BindAddress": "localhost",
     "DataFolderRoot": ""
   }
 }
@@ -683,6 +688,7 @@ Client (AI agent / curl / script) ──HTTP POST──→ GDD (port 9700/mcp)
 | `BackendUrl` | Backend API for `gdd_quick_auth` | `http://localhost:8080/api/v1` |
 | `BotToken` | Telegram Bot Token (for WebApp injection) | empty |
 | `McpPort` | MCP server port | 9700 |
+| `BindAddress` | Network interface to listen on (`"localhost"` = local only, `"*"` = all interfaces for LAN access) | `localhost` |
 | `DataFolderRoot` | Browser profile storage | `%LOCALAPPDATA%\GDD\Profiles` (Win), `~/.local/share/GDD/Profiles` (Linux/macOS) |
 | `Headed` | Launch visible browser windows (headless only) | `false` (or use `--headed` CLI flag) |
 

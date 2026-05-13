@@ -140,5 +140,6 @@ When you see an error beacon, call `gdd_get_console` to inspect the errors befor
 - After `gdd_add_players`, wait 3-5 seconds before navigating — the browser needs time to initialize.
 - Screenshot coordinates are in CSS pixels — they match `gdd_tap(x, y)` coordinates directly.
 - `player_id` starts from 1 and increments. Use `gdd_list_windows()` to see current IDs.
+- **Session isolation**: When multiple clients share one GDD server, each session only sees its own players. Players created via GUI buttons (not MCP) are shared across all sessions.
 - Console and network logs are captured automatically. Use `gdd_get_console` and `gdd_get_network` to read them at any time.
 - All emulation (device, location, network, language) persists until changed or the player is removed.

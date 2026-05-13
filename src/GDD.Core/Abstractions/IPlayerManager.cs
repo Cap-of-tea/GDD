@@ -4,6 +4,6 @@ public interface IPlayerManager
 {
     IReadOnlyList<IPlayerContext> GetPlayers();
     IPlayerContext? GetPlayer(int playerId);
-    IReadOnlyList<int> AddPlayers(int count, string? devicePreset = null);
+    IReadOnlyList<int> AddPlayers(int count, string? devicePreset = null, string? sessionId = null);
     void RemovePlayer(int playerId);
 }

@@ -3,6 +3,8 @@ using GDD.Abstractions;
 
 namespace GDD.Mcp.Tools;
 
+// NOTE: Players created via GUI (OwnerSessionId == null) are accessible to ALL MCP sessions.
+
 public static class PlayerTools
 {
     public static void Register(McpToolRegistry registry, IPlayerManager playerManager)
@@ -32,7 +34,7 @@ public static class PlayerTools
             {
                 var count = args?.GetProperty("count").GetInt32() ?? 1;
                 var deviceName = args?.TryGetProperty("device", out var dEl) == true ? dEl.GetString() : null;
-                var ids = playerManager.AddPlayers(count, deviceName);
+                var ids = playerManager.AddPlayers(count, deviceName, McpSessionContext.CurrentSessionId);
                 await Task.CompletedTask;
                 var suffix = string.IsNullOrEmpty(deviceName) ? "" : $" with {deviceName}";
                 return McpResult.Text($"Created {count} players{suffix}: [{string.Join(", ", ids)}]");
@@ -79,7 +81,8 @@ public static class PlayerTools
                     name = p.PlayerName,
                     url = p.CurrentUrl,
                     status = p.StatusText,
-                    overlay_open = p.IsOverlayOpen
+                    overlay_open = p.IsOverlayOpen,
+                    session = p.OwnerSessionId is not null ? p.OwnerSessionId[..8] : "shared"
                 });
                 await Task.CompletedTask;
                 return McpResult.Text(JsonSerializer.Serialize(players, new JsonSerializerOptions { WriteIndented = true }));

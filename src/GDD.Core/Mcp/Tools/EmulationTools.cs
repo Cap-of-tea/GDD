@@ -217,7 +217,11 @@ public static class EmulationTools
                 if (player?.Engine is null)
                     return McpResult.Error($"Player {playerId} not found or not initialized");
 
-                await cdpService.CallAsync(player.Engine, "Emulation.setLocaleOverride", new { locale });
+                try
+                {
+                    await cdpService.CallAsync(player.Engine, "Emulation.setLocaleOverride", new { locale });
+                }
+                catch { /* Not supported on all engines (Playwright) */ }
 
                 await cdpService.CallAsync(player.Engine, "Emulation.setUserAgentOverride", new
                 {
@@ -229,6 +233,13 @@ public static class EmulationTools
                 {
                     headers = new Dictionary<string, string> { ["Accept-Language"] = locale }
                 });
+
+                var localeScript = $$"""
+                    Object.defineProperty(navigator, 'language', { get: () => '{{locale}}', configurable: true });
+                    Object.defineProperty(navigator, 'languages', { get: () => ['{{locale}}'], configurable: true });
+                    """;
+                await player.Engine.ExecuteJavaScriptAsync(localeScript);
+                await player.Engine.InjectScriptOnDocumentCreatedAsync(localeScript);
 
                 player.Language = locale;
                 return McpResult.Text($"Language set to {locale} for player {playerId}");

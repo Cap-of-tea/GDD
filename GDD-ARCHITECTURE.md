@@ -89,9 +89,11 @@ App.OnStartup()
 ```text
 Client → POST /mcp {"method":"tools/call","params":{"name":"gdd_navigate",...}}
   → McpServer.HandleStreamableHttp()
+  → McpSessionContext.CurrentSessionId = sessionId  (AsyncLocal)
   → McpToolRegistry.InvokeAsync("gdd_navigate", args)
   → Dispatcher.InvokeAsync (→ UI thread or direct)
-  → IPlayerManager.GetPlayer(id).Engine.NavigateAsync(url)
+  → IPlayerManager.GetPlayer(id)  (filters by session ownership)
+  → player.Engine.NavigateAsync(url)
   → WebView2.Navigate() or Playwright.GotoAsync()
   → JSON-RPC response → Client
 ```
@@ -115,6 +117,7 @@ BrowserXn.sln
 │   │   │   └── RingBuffer.cs                  Thread-safe circular buffer (500 entries)
 │   │   ├── Mcp/
 │   │   │   ├── McpServer.cs                   HTTP server (SSE + Streamable HTTP)
+│   │   │   ├── McpSessionContext.cs           AsyncLocal session ID for multi-client isolation
 │   │   │   ├── McpProtocol.cs                 JSON-RPC 2.0 DTOs
 │   │   │   ├── McpToolRegistry.cs             Tool registry + error beacon
 │   │   │   ├── McpResult.cs                   Tool result builder
@@ -232,6 +235,10 @@ interface IBrowserEngine : IAsyncDisposable
 | SSE | `GET /sse` + `POST /message?sessionId=` | Bidirectional SSE stream |
 
 Порт: 9700 с fallback до 9709. CORS включен для всех origins.
+
+**Session isolation:** `McpSessionContext` (AsyncLocal) хранит session ID текущего запроса. `McpServer` устанавливает его до вызова `ProcessRequest` — для Streamable HTTP из заголовка `Mcp-Session-Id`, для SSE из `sessionId` query-параметра. `IPlayerManager.GetPlayer/GetPlayers` фильтрует по session — каждый MCP-клиент видит только свои player'ы. Bind address `"*"` позволяет LAN-доступ; session isolation предотвращает cross-client interference.
+
+> ⚠ **Warning:** Players created via the Windows GUI (not through MCP) have `OwnerSessionId = null` and are accessible to ALL connected MCP sessions.
 
 ### 5.3 Emulation Services
 

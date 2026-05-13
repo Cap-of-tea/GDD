@@ -76,6 +76,8 @@ public partial class BrowserCellViewModel : ObservableObject, IPlayerContext, ID
     [ObservableProperty]
     private string _language = "";
 
+    public string? OwnerSessionId { get; set; }
+
     public bool HasNotifications => NotificationCount > 0;
 
     [ObservableProperty]
