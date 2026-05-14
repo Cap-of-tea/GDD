@@ -4,6 +4,7 @@ using Microsoft.Extensions.Hosting;
 using Serilog;
 using Serilog.Settings.Configuration;
 using Serilog.Sinks.File;
+using GDD;
 using GDD.Abstractions;
 using GDD.Headless.Platform;
 using GDD.Mcp;
@@ -12,6 +13,7 @@ using GDD.Models;
 using GDD.Services;
 
 var headed = args.Any(a => a.Equals("--headed", StringComparison.OrdinalIgnoreCase));
+var doUpdate = args.Any(a => a.Equals("--update", StringComparison.OrdinalIgnoreCase));
 
 var browsersPath = Path.Combine(AppContext.BaseDirectory, ".browsers");
 Environment.SetEnvironmentVariable("PLAYWRIGHT_BROWSERS_PATH", browsersPath);
@@ -65,8 +67,31 @@ var host = Host.CreateDefaultBuilder(args)
             client.BaseAddress = new Uri(config.BackendUrl.TrimEnd('/') + "/");
             client.DefaultRequestHeaders.Add("Accept", "application/json");
         });
+
+        services.AddHttpClient("GitHubApi", client =>
+        {
+            client.DefaultRequestHeaders.Add("User-Agent", "GDD-Updater");
+            client.DefaultRequestHeaders.Add("Accept", "application/vnd.github+json");
+        });
+        services.AddSingleton<UpdateService>();
     })
     .Build();
+
+if (doUpdate)
+{
+    var updateSvc = host.Services.GetRequiredService<UpdateService>();
+    Console.WriteLine($"GDD v{GddVersion.Current} — checking for updates...");
+    var update = await updateSvc.CheckForUpdateAsync();
+    if (update is null)
+    {
+        Console.WriteLine("Already up to date.");
+        return;
+    }
+    Console.WriteLine($"Downloading v{update.Version} ({update.SizeBytes / 1048576.0:F1} MB)...");
+    var archive = await updateSvc.DownloadUpdateAsync(update);
+    await updateSvc.ApplyUpdateAsync(archive);
+    return;
+}
 
 await PlaywrightSetup.EnsureBrowserAsync();
 
@@ -97,13 +122,31 @@ StateTools.Register(registry, playerManager, notificationService);
 DiagnosticsTools.Register(registry, playerManager, consoleService, networkMonitorService, cdpService);
 HelpTools.Register(registry);
 
+var updateService = host.Services.GetRequiredService<UpdateService>();
+UpdateTools.Register(registry, updateService);
+
 var mcpServer = host.Services.GetRequiredService<McpServer>();
+mcpServer.SetUpdateService(updateService);
 mcpServer.Start();
 
 var mode = appConfig.Headed ? "headed" : "headless";
-Log.Information("GDD {Mode} MCP server at http://localhost:{Port}/mcp", mode, mcpServer.ActualPort);
-Console.WriteLine($"GDD ({mode}) — MCP server at http://localhost:{mcpServer.ActualPort}/mcp");
+Log.Information("GDD v{Version} {Mode} MCP server at http://localhost:{Port}/mcp", GddVersion.Current, mode, mcpServer.ActualPort);
+Console.WriteLine($"GDD v{GddVersion.Current} ({mode}) — MCP server at http://localhost:{mcpServer.ActualPort}/mcp");
 Console.WriteLine("Press Ctrl+C to stop.");
+
+if (appConfig.CheckForUpdates)
+{
+    _ = Task.Run(async () =>
+    {
+        try
+        {
+            var update = await updateService.CheckForUpdateAsync();
+            if (update is not null)
+                Console.WriteLine($"⚠ Update available: v{GddVersion.Current} → v{update.Version}. Run with --update to install.");
+        }
+        catch { /* non-critical */ }
+    });
+}
 
 await host.WaitForShutdownAsync();
 

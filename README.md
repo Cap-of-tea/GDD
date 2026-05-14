@@ -23,7 +23,7 @@
 
 GDD is a cross-platform multi-browser manager — run N isolated Chromium instances, each with its own profile, cookies, device emulation, geolocation, and network conditions.
 
-GDD exposes 34 tools via HTTP API ([MCP protocol](https://modelcontextprotocol.io/) on `localhost:9700`). You can control browsers from:
+GDD exposes 36 tools via HTTP API ([MCP protocol](https://modelcontextprotocol.io/) on `localhost:9700`). You can control browsers from:
 
 - **AI agents** — Claude Code, Cursor, or any MCP-compatible client
 - **Scripts & automation** — `curl`, Python, Node.js, or any HTTP client via JSON-RPC
@@ -39,7 +39,7 @@ GDD exposes 34 tools via HTTP API ([MCP protocol](https://modelcontextprotocol.i
 | UI | WPF desktop with video wall | No UI — HTTP API only | Visible Chromium windows |
 | Platforms | Windows only | Windows, Linux, macOS | Windows, Linux, macOS |
 | Use case | Manual testing with live preview | CI/CD, scripted automation | Visual testing on any platform |
-| MCP tools | 34 | 34 (identical) | 34 (identical) |
+| MCP tools | 36 | 36 (identical) | 36 (identical) |
 
 **Use cases:**
 
@@ -163,7 +163,7 @@ For headed mode, add `"--headed"` to the `args` array.
 
 **With AI:** Tell Claude — *"Open 3 phones and a desktop, navigate to my app, test the login flow on all devices"*
 
-**Without AI:** Call any of the 34 tools via HTTP. Example — create a browser and navigate:
+**Without AI:** Call any of the 36 tools via HTTP. Example — create a browser and navigate:
 
 ```bash
 curl -X POST http://localhost:9700/mcp -H "Content-Type: application/json" \
@@ -175,7 +175,7 @@ curl -X POST http://localhost:9700/mcp -H "Content-Type: application/json" \
 
 ---
 
-## MCP Tools (34)
+## MCP Tools (36)
 
 ### Player Management
 
@@ -256,6 +256,13 @@ curl -X POST http://localhost:9700/mcp -H "Content-Type: application/json" \
 | ------ | ------------- |
 | `gdd_get_manual` | Returns the full GDD manual (M2M self-learning API) |
 
+### Updates
+
+| Tool | Description |
+| ------ | ------------- |
+| `gdd_check_update` | Check if a newer version of GDD is available |
+| `gdd_update` | Download and install update (requires `confirm=true`, restarts GDD) |
+
 ---
 
 ## Device Presets
@@ -322,7 +329,7 @@ curl -X POST http://localhost:9700/mcp -H "Content-Type: application/json" \
 └────────────────────┬─────────────────────────────┘
                      │
 ┌────────────────────▼─────────────────────────────┐
-│           McpToolRegistry (34 tools)             │
+│           McpToolRegistry (36 tools)             │
 │  Player · Navigation · Interaction · Read        │
 │  Emulation · Auth · State · Diagnostics · Help   │
 └────────────────────┬─────────────────────────────┘

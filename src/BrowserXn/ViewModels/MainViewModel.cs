@@ -41,6 +41,12 @@ public partial class MainViewModel : ObservableObject, IPlayerManager
     [ObservableProperty]
     private string _apiEndpoint = "";
 
+    [ObservableProperty]
+    private bool _updateAvailable;
+
+    [ObservableProperty]
+    private string _updateVersion = "";
+
     public ObservableCollection<BrowserCellViewModel> Players { get; } = new();
 
     public MainViewModel(
@@ -382,5 +388,12 @@ public partial class MainViewModel : ObservableObject, IPlayerManager
         {
             Logger.Error(ex, "Failed to attach diagnostics for Player {Id}", vm.PlayerId);
         }
+    }
+
+    public void SetUpdateAvailable(UpdateService.UpdateInfo info)
+    {
+        UpdateAvailable = true;
+        UpdateVersion = info.Version;
+        StatusText = $"⚠ Update available: v{GddVersion.Current} → v{info.Version}";
     }
 }

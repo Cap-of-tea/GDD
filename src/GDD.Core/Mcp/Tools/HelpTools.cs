@@ -11,7 +11,7 @@ public static class HelpTools
             {
                 Name = "gdd_get_manual",
                 Description =
-                    "Returns the full GDD manual: setup, all 34 tool descriptions with parameters, " +
+                    "Returns the full GDD manual: setup, all 36 tool descriptions with parameters, " +
                     "agent rules, anti-patterns, and real-world workflow examples. " +
                     "Call this once at the start of a session to learn how to use GDD effectively.",
                 InputSchema = new

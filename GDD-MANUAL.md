@@ -2,7 +2,7 @@
 
 ## 1. What is GDD
 
-GDD (Giggly-Dazzling-Duckling) — кроссплатформенный инструмент для мультибраузерного тестирования. Управляет N изолированными Chromium-инстансами и выставляет 34 MCP-инструмента. Работает как HTTP API сервер — управляется через AI-агентов (Claude Code и др.), скрипты, curl или любой HTTP-клиент.
+GDD (Giggly-Dazzling-Duckling) — кроссплатформенный инструмент для мультибраузерного тестирования. Управляет N изолированными Chromium-инстансами и выставляет 36 MCP-инструментов. Работает как HTTP API сервер — управляется через AI-агентов (Claude Code и др.), скрипты, curl или любой HTTP-клиент.
 
 Три режима: **Windows GUI** (WPF + WebView2, с визуальным превью), **Headless** (Playwright, работает на Windows/Linux/macOS) и **Headed** (`--headed` — видимые окна Chromium на любой платформе). Все режимы предоставляют идентичный набор MCP-инструментов.
 
@@ -98,7 +98,7 @@ GDD запускает MCP HTTP сервер на порту 9700 (auto-fallback
 
 Откройте **новый чат** в Claude Code (или Reload Window). MCP клиент читает `.mcp.json` только при старте сессии.
 
-34 tools должны появиться с `mcp__gdd__` префиксом.
+36 tools должны появиться с `mcp__gdd__` префиксом.
 
 ### Troubleshooting
 
@@ -418,6 +418,28 @@ Read or clear browser cookies.
 
 ---
 
+### Update
+
+#### `gdd_check_update()`
+
+Check if a newer version of GDD is available. Returns current version, latest version, download URL, and release notes.
+
+No parameters.
+
+#### `gdd_update(confirm)`
+
+Download and install a GDD update. GDD will restart after applying the update. Local settings (`appsettings.json`) are preserved.
+
+| Param | Type | Description |
+| ----- | ---- | ----------- |
+| `confirm` | boolean | **Required.** Must be `true` to proceed. Safety check to prevent accidental updates |
+
+**CLI alternative:** `./GDD.Headless --update` — checks, downloads, and applies update from the command line.
+
+**Startup check:** GDD checks for updates at startup (configurable via `CheckForUpdates` in appsettings.json). Console shows `⚠ Update available: v1.3.0 → v1.4.0`. MCP `initialize` response includes `updateAvailable` and `latestVersion` fields.
+
+---
+
 ## 4. Claude Agent Rules
 
 ### Core Principle
@@ -643,7 +665,7 @@ Report: "All 3 players have isolated sessions. Each sees their own profile name.
 ```text
 Client (AI agent / curl / script) ──HTTP POST──→ GDD (port 9700/mcp)
                                                       │
-                                            McpToolRegistry (34 tools)
+                                            McpToolRegistry (36 tools)
                                                       │
                                               IPlayerManager
                                             ┌────┬────┬────┐
@@ -677,7 +699,8 @@ Client (AI agent / curl / script) ──HTTP POST──→ GDD (port 9700/mcp)
     "BotToken": "",
     "McpPort": 9700,
     "BindAddress": "localhost",
-    "DataFolderRoot": ""
+    "DataFolderRoot": "",
+    "CheckForUpdates": true
   }
 }
 ```
@@ -691,6 +714,7 @@ Client (AI agent / curl / script) ──HTTP POST──→ GDD (port 9700/mcp)
 | `BindAddress` | Network interface to listen on (`"localhost"` = local only, `"*"` = all interfaces for LAN access) | `localhost` |
 | `DataFolderRoot` | Browser profile storage | `%LOCALAPPDATA%\GDD\Profiles` (Win), `~/.local/share/GDD/Profiles` (Linux/macOS) |
 | `Headed` | Launch visible browser windows (headless only) | `false` (or use `--headed` CLI flag) |
+| `CheckForUpdates` | Check GitHub for new versions at startup | `true` |
 
 ### Logs
 

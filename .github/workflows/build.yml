@@ -23,6 +23,16 @@ jobs:
           name: gdd-windows-gui
           path: publish/win-gui/
 
+      - name: Create update artifact (without browsers)
+        shell: pwsh
+        run: |
+          Copy-Item -Recurse publish/win-gui publish/win-gui-update
+          Remove-Item -Recurse -Force publish/win-gui-update/logs -ErrorAction SilentlyContinue
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gdd-windows-gui-update
+          path: publish/win-gui-update/
+
   build-headless:
     strategy:
       matrix:
@@ -97,8 +107,8 @@ jobs:
           TOOLS=$(echo "$RESPONSE" | python3 -c "import sys,json; print(len(json.loads(sys.stdin.read())['result']['tools']))")
           echo "Tools found: $TOOLS"
           kill $PID 2>/dev/null || true
-          if [ "$TOOLS" -ne 34 ]; then
-            echo "Expected 34 tools, got $TOOLS"
+          if [ "$TOOLS" -ne 36 ]; then
+            echo "Expected 36 tools, got $TOOLS"
             exit 1
           fi
 
@@ -107,6 +117,18 @@ jobs:
           name: ${{ matrix.artifact }}
           path: publish/${{ matrix.rid }}/
           include-hidden-files: true
+
+      - name: Create update artifact (without browsers)
+        shell: bash
+        run: |
+          cp -r publish/${{ matrix.rid }} publish/${{ matrix.rid }}-update
+          rm -rf publish/${{ matrix.rid }}-update/.browsers
+          rm -rf publish/${{ matrix.rid }}-update/.playwright
+          rm -rf publish/${{ matrix.rid }}-update/logs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}-update
+          path: publish/${{ matrix.rid }}-update/
 
   release:
     if: startsWith(github.ref, 'refs/tags/v')

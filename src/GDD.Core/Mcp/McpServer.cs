@@ -4,6 +4,7 @@ using System.Net;
 using System.Text;
 using System.Text.Json;
 using GDD.Abstractions;
+using GDD.Services;
 using Serilog;
 
 namespace GDD.Mcp;
@@ -26,8 +27,11 @@ public sealed class McpServer : IDisposable
     private CancellationTokenSource? _cts;
     private Task? _listenTask;
     private bool _disposed;
+    private UpdateService? _updateService;
 
     public int ActualPort { get; private set; }
+
+    public void SetUpdateService(UpdateService updateService) => _updateService = updateService;
 
     public McpServer(McpToolRegistry registry, IMainThreadDispatcher dispatcher, int port, string bindAddress = "localhost")
     {
@@ -287,7 +291,9 @@ public sealed class McpServer : IDisposable
                         serverInfo = new
                         {
                             name = "gdd",
-                            version = "1.3.0"
+                            version = GddVersion.Current,
+                            updateAvailable = _updateService?.CachedUpdate is not null,
+                            latestVersion = _updateService?.CachedUpdate?.Version
                         }
                     }
                 };

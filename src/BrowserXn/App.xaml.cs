@@ -52,12 +52,34 @@ public partial class App : Application
         RegisterMcpTools();
         StartMcpServer();
 
+        if (_mcpServer is not null)
+        {
+            var updateService = _host.Services.GetRequiredService<UpdateService>();
+            _mcpServer.SetUpdateService(updateService);
+        }
+
         var mainViewModel = _host.Services.GetRequiredService<MainViewModel>();
         if (_mcpServer is not null)
             mainViewModel.ApiEndpoint = $"http://localhost:{_mcpServer.ActualPort}/mcp";
         var mainWindow = new MainWindow { DataContext = mainViewModel };
         MainWindow = mainWindow;
         mainWindow.Show();
+
+        var appConfig = _host.Services.GetRequiredService<AppConfig>();
+        if (appConfig.CheckForUpdates)
+        {
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    var updateService = _host.Services.GetRequiredService<UpdateService>();
+                    var update = await updateService.CheckForUpdateAsync();
+                    if (update is not null)
+                        Dispatcher.Invoke(() => mainViewModel.SetUpdateAvailable(update));
+                }
+                catch { /* non-critical */ }
+            });
+        }
     }
 
     private void RegisterMcpTools()
@@ -88,6 +110,9 @@ public partial class App : Application
         StateTools.Register(registry, playerManager, notificationService);
         DiagnosticsTools.Register(registry, playerManager, consoleService, networkMonitorService, cdpService);
         HelpTools.Register(registry);
+
+        var updateService = _host.Services.GetRequiredService<UpdateService>();
+        UpdateTools.Register(registry, updateService);
     }
 
     private void StartMcpServer()

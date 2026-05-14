@@ -2,7 +2,7 @@
 
 ## What is GDD
 
-GDD is a cross-platform application that manages multiple isolated Chromium browser instances ("players") and exposes 34 MCP tools for browser automation, device/network/location emulation, and diagnostics. It listens on `http://localhost:9700/mcp`.
+GDD is a cross-platform application that manages multiple isolated Chromium browser instances ("players") and exposes 36 MCP tools for browser automation, device/network/location emulation, and diagnostics. It listens on `http://localhost:9700/mcp`.
 
 Three modes: **Windows GUI** (WebView2 with visual preview), **Headless** (Playwright, runs on Windows/Linux/macOS), and **Headed** (`--headed` flag — visible Chromium windows on any platform). All provide identical MCP tools.
 
@@ -12,7 +12,7 @@ You have access to GDD tools via the `gdd` MCP server. Use them to test web appl
 
 The `.mcp.json` in this project connects you to GDD. GDD auto-launches when you first call any tool. If tools return connection errors, wait 5-6 seconds and retry — GDD is starting up.
 
-## Available Tools (34)
+## Available Tools (36)
 
 ### Player Management
 
@@ -80,6 +80,11 @@ The `.mcp.json` in this project connects you to GDD. GDD auto-launches when you 
 ### Help
 
 - `gdd_get_manual()` — Returns the full GDD manual for self-learning.
+
+### Updates
+
+- `gdd_check_update()` — Check if a newer version of GDD is available. Returns current version, latest version, and download URL.
+- `gdd_update(confirm)` — Download and install a GDD update. Requires `confirm=true`. GDD will restart after update. Local settings (appsettings.json) are preserved.
 
 ## Workflow Patterns
 

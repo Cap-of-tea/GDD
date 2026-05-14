@@ -1,3 +1,4 @@
+using System.Net.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using GDD.Abstractions;
@@ -58,6 +59,13 @@ public static class IServiceCollectionExtensions
             client.BaseAddress = new Uri(config.BackendUrl.TrimEnd('/') + "/");
             client.DefaultRequestHeaders.Add("Accept", "application/json");
         });
+
+        services.AddHttpClient("GitHubApi", client =>
+        {
+            client.DefaultRequestHeaders.Add("User-Agent", "GDD-Updater");
+            client.DefaultRequestHeaders.Add("Accept", "application/vnd.github+json");
+        });
+        services.AddSingleton(sp => new UpdateService(sp.GetRequiredService<IHttpClientFactory>(), isGui: true));
 
         return services;
     }

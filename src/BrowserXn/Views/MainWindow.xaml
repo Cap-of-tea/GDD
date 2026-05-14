@@ -134,6 +134,19 @@
                 BorderThickness="0,1,0,0"
                 Padding="12,4">
             <DockPanel>
+                <TextBlock DockPanel.Dock="Right"
+                           Text="{Binding PlayerCount, StringFormat='Players: {0}'}"
+                           Foreground="{StaticResource TextSecondaryBrush}"
+                           FontSize="12"
+                           VerticalAlignment="Center" />
+                <TextBlock DockPanel.Dock="Right"
+                           Text="{Binding UpdateVersion, StringFormat='⚠ Update v{0} available'}"
+                           Visibility="{Binding UpdateAvailable, Converter={StaticResource BoolToVis}}"
+                           Foreground="#FFD700"
+                           FontSize="11"
+                           VerticalAlignment="Center"
+                           Margin="0,0,12,0"
+                           ToolTip="A newer version of GDD is available. Use gdd_update tool or --update flag to install." />
                 <TextBlock Text="{Binding ApiEndpoint}"
                            Foreground="{StaticResource AccentBrush}"
                            FontSize="11"
@@ -145,12 +158,6 @@
                            FontSize="12"
                            VerticalAlignment="Center"
                            Margin="16,0,0,0" />
-                <TextBlock DockPanel.Dock="Right"
-                           Text="{Binding PlayerCount, StringFormat='Players: {0}'}"
-                           Foreground="{StaticResource TextSecondaryBrush}"
-                           FontSize="12"
-                           VerticalAlignment="Center"
-                           HorizontalAlignment="Right" />
             </DockPanel>
         </Border>
     </Grid>

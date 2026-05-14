@@ -54,7 +54,7 @@ BrowserXn.sln
 │   │   ├── Abstractions/        ← IBrowserEngine, IPlayerManager, IPlayerContext,
 │   │   │                          IMainThreadDispatcher, ICdpEventSubscription
 │   │   ├── Mcp/                 ← MCP server, tool registry, JSON-RPC protocol
-│   │   │   └── Tools/           ← 34 MCP tools organized by category
+│   │   │   └── Tools/           ← 36 MCP tools organized by category
 │   │   ├── Models/              ← Device, Location, Network presets, AppConfig
 │   │   ├── Services/            ← CDP, Emulation, Interception, Monitoring
 │   │   └── Collections/         ← RingBuffer
@@ -135,7 +135,7 @@ dotnet publish src/GDD.Headless/GDD.Headless.csproj -c Release -r win-x64 --self
 1. Commit and push all changes to `master`
 2. Create a version tag: `git tag v1.x.0 && git push origin v1.x.0`
 3. GitHub Actions builds all 5 targets (Windows GUI, win-x64, linux-x64, macOS ARM64, macOS x64)
-4. Each build runs a smoke test (verifies 34 tools via HTTP)
+4. Each build runs a smoke test (verifies 36 tools via HTTP)
 5. On success, `tar.gz` archives are uploaded to GitHub Releases
 
 ## Reporting Issues

@@ -11,6 +11,7 @@ public sealed class AppConfig
     public string BindAddress { get; set; } = "localhost";
     public string DataFolderRoot { get; set; } = string.Empty;
     public bool Headed { get; set; }
+    public bool CheckForUpdates { get; set; } = true;
 
     public string GetDataFolderRoot()
     {
