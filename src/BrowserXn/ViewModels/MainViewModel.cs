@@ -41,6 +41,8 @@ public partial class MainViewModel : ObservableObject, IPlayerManager
     [ObservableProperty]
     private string _apiEndpoint = "";
 
+    public string Version => $"v{GddVersion.Current}";
+
     [ObservableProperty]
     private bool _updateAvailable;
 

@@ -164,12 +164,15 @@ public sealed class McpServer : IDisposable
             return;
         }
 
-        var sessionId = request.Headers["Mcp-Session-Id"] ?? Guid.NewGuid().ToString("N");
+        var sessionId = request.Headers["Mcp-Session-Id"];
+        if (sessionId is null && rpcRequest.Method == "initialize")
+            sessionId = Guid.NewGuid().ToString("N");
         McpSessionContext.CurrentSessionId = sessionId;
 
         var rpcResponse = await ProcessRequest(rpcRequest);
 
-        response.Headers.Add("Mcp-Session-Id", sessionId);
+        if (sessionId is not null)
+            response.Headers.Add("Mcp-Session-Id", sessionId);
 
         await WriteJsonResponse(response, rpcResponse);
     }

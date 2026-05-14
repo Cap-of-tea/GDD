@@ -32,11 +32,15 @@
             <DockPanel>
                 <!-- Left: Actions -->
                 <StackPanel DockPanel.Dock="Left" Orientation="Horizontal" VerticalAlignment="Center">
-                    <TextBlock Text="GDD"
-                               FontSize="16" FontWeight="Bold"
+                    <TextBlock FontSize="16" FontWeight="Bold"
                                Foreground="{StaticResource AccentBrush}"
                                VerticalAlignment="Center"
-                               Margin="0,0,20,0" />
+                               Margin="0,0,20,0">
+                        <Run Text="GDD" />
+                        <Run Text="{Binding Version, Mode=OneTime}"
+                             FontSize="11" FontWeight="Normal"
+                             Foreground="{StaticResource TextSecondaryBrush}" />
+                    </TextBlock>
 
                     <Button Content="+ Add Player"
                             Style="{StaticResource AccentButton}"
