@@ -51,9 +51,31 @@ GDD запускает MCP HTTP сервер на порту 9700 (auto-fallback
 
 ### Настройка Claude Code
 
-`.mcp.json` в корне проекта:
+Два способа подключения — выбирайте один:
 
-**Windows (PowerShell proxy с автозапуском):**
+#### Вариант A: Прямой URL (рекомендуется)
+
+GDD должен быть запущен заранее (вручную, через launchd/systemd, или nohup).
+
+`.mcp.json` (в корне проекта или `~/.claude/.mcp.json` глобально):
+
+```json
+{
+  "mcpServers": {
+    "gdd": {
+      "url": "http://localhost:9700/mcp"
+    }
+  }
+}
+```
+
+Мгновенное подключение, без промежуточного proxy, без таймаутов.
+
+#### Вариант B: stdio-proxy (автозапуск GDD)
+
+Прокси-скрипты автоматически запускают GDD если он не работает и пробрасывают JSON-RPC через stdin/stdout.
+
+**Windows:**
 
 ```json
 {
@@ -66,7 +88,7 @@ GDD запускает MCP HTTP сервер на порту 9700 (auto-fallback
 }
 ```
 
-**Linux / macOS (Bash proxy с автозапуском):**
+**Linux / macOS:**
 
 ```json
 {
@@ -79,20 +101,19 @@ GDD запускает MCP HTTP сервер на порту 9700 (auto-fallback
 }
 ```
 
-**Linux / macOS (Headless — без видимых окон, для CI/CD):**
+Для headless-режима добавьте `"--headless"` в массив `args`.
 
-```json
-{
-  "mcpServers": {
-    "gdd": {
-      "command": "bash",
-      "args": ["/path/to/Scripts/mcp-proxy.sh", "--headless"]
-    }
-  }
-}
-```
+> **Примечание:** При первом запуске GDD скачивает Chromium (~80 MB), что может занять время. Если MCP-клиент не дожидается — запустите GDD вручную (`./GDD.Headless`), дождитесь установки Chromium, затем перезапустите сессию.
 
-Прокси-скрипты автоматически запускают GDD если он не работает, и пробрасывают JSON-RPC из stdin Claude Code в HTTP endpoint `http://localhost:9700/mcp`.
+#### Расположение конфигов
+
+| Клиент | Путь |
+| --- | --- |
+| Claude Code (проект) | `<project>/.mcp.json` |
+| Claude Code (глобально) | `~/.claude/.mcp.json` |
+| Cursor | `~/.cursor/mcp.json` |
+
+> Конфиги мержатся: серверы из глобального и проектного `.mcp.json` доступны одновременно. Изменения подхватываются только при перезапуске сессии Claude Code / Cursor.
 
 ### Проверка подключения
 

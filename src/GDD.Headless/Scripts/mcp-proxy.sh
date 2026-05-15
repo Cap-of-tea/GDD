@@ -9,6 +9,7 @@ GDD_ARGS=""
 for arg in "$@"; do
     case "$arg" in
         --headed) GDD_ARGS="$GDD_ARGS --headed" ;;
+        --headless) GDD_ARGS="$GDD_ARGS --headless" ;;
     esac
 done
 

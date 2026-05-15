@@ -2,6 +2,29 @@
 
 All notable changes to GDD are documented here.
 
+## [1.4.2] - 2026-05-16
+
+### Added
+
+- **macOS: bundled Node.js fallback** — Chromium auto-install now falls back to `.playwright/node/{platform}/node` + `cli.js` when PowerShell (`pwsh`) is unavailable. Three-tier chain: Playwright.Program.Main → pwsh → bundled node
+- **Crash logging** — unhandled exceptions written to `logs/gdd-crash.log` with timestamp, exception details, and OS/version info
+- **`--headless` CLI flag** — explicitly disable headed mode (`./GDD.Headless --headless` for CI/CD)
+- **macOS launchd autostart** — README documents `launchd` plist for persistent GDD on macOS
+- **Linux systemd autostart** — README documents `systemd --user` service for persistent GDD on Linux
+- **Direct URL connection** — documented `"url": "http://localhost:9700/mcp"` as recommended MCP connection method (no proxy needed)
+
+### Changed
+
+- **Headed mode by default** — `GDD.Headless` now launches with visible Chromium windows. Use `--headless` for CI/CD. `appsettings.json` default: `"Headed": true`
+- **macOS xattr handling** — targeted quarantine removal on `.browsers`, `.playwright`, and executables instead of recursive on entire directory. Suppresses permission errors (`2>/dev/null || true`)
+- **Proxy scripts** — `mcp-proxy.sh` and `mcp-proxy.ps1` now support both `--headed` and `--headless` flags
+- **Documentation overhaul** — README and Manual rewritten with two MCP connection options (URL vs stdio-proxy), config file paths for Claude Code/Cursor, session restart notes
+
+### Fixed
+
+- **WebView2 orphan processes** — proper cleanup chain: event unsubscription in `WebView2ControlAdapter.DisposeAsync`, `CoreWebView2Environment` disposal in `OverlayWindow`, `BrowserCellViewModel.Dispose` calls `Engine.DisposeAsync`, `MainWindow.Closing` triggers `CloseAll`, `App.OnExit` safety net
+- **CI macOS artifacts** — removed full `Chromium.app` bundle from macOS tar.gz (kept only `chromium_headless_shell`), eliminates xattr permission errors on `.app` bundle files
+
 ## [1.2.0] - 2026-05-12
 
 ### Added

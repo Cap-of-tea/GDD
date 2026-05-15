@@ -5,6 +5,7 @@ $baseUrl = "http://localhost:9700/mcp"
 $gddProcess = $null
 $gddArgs = @()
 if ($args -contains '--headed') { $gddArgs += '--headed' }
+if ($args -contains '--headless') { $gddArgs += '--headless' }
 
 [Console]::InputEncoding = [System.Text.Encoding]::UTF8
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8

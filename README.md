@@ -98,6 +98,8 @@ GDD exposes 36 tools via HTTP API ([MCP protocol](https://modelcontextprotocol.i
    ./GDD.Headless
    ```
 
+   > **First run:** GDD downloads Chromium (~80 MB). Run in foreground (not `&`) to see progress and errors. After Chromium is installed, you can run in background or via launchd.
+
    If Chromium auto-install fails (CDN timeouts), install manually using the bundled Playwright CLI:
 
    ```bash
@@ -117,6 +119,8 @@ GDD exposes 36 tools via HTTP API ([MCP protocol](https://modelcontextprotocol.i
    xattr -dr com.apple.quarantine . 2>/dev/null || true
    ./GDD.Headless
    ```
+
+   > **First run:** GDD downloads Chromium (~80 MB). Run in foreground (not `&`) to see progress and errors. After Chromium is installed, you can run in background or via launchd.
 
    If Chromium auto-install fails, install manually:
 
@@ -147,7 +151,7 @@ curl -X POST http://localhost:9700/mcp \
   -d '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}'
 ```
 
-**Claude Code / Cursor / MCP clients** — add to `.mcp.json`. Proxy scripts auto-launch GDD if it's not running.
+**Claude Code / Cursor / MCP clients** — two connection methods:
 
 Config file location:
 
@@ -156,6 +160,28 @@ Config file location:
 | Claude Code (project) | `<project>/.mcp.json` |
 | Claude Code (global) | `~/.claude/.mcp.json` |
 | Cursor | `~/.cursor/mcp.json` |
+
+> **Note:** MCP config is read at session start. After editing `.mcp.json`, restart Claude Code / Cursor for changes to take effect. Global and project configs are merged — servers from both are available simultaneously.
+
+#### Option A: Direct URL (recommended)
+
+Connect directly to GDD's HTTP endpoint. Requires GDD to be running (manually, via autostart, or as a service).
+
+```json
+{
+  "mcpServers": {
+    "gdd": {
+      "url": "http://localhost:9700/mcp"
+    }
+  }
+}
+```
+
+Instant connection, no intermediate proxy, no timeout issues. Works on all platforms.
+
+#### Option B: stdio proxy (auto-launches GDD)
+
+Proxy scripts start GDD automatically if it's not running and relay JSON-RPC via stdin/stdout.
 
 Windows:
 
@@ -184,6 +210,80 @@ Linux / macOS:
 ```
 
 For headless mode, add `"--headless"` to the `args` array.
+
+> **Tip:** On first launch, GDD downloads Chromium (~80 MB) which can take time. If the MCP client times out waiting, run GDD manually first (`./GDD.Headless`), then restart the MCP session.
+
+### macOS: Autostart via launchd
+
+For persistent GDD on macOS, set up a launchd service that starts GDD at login and auto-restarts on crash:
+
+```bash
+cat > ~/Library/LaunchAgents/com.gdd.headless.plist << 'PLIST'
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.gdd.headless</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/path/to/GDD.Headless</string>
+    </array>
+    <key>WorkingDirectory</key>
+    <string>/path/to/gdd-directory</string>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <true/>
+    <key>StandardOutPath</key>
+    <string>/path/to/gdd-directory/logs/launchd-stdout.log</string>
+    <key>StandardErrorPath</key>
+    <string>/path/to/gdd-directory/logs/launchd-stderr.log</string>
+</dict>
+</plist>
+PLIST
+
+# Replace /path/to/ with your actual GDD directory, then:
+mkdir -p /path/to/gdd-directory/logs
+launchctl load ~/Library/LaunchAgents/com.gdd.headless.plist
+```
+
+Then use **Option A** (direct URL) in `.mcp.json` — no proxy needed.
+
+Manage the service:
+
+```bash
+launchctl unload ~/Library/LaunchAgents/com.gdd.headless.plist  # stop
+launchctl load ~/Library/LaunchAgents/com.gdd.headless.plist    # start
+launchctl list | grep gdd                                        # status
+```
+
+### Linux: Autostart via systemd
+
+```bash
+mkdir -p ~/.config/systemd/user
+
+cat > ~/.config/systemd/user/gdd.service << 'EOF'
+[Unit]
+Description=GDD Multi-Browser Testing Server
+
+[Service]
+ExecStart=/path/to/GDD.Headless
+WorkingDirectory=/path/to/gdd-directory
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target
+EOF
+
+# Replace /path/to/ with your actual GDD directory, then:
+systemctl --user daemon-reload
+systemctl --user enable --now gdd
+systemctl --user status gdd   # check status
+journalctl --user -u gdd -f   # view logs
+```
 
 ### Use
 
