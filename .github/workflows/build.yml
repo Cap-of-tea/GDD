@@ -118,6 +118,12 @@ jobs:
           path: publish/${{ matrix.rid }}/
           include-hidden-files: true
 
+      - name: Remove full Chromium.app from macOS artifacts (keep only headless shell)
+        if: startsWith(matrix.rid, 'osx-')
+        shell: bash
+        run: |
+          find publish/${{ matrix.rid }}/.browsers -maxdepth 1 -name 'chromium-*' -type d -exec rm -rf {} + 2>/dev/null || true
+
       - name: Create update artifact (without browsers)
         shell: bash
         run: |

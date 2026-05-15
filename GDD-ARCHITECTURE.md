@@ -4,7 +4,7 @@
 
 GDD (Giggly-Dazzling-Duckling) — кроссплатформенное приложение для мультибраузерного тестирования веб-приложений. Управляет N изолированными Chromium-инстансами ("players") через Chrome DevTools Protocol и предоставляет 36 MCP-инструментов для автоматизации через Claude Code или любой MCP-клиент.
 
-Три режима: **Windows GUI** (WPF + WebView2), **Headless** (Playwright, Windows/Linux/macOS) и **Headed** (`--headed` — видимые окна Chromium на любой платформе). Общее ядро GDD.Core содержит все сервисы и MCP-инструменты, работающие через абстракции `IBrowserEngine` и `IPlayerManager`.
+Три режима: **Windows GUI** (WPF + WebView2), **Headed** (Playwright, видимые окна Chromium, по умолчанию на Windows/Linux/macOS) и **Headless** (`--headless` — без UI, для CI/CD). Общее ядро GDD.Core содержит все сервисы и MCP-инструменты, работающие через абстракции `IBrowserEngine` и `IPlayerManager`.
 
 **Ключевая идея:** один AI-агент (Claude) видит и управляет несколькими браузерами одновременно — навигация, клики, скриншоты, эмуляция устройств/сети/геолокации, мониторинг консоли и сетевых запросов.
 
@@ -106,7 +106,7 @@ Client → POST /mcp {"method":"tools/call","params":{"name":"gdd_navigate",...}
 BrowserXn.sln
 ├── src/
 │   ├── GDD.Core/                          ← Shared library (net8.0)
-│   │   ├── GddVersion.cs                    Version constant (e.g. "1.3.0")
+│   │   ├── GddVersion.cs                    Version constant (e.g. "1.4.1")
 │   │   ├── Abstractions/
 │   │   │   ├── IBrowserEngine.cs              Browser engine interface
 │   │   │   ├── IBrowserEngineFactory.cs       Factory interface
@@ -226,7 +226,7 @@ interface IBrowserEngine : IAsyncDisposable
 - CDP session через `context.NewCDPSessionAsync(page)`
 - Скриншоты через `page.ScreenshotAsync()` с `ScreenshotScale.Css` (JPEG)
 - Ожидание загрузки через `WaitForLoadStateAsync(LoadState.Load)`
-- Режим `--headed` запускает видимые окна Chromium (для GUI на Linux/macOS)
+- По умолчанию запускает видимые окна Chromium; `--headless` отключает UI (для CI/CD)
 
 ### 5.2 MCP Server
 
@@ -414,9 +414,9 @@ interface IMainThreadDispatcher
 
 ### 7.4 Headed Mode (GUI on Linux/macOS)
 
-`GDD.Headless --headed` launches Playwright with `Headless = false`, opening visible Chromium windows. MCP tools work identically — no code changes needed. This provides GUI-like visual testing on Linux/macOS without WPF or CefGlue.
+`GDD.Headless` launches Playwright with `Headless = false` by default, opening visible Chromium windows. Use `--headless` to run without UI. MCP tools work identically in both modes. This provides GUI-like visual testing on Linux/macOS without WPF or CefGlue.
 
-Configuration: `AppConfig.Headed` property or `--headed` CLI flag. Proxy scripts also support `--headed`.
+Configuration: `AppConfig.Headed` property (default `true`) or `--headless`/`--headed` CLI flags. Proxy scripts also support these flags.
 
 **Future — Full Management UI on All Platforms:**
 

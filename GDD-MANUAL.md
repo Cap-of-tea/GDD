@@ -4,7 +4,7 @@
 
 GDD (Giggly-Dazzling-Duckling) — кроссплатформенный инструмент для мультибраузерного тестирования. Управляет N изолированными Chromium-инстансами и выставляет 36 MCP-инструментов. Работает как HTTP API сервер — управляется через AI-агентов (Claude Code и др.), скрипты, curl или любой HTTP-клиент.
 
-Три режима: **Windows GUI** (WPF + WebView2, с визуальным превью), **Headless** (Playwright, работает на Windows/Linux/macOS) и **Headed** (`--headed` — видимые окна Chromium на любой платформе). Все режимы предоставляют идентичный набор MCP-инструментов.
+Три режима: **Windows GUI** (WPF + WebView2, с визуальным превью), **Headed** (Playwright, видимые окна Chromium, по умолчанию на Windows/Linux/macOS) и **Headless** (`--headless` — без UI). Все режимы предоставляют идентичный набор MCP-инструментов.
 
 Claude видит и управляет браузерами как человек: открывает страницы, тапает кнопки, читает текст, делает скриншоты, эмулирует устройства/сети/геолокации, мониторит консоль и сетевые запросы.
 
@@ -41,10 +41,10 @@ Claude видит и управляет браузерами как челове
 # MCP server starts on http://localhost:9700/mcp
 ```
 
-**Headed (видимые окна Chromium):**
+**Headless (без UI, для CI/CD):**
 
 ```bash
-./GDD.Headless --headed
+./GDD.Headless --headless
 ```
 
 GDD запускает MCP HTTP сервер на порту 9700 (auto-fallback 9701..9709 если занят).
@@ -79,14 +79,14 @@ GDD запускает MCP HTTP сервер на порту 9700 (auto-fallback
 }
 ```
 
-**Linux / macOS (Headed — видимые окна Chromium):**
+**Linux / macOS (Headless — без видимых окон, для CI/CD):**
 
 ```json
 {
   "mcpServers": {
     "gdd": {
       "command": "bash",
-      "args": ["/path/to/Scripts/mcp-proxy.sh", "--headed"]
+      "args": ["/path/to/Scripts/mcp-proxy.sh", "--headless"]
     }
   }
 }
@@ -713,7 +713,7 @@ Client (AI agent / curl / script) ──HTTP POST──→ GDD (port 9700/mcp)
 | `McpPort` | MCP server port | 9700 |
 | `BindAddress` | Network interface to listen on (`"localhost"` = local only, `"*"` = all interfaces for LAN access) | `localhost` |
 | `DataFolderRoot` | Browser profile storage | `%LOCALAPPDATA%\GDD\Profiles` (Win), `~/.local/share/GDD/Profiles` (Linux/macOS) |
-| `Headed` | Launch visible browser windows (headless only) | `false` (or use `--headed` CLI flag) |
+| `Headed` | Launch visible browser windows (Headless binary only) | `true` (use `--headless` CLI flag to disable) |
 | `CheckForUpdates` | Check GitHub for new versions at startup | `true` |
 
 ### Logs

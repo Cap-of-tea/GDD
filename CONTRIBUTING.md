@@ -17,7 +17,7 @@ Thanks for your interest in contributing to GDD!
    - [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
    - Windows GUI only: [WebView2 Runtime](https://developer.microsoft.com/en-us/microsoft-edge/webview2/)
    - Linux headless: `sudo apt install -y libnss3 libatk-bridge2.0-0 libdrm2 libxkbcommon0 libgbm1`
-   - macOS: unblock Gatekeeper after build: `xattr -dr com.apple.quarantine .`
+   - macOS: unblock Gatekeeper after build: `xattr -dr com.apple.quarantine . 2>/dev/null || true`
 
 4. Build:
 
@@ -28,7 +28,7 @@ Thanks for your interest in contributing to GDD!
    # Windows GUI (Windows only)
    dotnet build src/BrowserXn/BrowserXn.csproj
 
-   # Cross-platform (headless by default, --headed for visible browser)
+   # Cross-platform (headed by default, --headless for CI/CD)
    dotnet build src/GDD.Headless/GDD.Headless.csproj
    ```
 
@@ -117,8 +117,8 @@ curl -X POST http://localhost:9700/mcp \
   -H "Content-Type: application/json" \
   -d '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}'
 
-# Headed mode (visible browser windows):
-dotnet run --project src/GDD.Headless/GDD.Headless.csproj -- --headed
+# Headless mode (no browser windows, for CI/CD):
+dotnet run --project src/GDD.Headless/GDD.Headless.csproj -- --headless
 ```
 
 ## Cross-Platform Publish

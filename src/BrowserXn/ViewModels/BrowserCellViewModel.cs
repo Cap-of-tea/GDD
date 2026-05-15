@@ -145,6 +145,10 @@ public partial class BrowserCellViewModel : ObservableObject, IPlayerContext, ID
 
     public void Dispose()
     {
+        if (Engine is IAsyncDisposable asyncDisposable)
+            asyncDisposable.DisposeAsync().AsTask().GetAwaiter().GetResult();
+        Engine = null;
+
         WebView?.Dispose();
         WebView = null;
         GC.SuppressFinalize(this);

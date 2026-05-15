@@ -19,7 +19,7 @@ All notable changes to GDD are documented here.
 - **`gdd_set_viewport`** — set arbitrary viewport dimensions (width, height, scale, mobile flag, user agent)
 - **`gdd_set_language`** — set browser language/locale, changes `navigator.language`, `navigator.languages`, and `Accept-Language` header
 - **`gdd_set_device` expanded** — now exposes all 22 device presets (was 5 in enum)
-- **`--headed` mode** — `GDD.Headless --headed` launches visible Chromium windows on Linux/macOS instead of headless. MCP proxy scripts also support `--headed` flag
+- **Headed by default** — `GDD.Headless` now launches visible Chromium windows by default. Use `--headless` for CI/CD. `--headed` flag still works for explicit override. MCP proxy scripts support both flags
 - **Copyright** — assembly copyright `imVS©, freeware for private use.` in both BrowserXn and GDD.Headless
 - **Console & network diagnostics on ViewModel** — ConsoleErrorCount, NetworkErrorCount, LastError fields on BrowserCellViewModel
 - **Stdout port output** — GDD prints `GDD MCP server listening on http://localhost:{port}` on startup

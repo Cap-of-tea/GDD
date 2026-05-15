@@ -2,5 +2,5 @@ namespace GDD;
 
 public static class GddVersion
 {
-    public const string Current = "1.4.1";
+    public const string Current = "1.4.2";
 }

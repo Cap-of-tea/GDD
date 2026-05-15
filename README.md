@@ -28,13 +28,13 @@ GDD exposes 36 tools via HTTP API ([MCP protocol](https://modelcontextprotocol.i
 - **AI agents** — Claude Code, Cursor, or any MCP-compatible client
 - **Scripts & automation** — `curl`, Python, Node.js, or any HTTP client via JSON-RPC
 - **CI/CD pipelines** — headless browser testing on any platform
-- **Manual testing** — visible browser windows on any OS (`--headed`), or Windows GUI with video wall
+- **Manual testing** — visible browser windows on any OS (default), or Windows GUI with video wall
 
 **Three modes:**
 
 | | Windows GUI | Headless | Headed |
 | --- | --- | --- | --- |
-| Binary | `GDD.exe` (BrowserXn) | `GDD.Headless` | `GDD.Headless --headed` |
+| Binary | `GDD.exe` (BrowserXn) | `GDD.Headless --headless` | `GDD.Headless` |
 | Browser engine | WebView2 | Playwright (Chromium) | Playwright (Chromium) |
 | UI | WPF desktop with video wall | No UI — HTTP API only | Visible Chromium windows |
 | Platforms | Windows only | Windows, Linux, macOS | Windows, Linux, macOS |
@@ -94,8 +94,17 @@ GDD exposes 36 tools via HTTP API ([MCP protocol](https://modelcontextprotocol.i
 
    ```bash
    chmod +x GDD.Headless
-   xattr -dr com.apple.quarantine .    # unblock Gatekeeper
+   xattr -dr com.apple.quarantine . 2>/dev/null || true
    ./GDD.Headless
+   ```
+
+   If Chromium auto-install fails (CDN timeouts), install manually using the bundled Playwright CLI:
+
+   ```bash
+   PLAYWRIGHT_BROWSERS_PATH="$(pwd)/.browsers" \
+     ./.playwright/node/darwin-arm64/node \
+     ./.playwright/package/cli.js install chromium
+   xattr -dr com.apple.quarantine .browsers .playwright 2>/dev/null || true
    ```
 
 ### macOS — Intel
@@ -105,19 +114,28 @@ GDD exposes 36 tools via HTTP API ([MCP protocol](https://modelcontextprotocol.i
 
    ```bash
    chmod +x GDD.Headless
-   xattr -dr com.apple.quarantine .    # unblock Gatekeeper
+   xattr -dr com.apple.quarantine . 2>/dev/null || true
    ./GDD.Headless
    ```
 
-### Headed Mode (visible browser windows)
+   If Chromium auto-install fails, install manually:
 
-On any platform, pass `--headed` to launch visible Chromium windows:
+   ```bash
+   PLAYWRIGHT_BROWSERS_PATH="$(pwd)/.browsers" \
+     ./.playwright/node/darwin-x64/node \
+     ./.playwright/package/cli.js install chromium
+   xattr -dr com.apple.quarantine .browsers .playwright 2>/dev/null || true
+   ```
+
+### Headed vs Headless Mode
+
+By default, `GDD.Headless` launches in **headed** mode (visible Chromium windows). To run without UI:
 
 ```bash
-./GDD.Headless --headed
+./GDD.Headless --headless
 ```
 
-All tools work identically in headless and headed modes.
+All tools work identically in both modes. You can also set `"Headed": false` in `appsettings.json`.
 
 ### Connect
 
@@ -129,7 +147,15 @@ curl -X POST http://localhost:9700/mcp \
   -d '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}'
 ```
 
-**Claude Code / Cursor / MCP clients** — add to `.mcp.json`. Proxy scripts auto-launch GDD if it's not running:
+**Claude Code / Cursor / MCP clients** — add to `.mcp.json`. Proxy scripts auto-launch GDD if it's not running.
+
+Config file location:
+
+| Client | Path |
+| --- | --- |
+| Claude Code (project) | `<project>/.mcp.json` |
+| Claude Code (global) | `~/.claude/.mcp.json` |
+| Cursor | `~/.cursor/mcp.json` |
 
 Windows:
 
@@ -157,7 +183,7 @@ Linux / macOS:
 }
 ```
 
-For headed mode, add `"--headed"` to the `args` array.
+For headless mode, add `"--headless"` to the `args` array.
 
 ### Use
 
@@ -413,7 +439,7 @@ BrowserXn.sln
 | `BotToken` | Telegram bot token (for TG testing) | — |
 | `McpPort` | MCP server port (auto-fallback +1..+9) | `9700` |
 | `DataFolderRoot` | Browser profile storage root | `%LOCALAPPDATA%\GDD\Profiles` (Win), `~/.local/share/GDD/Profiles` (Linux/macOS) |
-| `Headed` | Launch visible browser windows (headless only) | `false` (or use `--headed` CLI flag) |
+| `Headed` | Launch visible browser windows (headless only) | `true` (use `--headless` CLI flag to override) |
 
 ---
 
@@ -447,7 +473,9 @@ dotnet publish src/GDD.Headless/GDD.Headless.csproj -c Release -r osx-arm64 --se
 dotnet publish src/GDD.Headless/GDD.Headless.csproj -c Release -r win-x64 --self-contained -o ./publish/win-x64
 
 # Install Chromium manually (auto-installed on first run):
-PLAYWRIGHT_BROWSERS_PATH=publish/linux-x64/.browsers pwsh publish/linux-x64/playwright.ps1 install chromium
+PLAYWRIGHT_BROWSERS_PATH=publish/linux-x64/.browsers \
+  publish/linux-x64/.playwright/node/linux-x64/node \
+  publish/linux-x64/.playwright/package/cli.js install chromium
 ```
 
 ---

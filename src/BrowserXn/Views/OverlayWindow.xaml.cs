@@ -18,6 +18,7 @@ public partial class OverlayWindow : Window
     private static readonly ILogger Logger = Log.ForContext<OverlayWindow>();
 
     private WebView2? _webView;
+    private CoreWebView2Environment? _webViewEnvironment;
     private bool _initialized;
     private bool _forceClosing;
     private double _aspectRatio;
@@ -61,10 +62,10 @@ public partial class OverlayWindow : Window
             if (WebViewContainer is Border border)
                 border.Child = _webView;
 
-            var env = await CoreWebView2Environment.CreateAsync(
+            _webViewEnvironment = await CoreWebView2Environment.CreateAsync(
                 browserExecutableFolder: null,
                 userDataFolder: vm.Cell.UserDataFolder);
-            await _webView.EnsureCoreWebView2Async(env);
+            await _webView.EnsureCoreWebView2Async(_webViewEnvironment);
 
             _webView.CoreWebView2.Settings.IsStatusBarEnabled = false;
             _webView.CoreWebView2.Settings.AreDefaultContextMenusEnabled = true;
@@ -136,11 +137,15 @@ public partial class OverlayWindow : Window
 
         if (_webView is not null)
         {
+            try { _webView.CoreWebView2?.Stop(); } catch { }
+
             if (WebViewContainer is Border border)
                 border.Child = null;
             _webView.Dispose();
             _webView = null;
         }
+
+        _webViewEnvironment = null;
 
         if (DataContext is OverlayViewModel vm2)
         {

@@ -9,11 +9,16 @@ public sealed class WebView2ControlAdapter : IBrowserEngine
 {
     private readonly CoreWebView2 _webView;
     private readonly Dispatcher _dispatcher;
+    private bool _disposed;
+
+    private readonly EventHandler<CoreWebView2NavigationCompletedEventArgs> _navHandler;
+    private readonly EventHandler<object> _titleHandler;
+    private readonly EventHandler<CoreWebView2NotificationReceivedEventArgs> _notifHandler;
 
     public int PlayerId { get; }
     public string UserDataFolder => "";
     public bool IsInitialized => true;
-    public string CurrentUrl => _webView.Source ?? string.Empty;
+    public string CurrentUrl => _disposed ? string.Empty : (_webView.Source ?? string.Empty);
 
     public event EventHandler<NotificationEventArgs>? NotificationReceived;
     public event EventHandler<string>? NavigationCompleted;
@@ -25,13 +30,11 @@ public sealed class WebView2ControlAdapter : IBrowserEngine
         PlayerId = playerId;
         _dispatcher = Dispatcher.CurrentDispatcher;
 
-        _webView.NavigationCompleted += (_, _) =>
+        _navHandler = (_, _) =>
             NavigationCompleted?.Invoke(this, _webView.Source ?? string.Empty);
-
-        _webView.DocumentTitleChanged += (_, _) =>
+        _titleHandler = (_, _) =>
             TitleChanged?.Invoke(this, _webView.DocumentTitle ?? string.Empty);
-
-        _webView.NotificationReceived += (_, e) =>
+        _notifHandler = (_, e) =>
         {
             e.Handled = true;
             NotificationReceived?.Invoke(this, new NotificationEventArgs
@@ -43,6 +46,10 @@ public sealed class WebView2ControlAdapter : IBrowserEngine
                 Tag = e.Notification.Tag
             });
         };
+
+        _webView.NavigationCompleted += _navHandler;
+        _webView.DocumentTitleChanged += _titleHandler;
+        _webView.NotificationReceived += _notifHandler;
     }
 
     public Task InitializeAsync(object? hostHandle, string startUrl)
@@ -114,5 +121,19 @@ public sealed class WebView2ControlAdapter : IBrowserEngine
     public ICdpEventSubscription SubscribeToCdpEvent(string eventName)
         => new WebView2CdpSubscription(_webView, eventName);
 
-    public ValueTask DisposeAsync() => ValueTask.CompletedTask;
+    public ValueTask DisposeAsync()
+    {
+        if (_disposed) return ValueTask.CompletedTask;
+        _disposed = true;
+
+        _webView.NavigationCompleted -= _navHandler;
+        _webView.DocumentTitleChanged -= _titleHandler;
+        _webView.NotificationReceived -= _notifHandler;
+
+        NavigationCompleted = null;
+        TitleChanged = null;
+        NotificationReceived = null;
+
+        return ValueTask.CompletedTask;
+    }
 }

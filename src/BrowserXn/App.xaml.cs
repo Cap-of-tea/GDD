@@ -131,6 +131,13 @@ public partial class App : Application
 
     protected override void OnExit(ExitEventArgs e)
     {
+        try
+        {
+            var vm = _host?.Services.GetService<MainViewModel>();
+            vm?.CloseAllCommand.Execute(null);
+        }
+        catch { /* best effort during shutdown */ }
+
         _mcpServer?.Dispose();
         _host?.Dispose();
         Log.CloseAndFlush();

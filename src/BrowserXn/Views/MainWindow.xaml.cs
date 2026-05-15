@@ -17,12 +17,19 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
         SourceInitialized += (_, _) => DarkTitleBar.Apply(this);
+        Closing += OnWindowClosing;
         _mascotTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(5) };
         _mascotTimer.Tick += (_, _) =>
         {
             _mascotTimer.Stop();
             MascotImage.Opacity = 1.0;
         };
+    }
+
+    private void OnWindowClosing(object? sender, System.ComponentModel.CancelEventArgs e)
+    {
+        if (DataContext is MainViewModel vm)
+            vm.CloseAllCommand.Execute(null);
     }
 
     private void OnWindowLoaded(object sender, RoutedEventArgs e)

@@ -4,7 +4,7 @@
 
 GDD is a cross-platform application that manages multiple isolated Chromium browser instances ("players") and exposes 36 MCP tools for browser automation, device/network/location emulation, and diagnostics. It listens on `http://localhost:9700/mcp`.
 
-Three modes: **Windows GUI** (WebView2 with visual preview), **Headless** (Playwright, runs on Windows/Linux/macOS), and **Headed** (`--headed` flag — visible Chromium windows on any platform). All provide identical MCP tools.
+Three modes: **Windows GUI** (WebView2 with visual preview), **Headed** (Playwright, visible Chromium windows, default on Windows/Linux/macOS), and **Headless** (`--headless` flag — no UI, for CI/CD). All provide identical MCP tools.
 
 You have access to GDD tools via the `gdd` MCP server. Use them to test web applications across different devices, networks, geolocations, and languages — all from a single machine.
 

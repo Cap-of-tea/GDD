@@ -12,7 +12,28 @@ using GDD.Mcp.Tools;
 using GDD.Models;
 using GDD.Services;
 
+try
+{
+return await RunAsync(args);
+}
+catch (Exception ex)
+{
+var msg = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] FATAL: {ex}";
+Console.Error.WriteLine(msg);
+try
+{
+    var logDir = Path.Combine(AppContext.BaseDirectory, "logs");
+    Directory.CreateDirectory(logDir);
+    await File.AppendAllTextAsync(Path.Combine(logDir, "gdd-crash.log"), msg + Environment.NewLine);
+}
+catch { /* best effort */ }
+return 1;
+}
+
+static async Task<int> RunAsync(string[] args)
+{
 var headed = args.Any(a => a.Equals("--headed", StringComparison.OrdinalIgnoreCase));
+var headless = args.Any(a => a.Equals("--headless", StringComparison.OrdinalIgnoreCase));
 var doUpdate = args.Any(a => a.Equals("--update", StringComparison.OrdinalIgnoreCase));
 
 var browsersPath = Path.Combine(AppContext.BaseDirectory, ".browsers");
@@ -36,6 +57,7 @@ var host = Host.CreateDefaultBuilder(args)
         var config = new AppConfig();
         context.Configuration.GetSection("GDD").Bind(config);
         if (headed) config.Headed = true;
+        if (headless) config.Headed = false;
         services.AddSingleton(config);
 
         services.AddSingleton<IMainThreadDispatcher, ConsoleDispatcher>();
@@ -85,12 +107,12 @@ if (doUpdate)
     if (update is null)
     {
         Console.WriteLine("Already up to date.");
-        return;
+        return 0;
     }
     Console.WriteLine($"Downloading v{update.Version} ({update.SizeBytes / 1048576.0:F1} MB)...");
     var archive = await updateSvc.DownloadUpdateAsync(update);
     await updateSvc.ApplyUpdateAsync(archive);
-    return;
+    return 0;
 }
 
 await PlaywrightSetup.EnsureBrowserAsync();
@@ -154,3 +176,5 @@ mcpServer.Dispose();
 if (host.Services.GetRequiredService<HeadlessPlayerManager>() is IAsyncDisposable disposable)
     await disposable.DisposeAsync();
 Log.CloseAndFlush();
+return 0;
+}
