@@ -265,7 +265,7 @@ public sealed class UpdateService
             Remove-Item -Path $StagingDir -Recurse -Force -ErrorAction SilentlyContinue
 
             if ($ExePath -and (Test-Path $ExePath)) {
-                Start-Process -FilePath $ExePath
+                Start-Process -FilePath $ExePath -WorkingDirectory $TargetDir
             }
             """);
     }
@@ -292,6 +292,7 @@ public sealed class UpdateService
 
             if [ -n "$EXE" ] && [ -f "$EXE" ]; then
                 chmod +x "$EXE"
+                cd "$TARGET"
                 nohup "$EXE" > /dev/null 2>&1 &
             fi
             """);
