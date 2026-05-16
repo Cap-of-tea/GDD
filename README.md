@@ -39,7 +39,9 @@ gdd_get_console(1, level="error")             → checks for JS errors
 
 GDD runs N isolated Chromium instances, each with its own profile, cookies, device emulation, geolocation, and network conditions. It exposes **36 MCP tools** via HTTP on `localhost:9700`.
 
-<!-- TODO: Add demo GIF/screenshot here -->
+<p align="center">
+  <img src="Design/gdd-video-wall.png" alt="GDD Video Wall — 3 devices testing simultaneously" width="900" />
+</p>
 
 ---
 
