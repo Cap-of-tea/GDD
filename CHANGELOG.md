@@ -2,6 +2,14 @@
 
 All notable changes to GDD are documented here.
 
+## [1.4.4] - 2026-05-16
+
+### Fixed
+
+- **Duplicate processes on update** — apply scripts now kill remaining GDD processes before relaunching (pkill on Unix, Stop-Process on Windows)
+- **--help launching full GDD** — `--help`, `-h`, `-v`, `--version` now print usage and exit immediately without starting the MCP server
+- **Duplicate instance prevention** — PID file (`.gdd.pid`) prevents running multiple GDD instances; second launch prints error and exits
+
 ## [1.4.2] - 2026-05-16
 
 ### Added

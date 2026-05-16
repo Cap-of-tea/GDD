@@ -32,9 +32,46 @@ return 1;
 
 static async Task<int> RunAsync(string[] args)
 {
+if (args.Any(a => a is "--help" or "-h" or "-?" or "/?" or "--version" or "-v"))
+{
+    Console.WriteLine($"GDD v{GddVersion.Current} — Multi-Browser Testing MCP Server");
+    Console.WriteLine();
+    Console.WriteLine("Usage: GDD.Headless [options]");
+    Console.WriteLine();
+    Console.WriteLine("Options:");
+    Console.WriteLine("  --headed     Launch with visible Chromium windows (default)");
+    Console.WriteLine("  --headless   Launch without UI (for CI/CD)");
+    Console.WriteLine("  --update     Check for updates, download and apply if available");
+    Console.WriteLine("  --help       Show this help");
+    return 0;
+}
+
 var headed = args.Any(a => a.Equals("--headed", StringComparison.OrdinalIgnoreCase));
 var headless = args.Any(a => a.Equals("--headless", StringComparison.OrdinalIgnoreCase));
 var doUpdate = args.Any(a => a.Equals("--update", StringComparison.OrdinalIgnoreCase));
+
+var pidFile = Path.Combine(AppContext.BaseDirectory, ".gdd.pid");
+if (!doUpdate && File.Exists(pidFile))
+{
+    if (int.TryParse(File.ReadAllText(pidFile).Trim(), out var existingPid))
+    {
+        try
+        {
+            var proc = System.Diagnostics.Process.GetProcessById(existingPid);
+            if (proc.ProcessName.Contains("GDD", StringComparison.OrdinalIgnoreCase))
+            {
+                Console.Error.WriteLine($"GDD is already running (PID {existingPid}). Use --update to update the running instance.");
+                return 1;
+            }
+        }
+        catch (ArgumentException) { /* process not found — stale PID file */ }
+    }
+}
+if (!doUpdate)
+{
+    await File.WriteAllTextAsync(pidFile, Environment.ProcessId.ToString());
+    AppDomain.CurrentDomain.ProcessExit += (_, _) => { try { File.Delete(pidFile); } catch { } };
+}
 
 var browsersPath = Path.Combine(AppContext.BaseDirectory, ".browsers");
 Environment.SetEnvironmentVariable("PLAYWRIGHT_BROWSERS_PATH", browsersPath);

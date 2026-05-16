@@ -264,6 +264,11 @@ public sealed class UpdateService
 
             Remove-Item -Path $StagingDir -Recurse -Force -ErrorAction SilentlyContinue
 
+            # Kill any remaining GDD processes before relaunch
+            $exeName = [System.IO.Path]::GetFileNameWithoutExtension($ExePath)
+            Get-Process -Name $exeName -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+            Start-Sleep -Seconds 1
+
             if ($ExePath -and (Test-Path $ExePath)) {
                 Start-Process -FilePath $ExePath -WorkingDirectory $TargetDir
             }
@@ -289,6 +294,10 @@ public sealed class UpdateService
 
             cp -rf "$STAGING"/* "$TARGET"/
             rm -rf "$STAGING"
+
+            # Kill any remaining GDD processes before relaunch
+            pkill -f "$(basename "$EXE")" 2>/dev/null || true
+            sleep 1
 
             if [ -n "$EXE" ] && [ -f "$EXE" ]; then
                 chmod +x "$EXE"
