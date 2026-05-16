@@ -90,45 +90,47 @@ GDD exposes 36 tools via HTTP API ([MCP protocol](https://modelcontextprotocol.i
 ### macOS — Apple Silicon (M1/M2/M3/M4)
 
 1. Download `gdd-macos-arm64.tar.gz` from [Releases](https://github.com/Cap-of-tea/GDD/releases/latest)
-2. Extract and run:
+2. Extract and set up:
 
    ```bash
-   chmod +x GDD.Headless
-   xattr -dr com.apple.quarantine . 2>/dev/null || true
+   tar xzf gdd-macos-arm64.tar.gz
+   bash Scripts/setup-macos.sh
+   ```
+
+   The setup script handles permissions, quarantine removal, and Chromium installation automatically.
+
+3. Run:
+
+   ```bash
    ./GDD.Headless
    ```
 
-   > **First run:** GDD downloads Chromium (~80 MB). Run in foreground (not `&`) to see progress and errors. After Chromium is installed, you can run in background or via launchd.
-
-   If Chromium auto-install fails (CDN timeouts), install manually using the bundled Playwright CLI:
+4. *(Optional)* Install as autostart service:
 
    ```bash
-   PLAYWRIGHT_BROWSERS_PATH="$(pwd)/.browsers" \
-     ./.playwright/node/darwin-arm64/node \
-     ./.playwright/package/cli.js install chromium
-   xattr -dr com.apple.quarantine .browsers .playwright 2>/dev/null || true
+   bash Scripts/install-launchd.sh
    ```
 
 ### macOS — Intel
 
 1. Download `gdd-macos-x64.tar.gz` from [Releases](https://github.com/Cap-of-tea/GDD/releases/latest)
-2. Extract and run:
+2. Extract and set up:
 
    ```bash
-   chmod +x GDD.Headless
-   xattr -dr com.apple.quarantine . 2>/dev/null || true
+   tar xzf gdd-macos-x64.tar.gz
+   bash Scripts/setup-macos.sh
+   ```
+
+3. Run:
+
+   ```bash
    ./GDD.Headless
    ```
 
-   > **First run:** GDD downloads Chromium (~80 MB). Run in foreground (not `&`) to see progress and errors. After Chromium is installed, you can run in background or via launchd.
-
-   If Chromium auto-install fails, install manually:
+4. *(Optional)* Install as autostart service:
 
    ```bash
-   PLAYWRIGHT_BROWSERS_PATH="$(pwd)/.browsers" \
-     ./.playwright/node/darwin-x64/node \
-     ./.playwright/package/cli.js install chromium
-   xattr -dr com.apple.quarantine .browsers .playwright 2>/dev/null || true
+   bash Scripts/install-launchd.sh
    ```
 
 ### Headed vs Headless Mode
@@ -215,38 +217,11 @@ For headless mode, add `"--headless"` to the `args` array.
 
 ### macOS: Autostart via launchd
 
-For persistent GDD on macOS, set up a launchd service that starts GDD at login and auto-restarts on crash:
+Use the included script to set up a launchd service (starts GDD at login, auto-restarts on crash):
 
 ```bash
-cat > ~/Library/LaunchAgents/com.gdd.headless.plist << 'PLIST'
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
-  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-    <key>Label</key>
-    <string>com.gdd.headless</string>
-    <key>ProgramArguments</key>
-    <array>
-        <string>/path/to/GDD.Headless</string>
-    </array>
-    <key>WorkingDirectory</key>
-    <string>/path/to/gdd-directory</string>
-    <key>RunAtLoad</key>
-    <true/>
-    <key>KeepAlive</key>
-    <true/>
-    <key>StandardOutPath</key>
-    <string>/path/to/gdd-directory/logs/launchd-stdout.log</string>
-    <key>StandardErrorPath</key>
-    <string>/path/to/gdd-directory/logs/launchd-stderr.log</string>
-</dict>
-</plist>
-PLIST
-
-# Replace /path/to/ with your actual GDD directory, then:
-mkdir -p /path/to/gdd-directory/logs
-launchctl load ~/Library/LaunchAgents/com.gdd.headless.plist
+bash Scripts/install-launchd.sh            # headed (default)
+bash Scripts/install-launchd.sh --headless  # headless for CI/CD
 ```
 
 Then use **Option A** (direct URL) in `.mcp.json` — no proxy needed.
@@ -257,6 +232,7 @@ Manage the service:
 launchctl unload ~/Library/LaunchAgents/com.gdd.headless.plist  # stop
 launchctl load ~/Library/LaunchAgents/com.gdd.headless.plist    # start
 launchctl list | grep gdd                                        # status
+bash Scripts/install-launchd.sh --uninstall                      # remove
 ```
 
 ### Linux: Autostart via systemd
