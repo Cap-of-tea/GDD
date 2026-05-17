@@ -13,7 +13,7 @@
   <a href="https://github.com/Cap-of-tea/GDD/releases/latest"><img src="https://img.shields.io/github/v/release/Cap-of-tea/GDD?style=flat-square&color=blue" alt="Release" /></a>
   <img src="https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-0078D6?style=flat-square" alt="Platforms" />
   <a href="https://modelcontextprotocol.io/"><img src="https://img.shields.io/badge/MCP-compatible-44CC11?style=flat-square" alt="MCP" /></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/license-free%20for%20personal%20use-blue?style=flat-square" alt="License" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-BUSL--1.1-blue?style=flat-square" alt="License" /></a>
 </p>
 <p align="center">
   <img src="https://img.shields.io/badge/Works%20with-Claude%20Code-F97316?style=flat-square" alt="Claude Code" />

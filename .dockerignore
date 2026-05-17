@@ -1,0 +1,12 @@
+**/bin/
+**/obj/
+**/logs/
+.git/
+.github/
+.claude/
+.vs/
+*.md
+!GDD-MANUAL.md
+Design/
+test_screenshot.png
+cyclefest_test_report.md
