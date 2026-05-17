@@ -18,6 +18,7 @@
 <p align="center">
   <img src="https://img.shields.io/badge/Works%20with-Claude%20Code-F97316?style=flat-square" alt="Claude Code" />
   <img src="https://img.shields.io/badge/Works%20with-Cursor-007ACC?style=flat-square" alt="Cursor" />
+  <a href="https://glama.ai/mcp/servers/Cap-of-tea/GDD"><img src="https://glama.ai/mcp/servers/Cap-of-tea/GDD/badges/score.svg" alt="GDD MCP server" /></a>
 </p>
 
 ---
