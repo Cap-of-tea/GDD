@@ -2,6 +2,15 @@
 
 All notable changes to GDD are documented here.
 
+## [1.4.5] - 2026-05-17
+
+### Changed
+
+- **Documentation fully translated to English** — GDD-MANUAL.md and GDD-ARCHITECTURE.md translated from Russian to English (all sections: setup, architecture, emulation, diagnostics, authentication, UI)
+- **VS Code IDE support documented** — README and Manual now include MCP config for VS Code-based IDEs (Windsurf, Antigravity, Copilot) with `.vscode/mcp.json` and `settings.json` formats
+- **Permissions section** — README documents `mcp__gdd__*` wildcard for Claude Code `settings.json` to allow all GDD tools without confirmation prompts
+- **Expanded config table** — client config table now shows project and global paths for Claude Code, Cursor, and VS Code-based IDEs
+
 ## [1.4.4] - 2026-05-16
 
 ### Fixed

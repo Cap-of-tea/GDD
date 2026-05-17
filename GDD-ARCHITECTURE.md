@@ -2,11 +2,11 @@
 
 ## 1. What is GDD
 
-GDD (Giggly-Dazzling-Duckling) — кроссплатформенное приложение для мультибраузерного тестирования веб-приложений. Управляет N изолированными Chromium-инстансами ("players") через Chrome DevTools Protocol и предоставляет 36 MCP-инструментов для автоматизации через Claude Code или любой MCP-клиент.
+GDD (Giggly-Dazzling-Duckling) — a cross-platform application for multi-browser testing of web applications. Manages N isolated Chromium instances ("players") via Chrome DevTools Protocol and provides 36 MCP tools for automation through Claude Code or any MCP client.
 
-Три режима: **Windows GUI** (WPF + WebView2), **Headed** (Playwright, видимые окна Chromium, по умолчанию на Windows/Linux/macOS) и **Headless** (`--headless` — без UI, для CI/CD). Общее ядро GDD.Core содержит все сервисы и MCP-инструменты, работающие через абстракции `IBrowserEngine` и `IPlayerManager`.
+Three modes: **Windows GUI** (WPF + WebView2), **Headed** (Playwright, visible Chromium windows, default on Windows/Linux/macOS), and **Headless** (`--headless` — no UI, for CI/CD). The shared GDD.Core library contains all services and MCP tools, operating through `IBrowserEngine` and `IPlayerManager` abstractions.
 
-**Ключевая идея:** один AI-агент (Claude) видит и управляет несколькими браузерами одновременно — навигация, клики, скриншоты, эмуляция устройств/сети/геолокации, мониторинг консоли и сетевых запросов.
+**Key idea:** a single AI agent (Claude) sees and controls multiple browsers simultaneously — navigation, clicks, screenshots, device/network/geolocation emulation, console and network request monitoring.
 
 ---
 
@@ -184,7 +184,7 @@ BrowserXn.sln
 
 ### 5.1 Browser Engine (WebView2)
 
-`IBrowserEngine` — абстракция над браузерным движком:
+`IBrowserEngine` — an abstraction over the browser engine:
 
 ```csharp
 interface IBrowserEngine : IAsyncDisposable
@@ -209,55 +209,55 @@ interface IBrowserEngine : IAsyncDisposable
 }
 ```
 
-Две реализации:
+Two implementations:
 
-**WebView2ControlAdapter** (Windows GUI) — каждый player получает:
+**WebView2ControlAdapter** (Windows GUI) — each player gets:
 
-- Изолированный user data folder (`%LOCALAPPDATA%\GDD\Profiles\Player_{id}`)
-- Собственный `CoreWebView2Environment` + `CoreWebView2Controller`
-- Настройки: отключены статусбар, контекстное меню, зум, devtools
-- Автоматическое разрешение Notifications и Geolocation
-- Скриншоты через CDP `Page.captureScreenshot` (JPEG, CSS pixel resolution, clip с scroll offset `pageX/pageY`)
-- Ожидание загрузки через CDP `Page.loadEventFired`
+- An isolated user data folder (`%LOCALAPPDATA%\GDD\Profiles\Player_{id}`)
+- Its own `CoreWebView2Environment` + `CoreWebView2Controller`
+- Settings: status bar, context menu, zoom, and devtools are disabled
+- Automatic Notifications and Geolocation permission grants
+- Screenshots via CDP `Page.captureScreenshot` (JPEG, CSS pixel resolution, clip with scroll offset `pageX/pageY`)
+- Load waiting via CDP `Page.loadEventFired`
 
-**PlaywrightEngine** (Headless/Headed, cross-platform) — каждый player получает:
+**PlaywrightEngine** (Headless/Headed, cross-platform) — each player gets:
 
-- Изолированный `BrowserContext` с viewport, user agent, touch
-- CDP session через `context.NewCDPSessionAsync(page)`
-- Скриншоты через `page.ScreenshotAsync()` с `ScreenshotScale.Css` (JPEG)
-- Ожидание загрузки через `WaitForLoadStateAsync(LoadState.Load)`
-- По умолчанию запускает видимые окна Chromium; `--headless` отключает UI (для CI/CD)
+- An isolated `BrowserContext` with viewport, user agent, touch
+- CDP session via `context.NewCDPSessionAsync(page)`
+- Screenshots via `page.ScreenshotAsync()` with `ScreenshotScale.Css` (JPEG)
+- Load waiting via `WaitForLoadStateAsync(LoadState.Load)`
+- Launches visible Chromium windows by default; `--headless` disables UI (for CI/CD)
 
 ### 5.2 MCP Server
 
-Кастомный HTTP-сервер на `HttpListener` с двумя транспортами:
+Custom HTTP server on `HttpListener` with two transports:
 
-| Transport | Endpoints | Протокол |
+| Transport | Endpoints | Protocol |
 | --------- | --------- | -------- |
 | Streamable HTTP | `POST /mcp` | Request → JSON response |
 | SSE | `GET /sse` + `POST /message?sessionId=` | Bidirectional SSE stream |
 
-Порт: 9700 с fallback до 9709. CORS включен для всех origins.
+Port: 9700 with fallback to 9709. CORS enabled for all origins.
 
-**Session isolation:** `McpSessionContext` (AsyncLocal) хранит session ID текущего запроса. `McpServer` устанавливает его до вызова `ProcessRequest` — для Streamable HTTP из заголовка `Mcp-Session-Id`, для SSE из `sessionId` query-параметра. `IPlayerManager.GetPlayer/GetPlayers` фильтрует по session — каждый MCP-клиент видит только свои player'ы. Bind address `"*"` позволяет LAN-доступ; session isolation предотвращает cross-client interference.
+**Session isolation:** `McpSessionContext` (AsyncLocal) stores the session ID of the current request. `McpServer` sets it before calling `ProcessRequest` — for Streamable HTTP from the `Mcp-Session-Id` header, for SSE from the `sessionId` query parameter. `IPlayerManager.GetPlayer/GetPlayers` filters by session — each MCP client sees only its own players. Bind address `"*"` enables LAN access; session isolation prevents cross-client interference.
 
 > ⚠ **Warning:** Players created via the Windows GUI (not through MCP) have `OwnerSessionId = null` and are accessible to ALL connected MCP sessions.
 
 ### 5.3 Emulation Services
 
-Все работают через CDP (Chrome DevTools Protocol):
+All operate via CDP (Chrome DevTools Protocol):
 
-**DeviceEmulationService** — 22 пресета устройств:
-- `Emulation.setDeviceMetricsOverride` (ширина, высота, DPI, mobile)
-- `Emulation.setUserAgentOverride` (User-Agent строка)
+**DeviceEmulationService** — 22 device presets:
+- `Emulation.setDeviceMetricsOverride` (width, height, DPI, mobile)
+- `Emulation.setUserAgentOverride` (User-Agent string)
 - `Emulation.setTouchEmulationEnabled` (5 touch points)
 
-**LocationEmulationService** — 5 городов + custom:
+**LocationEmulationService** — 5 cities + custom:
 - `Emulation.setGeolocationOverride` (lat, lon, accuracy)
 - `Emulation.setTimezoneOverride` (IANA timezone)
 - `Emulation.setLocaleOverride` (BCP-47 locale)
 
-**NetworkEmulationService** — 5 пресетов:
+**NetworkEmulationService** — 5 presets:
 - `Network.emulateNetworkConditions` (offline, latency, throughput)
 - Online / 4G (20ms) / Fast 3G (563ms) / Slow 3G (2s) / Offline
 
@@ -265,46 +265,46 @@ interface IBrowserEngine : IAsyncDisposable
 
 **ConsoleInterceptionService:**
 - CDP: `Runtime.consoleAPICalled`, `Runtime.exceptionThrown`
-- Per-player `RingBuffer<ConsoleEntry>` на 500 записей
-- Фильтрация по level (log/warn/error/info/debug)
+- Per-player `RingBuffer<ConsoleEntry>` with 500 entries
+- Filtering by level (log/warn/error/info/debug)
 
 **NetworkMonitoringService:**
 - CDP: `Network.requestWillBeSent`, `responseReceived`, `loadingFinished`, `loadingFailed`
-- Per-player `RingBuffer<NetworkEntry>` на 500 записей
+- Per-player `RingBuffer<NetworkEntry>` with 500 entries
 - URL, status, MIME, duration, error text
 
 **Performance:** `Performance.getMetrics` CDP — JS heap, DOM nodes, task duration
 
 ### 5.5 Authentication
 
-**QuickAuthService** — авто-регистрация/логин:
-- Генерирует credentials: `player{id}@gdd.test` / `GDD-Player{id}!`
+**QuickAuthService** — auto-registration/login:
+- Generates credentials: `player{id}@gdd.test` / `GDD-Player{id}!`
 - POST `/auth/register` → fallback `/auth/login`
-- Возвращает `AuthResult` (accessToken, sessionToken, user)
+- Returns `AuthResult` (accessToken, sessionToken, user)
 
-**TokenInjectionService** — инъекция токенов:
-- Записывает `NoiseAuthState` в `localStorage["noise-auth"]`
-- Перенаправляет на frontend URL
+**TokenInjectionService** — token injection:
+- Writes `NoiseAuthState` to `localStorage["noise-auth"]`
+- Redirects to frontend URL
 
-**TelegramInjectionService** — эмуляция Telegram WebApp:
-- Инъекция `window.Telegram.WebApp` API
-- HMAC-SHA256 подпись `initData` через BotToken
+**TelegramInjectionService** — Telegram WebApp emulation:
+- Injects `window.Telegram.WebApp` API
+- HMAC-SHA256 signed `initData` via BotToken
 - Mock CloudStorage, BackButton, MainButton
 
 ### 5.6 UI (WPF)
 
-**MainWindow** — основной интерфейс:
+**MainWindow** — main interface:
 - Toolbar: Add Player, Device Presets, Quick Auth, Navigate All
-- VideoWallPanel: адаптивная сетка миниатюр players
-- Status bar: количество players, статус
+- VideoWallPanel: adaptive grid of player thumbnails
+- Status bar: player count, status
 
-**BrowserCellControl** — миниатюра player:
-- Live DWM thumbnail рендеринг (Win32 DwmRegisterThumbnail)
-- Click → открывает OverlayWindow
+**BrowserCellControl** — player thumbnail:
+- Live DWM thumbnail rendering (Win32 DwmRegisterThumbnail)
+- Click → opens OverlayWindow
 
-**OverlayWindow** — floating окно с live WebView2:
-- Размер = пресету устройства
-- Title bar с именем устройства
+**OverlayWindow** — floating window with live WebView2:
+- Size matches device preset
+- Title bar with device name
 
 ---
 
@@ -314,18 +314,18 @@ interface IBrowserEngine : IAsyncDisposable
 
 | Component | Dependency | Why Windows |
 | --------- | ---------- | ----------- |
-| `WebView2Engine` | Microsoft.Web.WebView2 | Chromium control для Windows (HWND parenting) |
+| `WebView2Engine` | Microsoft.Web.WebView2 | Chromium control for Windows (HWND parenting) |
 | `DwmApi.cs` | dwmapi.dll, user32.dll | DWM thumbnail API, window management |
-| `BrowserCellControl` | DWM thumbnails | Live миниатюры через Win32 |
+| `BrowserCellControl` | DWM thumbnails | Live thumbnails via Win32 |
 | `OverlayWindow` | HwndSource, WndProc | Win32 message loop interop |
-| XAML Views (5 файлов) | WPF | Windows-only UI framework |
+| XAML Views (5 files) | WPF | Windows-only UI framework |
 | `MainViewModel` | Dispatcher, SystemParameters | WPF threading model |
 
 ### Platform-Agnostic (59% codebase)
 
 | Component | Files | Notes |
 | --------- | ----- | ----- |
-| Services (CDP, auth, emulation) | 11 | Pure C#, оперируют CDP JSON commands |
+| Services (CDP, auth, emulation) | 11 | Pure C#, operate via CDP JSON commands |
 | Models (presets, DTOs) | 11 | POCOs |
 | MCP Server + Protocol | 4 | HTTP/JSON-RPC, no OS dependencies |
 | MCP Tools | 10 | Business logic → IPlayerManager calls |
@@ -338,7 +338,7 @@ interface IBrowserEngine : IAsyncDisposable
 | --------- | ----------- | --------------- |
 | MCP Tools → IPlayerManager | Dispatcher.InvokeAsync | WpfDispatcher (GUI) / ConsoleDispatcher (CLI) |
 | Services → IBrowserEngine | CallCdpMethodAsync | WebView2 CDP / Playwright CDPSession |
-| AppConfig | `Environment.SpecialFolder.LocalApplicationData` | Кроссплатформенный (.NET) |
+| AppConfig | `Environment.SpecialFolder.LocalApplicationData` | Cross-platform (.NET) |
 
 ---
 
@@ -448,10 +448,10 @@ Tags matching `v*` trigger GitHub Releases with `tar.gz` archives for all target
 
 ## 9. Summary
 
-**Текущее состояние:** GDD.Core содержит всю platform-independent логику (~75% кодовой базы). BrowserXn (Windows GUI) и GDD.Headless (кроссплатформенный) реализуют platform-specific абстракции.
+**Current state:** GDD.Core contains all platform-independent logic (~75% of the codebase). BrowserXn (Windows GUI) and GDD.Headless (cross-platform) implement platform-specific abstractions.
 
-**Headless mode** через Playwright .NET работает на Windows, Linux и macOS с идентичным набором из 36 MCP-инструментов.
+**Headless mode** via Playwright .NET works on Windows, Linux, and macOS with an identical set of 36 MCP tools.
 
-**Windows GUI** предоставляет визуальный превью с DWM-миниатюрами и live WebView2 окнами.
+**Windows GUI** provides visual preview with DWM thumbnails and live WebView2 windows.
 
-**Потенциальное развитие:** Avalonia UI для кроссплатформенного GUI с CDP screencast вместо DWM thumbnails.
+**Potential future development:** Avalonia UI for cross-platform GUI with CDP screencast instead of DWM thumbnails.

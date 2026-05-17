@@ -86,13 +86,83 @@ That's it. Start GDD, tell Claude or Cursor to test your app.
 <details>
 <summary><strong>Config file locations</strong></summary>
 
-| Client | Path |
-|--------|------|
-| Claude Code (project) | `<project>/.mcp.json` |
-| Claude Code (global) | `~/.claude/.mcp.json` |
-| Cursor | `~/.cursor/mcp.json` |
+| Client | Project config | Global config |
+| ------ | -------------- | ------------- |
+| Claude Code | `<project>/.mcp.json` | `~/.claude/.mcp.json` |
+| Cursor | `<project>/.cursor/mcp.json` | `~/.cursor/mcp.json` |
+| VS Code / Windsurf / Antigravity | `<project>/.vscode/mcp.json` | IDE `settings.json` |
 
-MCP config is read at session start. After editing, restart Claude Code / Cursor.
+Global and project configs are merged — servers from both are available simultaneously. Changes are picked up only when restarting the AI client session.
+
+</details>
+
+<details>
+<summary><strong>VS Code-based IDEs (Windsurf, Antigravity, Copilot)</strong></summary>
+
+VS Code-based IDEs use a different config format than Claude Code / Cursor.
+
+**Project config** — `.vscode/mcp.json`:
+
+```json
+{
+  "servers": {
+    "gdd": {
+      "type": "http",
+      "url": "http://localhost:9700/mcp"
+    }
+  }
+}
+```
+
+**Global config** — open via `Cmd+Shift+P` → "Open User Settings (JSON)":
+
+```json
+{
+  "mcp": {
+    "servers": {
+      "gdd": {
+        "type": "http",
+        "url": "http://localhost:9700/mcp"
+      }
+    }
+  }
+}
+```
+
+Global `settings.json` location: macOS — `~/Library/Application Support/<IDE>/User/settings.json`, Linux — `~/.config/<IDE>/User/settings.json`, Windows — `%APPDATA%/<IDE>/User/settings.json`. Replace `<IDE>` with your editor name (Code, Windsurf, Antigravity, etc.).
+
+**stdio-proxy** alternative (`.vscode/mcp.json`):
+
+```json
+{
+  "servers": {
+    "gdd": {
+      "type": "stdio",
+      "command": "bash",
+      "args": ["/absolute/path/to/Scripts/mcp-proxy.sh"]
+    }
+  }
+}
+```
+
+</details>
+
+<details>
+<summary><strong>Permissions (Claude Code)</strong></summary>
+
+By default, Claude Code asks for confirmation on every MCP tool call. To allow GDD tools without prompts, add to `~/.claude/settings.json`:
+
+```json
+{
+  "permissions": {
+    "allow": [
+      "mcp__gdd__*"
+    ]
+  }
+}
+```
+
+This single wildcard covers all 36 GDD tools. Restart Claude Code after editing.
 
 </details>
 
