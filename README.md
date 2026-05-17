@@ -6,7 +6,7 @@
 
 <p align="center">
   <strong>AI-controlled browser farm on your machine</strong><br>
-  Tell Claude: <em>"Test the signup on 4 phones and a tablet"</em> — and watch it happen.
+  Simulate multiple real users across 22 device types — test your site like it's launch day.
 </p>
 
 <p align="center">
