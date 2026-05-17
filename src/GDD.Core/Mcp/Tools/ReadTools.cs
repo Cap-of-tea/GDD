@@ -11,7 +11,7 @@ public static class ReadTools
             new McpToolDefinition
             {
                 Name = "gdd_read",
-                Description = "Read text content of an element by CSS selector.",
+                Description = "Read the text content of a single DOM element matched by CSS selector. Returns the element's textContent (visible text, including children). Returns an error if the selector matches nothing. Use gdd_read_all to read multiple matching elements.",
                 InputSchema = new
                 {
                     type = "object",
@@ -46,7 +46,7 @@ public static class ReadTools
             new McpToolDefinition
             {
                 Name = "gdd_read_all",
-                Description = "Read text content of all elements matching a CSS selector. Returns JSON array.",
+                Description = "Read the text content of all DOM elements matching a CSS selector. Returns a JSON array of textContent strings, one per matched element. Returns an empty array if no elements match. Use for lists, table rows, or repeated UI components.",
                 InputSchema = new
                 {
                     type = "object",
@@ -78,7 +78,7 @@ public static class ReadTools
             new McpToolDefinition
             {
                 Name = "gdd_screenshot",
-                Description = "Take a screenshot of a browser window. Returns JPEG image at CSS pixel resolution (coordinates match CSS pixels for accurate tapping).",
+                Description = "Capture a JPEG screenshot of a browser player at CSS pixel resolution. Coordinates in the image map directly to CSS pixels for accurate gdd_tap(x, y) targeting. Lower quality values produce smaller, faster responses. Use before gdd_tap to identify clickable elements.",
                 InputSchema = new
                 {
                     type = "object",

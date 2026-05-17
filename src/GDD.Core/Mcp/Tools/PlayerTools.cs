@@ -13,7 +13,7 @@ public static class PlayerTools
             new McpToolDefinition
             {
                 Name = "gdd_add_players",
-                Description = "Add N new browser instances. Returns list of created player IDs.",
+                Description = "Create N new browser player instances. Each player is an isolated Chromium browser with its own profile, cookies, and storage. Returns the list of created player IDs. Optionally specify a device preset (default: iPhone 15 Pro). Maximum 64 players.",
                 InputSchema = new
                 {
                     type = "object",
@@ -44,7 +44,7 @@ public static class PlayerTools
             new McpToolDefinition
             {
                 Name = "gdd_remove_player",
-                Description = "Remove a browser instance by player ID.",
+                Description = "Remove a browser player instance and close its Chromium process. Frees all resources including the browser profile, console/network logs, and notification subscriptions. The player ID cannot be reused.",
                 InputSchema = new
                 {
                     type = "object",
@@ -70,7 +70,7 @@ public static class PlayerTools
             new McpToolDefinition
             {
                 Name = "gdd_list_windows",
-                Description = "List all active browser windows with their current state.",
+                Description = "List all active browser players with their current state. Returns JSON array with player ID, name, current URL, status, overlay visibility, and owning MCP session. Use to discover available players before performing actions.",
                 InputSchema = new { type = "object", properties = new { } }
             },
             async args =>

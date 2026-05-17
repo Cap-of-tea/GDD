@@ -15,7 +15,7 @@ public static class StateTools
             new McpToolDefinition
             {
                 Name = "gdd_get_state",
-                Description = "Get the current state of a browser window including URL, title, auth status, device, and network.",
+                Description = "Get the full state of a browser player: current URL, status, device preset (name, dimensions, scale, mobile flag), network status, console/network error counts, last error message, language, and notification count. Use to verify player configuration or check for errors without inspecting logs.",
                 InputSchema = new
                 {
                     type = "object",
@@ -64,7 +64,7 @@ public static class StateTools
             new McpToolDefinition
             {
                 Name = "gdd_get_notifications",
-                Description = "Get received push notifications, optionally filtered by player.",
+                Description = "Retrieve intercepted push notifications from browser players. Returns JSON array with title, body, tag, and timestamp. Pass player_id=0 or omit to get notifications from all players. Use to verify that push notification features are working correctly.",
                 InputSchema = new
                 {
                     type = "object",

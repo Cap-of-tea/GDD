@@ -19,7 +19,7 @@ public static class AuthTools
             new McpToolDefinition
             {
                 Name = "gdd_quick_auth",
-                Description = "Register and login a player with auto-generated credentials, injecting tokens into the browser.",
+                Description = "Auto-register and authenticate a player (or all players with player_id=0) using generated credentials. Creates a new user account, obtains auth tokens, and injects them into the browser's localStorage and cookies. The page reloads with the user logged in. Processes players in batches of 8.",
                 InputSchema = new
                 {
                     type = "object",

@@ -11,7 +11,7 @@ public static class UpdateTools
             new McpToolDefinition
             {
                 Name = "gdd_check_update",
-                Description = "Check if a newer version of GDD is available.",
+                Description = "Check if a newer version of GDD is available on GitHub Releases. Returns current version, latest version, download URL, file size, and release notes. No side effects — only checks, does not download or install.",
                 InputSchema = new { type = "object", properties = new { } }
             },
             async _ =>
@@ -38,7 +38,7 @@ public static class UpdateTools
             new McpToolDefinition
             {
                 Name = "gdd_update",
-                Description = "Download and install a GDD update. Requires confirm=true. GDD will restart after update.",
+                Description = "Download and install a GDD update from GitHub Releases. Requires confirm=true as a safety check. Downloads the archive, extracts it over the current installation, and restarts GDD. Local settings (appsettings.json) are preserved. The MCP connection will briefly drop during restart.",
                 InputSchema = new
                 {
                     type = "object",

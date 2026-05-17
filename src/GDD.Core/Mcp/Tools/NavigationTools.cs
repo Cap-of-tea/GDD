@@ -11,14 +11,14 @@ public static class NavigationTools
             new McpToolDefinition
             {
                 Name = "gdd_navigate",
-                Description = "Navigate a browser window to a URL.",
+                Description = "Navigate a browser player to the specified URL. Waits for page load before returning. After navigation, use gdd_screenshot to verify the page loaded correctly, or gdd_wait to wait for a specific element.",
                 InputSchema = new
                 {
                     type = "object",
                     properties = new
                     {
-                        player_id = new { type = "integer", description = "Player ID" },
-                        url = new { type = "string", description = "URL to navigate to" }
+                        player_id = new { type = "integer", description = "Target browser player ID (from gdd_add_players or gdd_list_windows)" },
+                        url = new { type = "string", description = "Full URL to navigate to (e.g., 'https://example.com')" }
                     },
                     required = new[] { "player_id", "url" }
                 }
@@ -39,7 +39,7 @@ public static class NavigationTools
             new McpToolDefinition
             {
                 Name = "gdd_wait",
-                Description = "Wait for a CSS selector to appear in the page. Returns success or timeout error.",
+                Description = "Wait for a CSS selector to appear in the DOM. Polls every 200ms until the element is found or timeout is reached. Returns the elapsed time on success. Use after gdd_navigate or gdd_tap to wait for dynamic content.",
                 InputSchema = new
                 {
                     type = "object",
@@ -84,7 +84,7 @@ public static class NavigationTools
             new McpToolDefinition
             {
                 Name = "gdd_reload",
-                Description = "Reload the current page. Use hard=true to bypass cache (like Ctrl+Shift+R).",
+                Description = "Reload the current page in a browser player. Set hard=true to bypass the browser cache (equivalent to Ctrl+Shift+R). Useful after code changes or to reset page state.",
                 InputSchema = new
                 {
                     type = "object",
@@ -115,7 +115,7 @@ public static class NavigationTools
             new McpToolDefinition
             {
                 Name = "gdd_back",
-                Description = "Navigate back in browser history.",
+                Description = "Navigate back in the browser history (like pressing the Back button). Returns an error if there is no previous history entry.",
                 InputSchema = new
                 {
                     type = "object",
@@ -152,7 +152,7 @@ public static class NavigationTools
             new McpToolDefinition
             {
                 Name = "gdd_forward",
-                Description = "Navigate forward in browser history.",
+                Description = "Navigate forward in the browser history (like pressing the Forward button). Returns an error if there is no forward history entry.",
                 InputSchema = new
                 {
                     type = "object",

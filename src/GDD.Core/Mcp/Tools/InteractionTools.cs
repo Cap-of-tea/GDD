@@ -11,7 +11,7 @@ public static class InteractionTools
             new McpToolDefinition
             {
                 Name = "gdd_tap",
-                Description = "Simulate a tap (touch) on an element by CSS selector or coordinates.",
+                Description = "Tap on an element by CSS selector or at exact (x, y) coordinates in CSS pixels. Dispatches touchStart/touchEnd events. Provide either a selector (element center is tapped) or x,y coordinates from a gdd_screenshot. Use gdd_screenshot first to identify tap targets.",
                 InputSchema = new
                 {
                     type = "object",
@@ -86,7 +86,7 @@ public static class InteractionTools
             new McpToolDefinition
             {
                 Name = "gdd_swipe",
-                Description = "Simulate a swipe gesture on a browser window.",
+                Description = "Simulate a swipe gesture on a browser player. Dispatches a series of touch events from the viewport center in the specified direction. Use for scrolling mobile content, dismissing panels, or navigating carousels.",
                 InputSchema = new
                 {
                     type = "object",
@@ -165,7 +165,7 @@ public static class InteractionTools
             new McpToolDefinition
             {
                 Name = "gdd_scroll",
-                Description = "Scroll inside a browser window, optionally targeting a specific element.",
+                Description = "Scroll within a browser player. Provide a CSS selector to scroll that element into view (centered, smooth), or use direction and amount for pixel-based scrolling. Use to reveal off-screen content before reading or tapping.",
                 InputSchema = new
                 {
                     type = "object",
@@ -208,7 +208,7 @@ public static class InteractionTools
             new McpToolDefinition
             {
                 Name = "gdd_type",
-                Description = "Type text into an input element identified by CSS selector.",
+                Description = "Type text into an input or textarea element identified by CSS selector. Focuses the element and sets its value, firing input and change events. By default clears the field first; set clear=false to append.",
                 InputSchema = new
                 {
                     type = "object",
@@ -266,7 +266,7 @@ public static class InteractionTools
             new McpToolDefinition
             {
                 Name = "gdd_hover",
-                Description = "Hover over an element by CSS selector. Triggers mouseover/mouseenter events (useful for tooltips, dropdowns, menus).",
+                Description = "Move the mouse cursor over an element identified by CSS selector, triggering mouseover and mouseenter events. Use to reveal tooltips, dropdown menus, or hover-dependent UI before taking a screenshot or reading content.",
                 InputSchema = new
                 {
                     type = "object",
@@ -310,7 +310,7 @@ public static class InteractionTools
             new McpToolDefinition
             {
                 Name = "gdd_select",
-                Description = "Select an option from a <select> dropdown by value or visible text.",
+                Description = "Select an option from a <select> dropdown element. Match by value attribute or visible text. Fires input and change events after selection. Returns the selected option's text. Provide either value or text parameter.",
                 InputSchema = new
                 {
                     type = "object",
@@ -378,7 +378,7 @@ public static class InteractionTools
             new McpToolDefinition
             {
                 Name = "gdd_dialog",
-                Description = "Handle JavaScript dialog (alert/confirm/prompt). Must be called after a dialog appears.",
+                Description = "Handle a JavaScript dialog (alert, confirm, or prompt). Must be called while a dialog is open. Accept or dismiss the dialog, and optionally enter text for prompt dialogs. Dialogs block page interaction until handled.",
                 InputSchema = new
                 {
                     type = "object",

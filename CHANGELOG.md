@@ -2,6 +2,12 @@
 
 All notable changes to GDD are documented here.
 
+## [1.4.6] - 2026-05-17
+
+### Changed
+
+- **TDQS-optimized tool descriptions** — all 36 MCP tool descriptions rewritten for Glama.ai Tool Definition Quality Score: added purpose clarity, usage guidelines, behavioral transparency, return value documentation, and cross-tool references
+
 ## [1.4.5] - 2026-05-17
 
 ### Changed

@@ -17,7 +17,7 @@ public static class DiagnosticsTools
             new McpToolDefinition
             {
                 Name = "gdd_get_console",
-                Description = "Get console output (log/warn/error/info/debug) and uncaught exceptions from a browser window.",
+                Description = "Retrieve console log entries (log, warn, error, info, debug) and uncaught exceptions from a browser player. Returns JSON array with level, message, source, line number, and stack trace. Filter by level or limit to last N entries. Check this when the error beacon reports console errors.",
                 InputSchema = new
                 {
                     type = "object",
@@ -70,7 +70,7 @@ public static class DiagnosticsTools
             new McpToolDefinition
             {
                 Name = "gdd_get_network",
-                Description = "Get network requests from a browser window. Shows method, URL, status, timing, and errors.",
+                Description = "Retrieve captured network requests from a browser player. Returns JSON array with method, URL, status code, timing, resource type, and error details. Filter by resource type or show only failed requests. Use to debug API calls, check response codes, or diagnose loading issues.",
                 InputSchema = new
                 {
                     type = "object",
@@ -128,7 +128,7 @@ public static class DiagnosticsTools
             new McpToolDefinition
             {
                 Name = "gdd_get_performance",
-                Description = "Get performance metrics (JS heap, DOM nodes, frames, task duration) from a browser window via CDP.",
+                Description = "Retrieve performance metrics from a browser player via Chrome DevTools Protocol. Returns metrics including JSHeapUsedSize, Nodes (DOM count), LayoutCount, TaskDuration, and more. Use to diagnose memory leaks, excessive DOM size, or rendering performance issues.",
                 InputSchema = new
                 {
                     type = "object",
@@ -168,7 +168,7 @@ public static class DiagnosticsTools
             new McpToolDefinition
             {
                 Name = "gdd_clear_logs",
-                Description = "Clear console and/or network logs for a browser window.",
+                Description = "Clear accumulated console and/or network logs for a browser player. Specify target: 'console', 'network', or 'all'. Also resets the console/network error counters shown in the error beacon. Use before a test run to get clean diagnostic data.",
                 InputSchema = new
                 {
                     type = "object",
@@ -217,7 +217,7 @@ public static class DiagnosticsTools
             new McpToolDefinition
             {
                 Name = "gdd_storage",
-                Description = "Read, write, or clear localStorage/sessionStorage.",
+                Description = "Read, write, or clear browser localStorage or sessionStorage for a player. Actions: get (read key), set (write key-value), remove (delete key), clear (delete all), keys (list all keys). Defaults to localStorage; set storage='session' for sessionStorage.",
                 InputSchema = new
                 {
                     type = "object",
@@ -303,7 +303,7 @@ public static class DiagnosticsTools
             new McpToolDefinition
             {
                 Name = "gdd_cookies",
-                Description = "Read or clear browser cookies for the current page.",
+                Description = "Read or clear browser cookies for a player. Action 'get' returns all cookies (filterable by name) with domain, path, httpOnly, and secure flags. Action 'clear' deletes all cookies. Uses Chrome DevTools Protocol for full cookie access including httpOnly cookies.",
                 InputSchema = new
                 {
                     type = "object",

@@ -11,7 +11,7 @@ public static class ExecutionTools
             new McpToolDefinition
             {
                 Name = "gdd_execute_js",
-                Description = "Execute arbitrary JavaScript in a browser window and return the result.",
+                Description = "Execute arbitrary JavaScript code in a browser player's page context and return the result as a string. The script runs in the page's global scope with full access to document, window, and all page APIs. Use for DOM manipulation, reading complex state, or actions not covered by other tools.",
                 InputSchema = new
                 {
                     type = "object",

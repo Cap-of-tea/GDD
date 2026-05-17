@@ -19,7 +19,7 @@ public static class EmulationTools
             new McpToolDefinition
             {
                 Name = "gdd_set_device",
-                Description = "Set device emulation preset for a browser window.",
+                Description = "Switch a browser player to a device emulation preset. Applies viewport dimensions, device scale factor, user agent, and touch/mobile flags. The page reloads automatically after applying. Available presets include iPhone, iPad, Pixel, Galaxy, and desktop configurations (22 total).",
                 InputSchema = new
                 {
                     type = "object",
@@ -59,7 +59,7 @@ public static class EmulationTools
             new McpToolDefinition
             {
                 Name = "gdd_set_location",
-                Description = "Set geolocation, timezone, and locale for a browser window.",
+                Description = "Set geolocation coordinates, timezone, and locale for a browser player. Choose a city preset (Moscow, Saint Petersburg, New York, London, Tokyo) or use 'custom' with manual latitude, longitude, timezone, and locale. Affects navigator.geolocation and Intl APIs.",
                 InputSchema = new
                 {
                     type = "object",
@@ -114,7 +114,7 @@ public static class EmulationTools
             new McpToolDefinition
             {
                 Name = "gdd_set_network",
-                Description = "Set network condition emulation for a browser window.",
+                Description = "Emulate network conditions for a browser player. Presets: Online (no throttling), 4G, Fast 3G, Slow 3G, Offline. Affects all network requests including XHR, fetch, and resource loading. Use to test loading states, offline handling, and slow network behavior.",
                 InputSchema = new
                 {
                     type = "object",
@@ -152,7 +152,7 @@ public static class EmulationTools
             new McpToolDefinition
             {
                 Name = "gdd_set_viewport",
-                Description = "Set custom viewport size for a browser window (arbitrary width/height).",
+                Description = "Set a custom viewport size for a browser player with exact pixel dimensions. Use instead of gdd_set_device when you need non-standard dimensions. Optionally set device scale factor, mobile emulation flag, and custom user agent string.",
                 InputSchema = new
                 {
                     type = "object",
@@ -196,7 +196,7 @@ public static class EmulationTools
             new McpToolDefinition
             {
                 Name = "gdd_set_language",
-                Description = "Set browser language/locale. Changes navigator.language, navigator.languages, and Accept-Language header.",
+                Description = "Set the browser language and locale for a player. Overrides navigator.language, navigator.languages, and the Accept-Language HTTP header. Persists across page navigations. Use to test localization and i18n features (e.g., 'ru', 'en-US', 'ja-JP').",
                 InputSchema = new
                 {
                     type = "object",
