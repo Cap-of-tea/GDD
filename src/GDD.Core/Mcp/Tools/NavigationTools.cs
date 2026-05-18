@@ -21,7 +21,8 @@ public static class NavigationTools
                         url = new { type = "string", description = "Full URL to navigate to (e.g., 'https://example.com')" }
                     },
                     required = new[] { "player_id", "url" }
-                }
+                },
+                Annotations = new { readOnlyHint = false, destructiveHint = false, idempotentHint = false, openWorldHint = true }
             },
             async args =>
             {
@@ -50,7 +51,8 @@ public static class NavigationTools
                         timeout = new { type = "integer", description = "Timeout in ms (default 5000)", @default = 5000 }
                     },
                     required = new[] { "player_id", "selector" }
-                }
+                },
+                Annotations = new { readOnlyHint = true, destructiveHint = false, idempotentHint = false, openWorldHint = false }
             },
             async args =>
             {
@@ -94,7 +96,8 @@ public static class NavigationTools
                         hard = new { type = "boolean", description = "Hard reload — ignore cache (default false)" }
                     },
                     required = new[] { "player_id" }
-                }
+                },
+                Annotations = new { readOnlyHint = false, destructiveHint = false, idempotentHint = false, openWorldHint = false }
             },
             async args =>
             {
@@ -124,7 +127,8 @@ public static class NavigationTools
                         player_id = new { type = "integer", description = "Player ID" }
                     },
                     required = new[] { "player_id" }
-                }
+                },
+                Annotations = new { readOnlyHint = false, destructiveHint = false, idempotentHint = false, openWorldHint = false }
             },
             async args =>
             {
@@ -161,7 +165,8 @@ public static class NavigationTools
                         player_id = new { type = "integer", description = "Player ID" }
                     },
                     required = new[] { "player_id" }
-                }
+                },
+                Annotations = new { readOnlyHint = false, destructiveHint = false, idempotentHint = false, openWorldHint = false }
             },
             async args =>
             {

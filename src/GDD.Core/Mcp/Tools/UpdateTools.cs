@@ -12,7 +12,8 @@ public static class UpdateTools
             {
                 Name = "gdd_check_update",
                 Description = "Check if a newer version of GDD is available on GitHub Releases. Returns current version, latest version, download URL, file size, and release notes. No side effects — only checks, does not download or install.",
-                InputSchema = new { type = "object", properties = new { } }
+                InputSchema = new { type = "object", properties = new { } },
+                Annotations = new { readOnlyHint = true, destructiveHint = false, idempotentHint = true, openWorldHint = true }
             },
             async _ =>
             {
@@ -51,7 +52,8 @@ public static class UpdateTools
                         }
                     },
                     required = new[] { "confirm" }
-                }
+                },
+                Annotations = new { readOnlyHint = false, destructiveHint = true, idempotentHint = false, openWorldHint = true }
             },
             async args =>
             {

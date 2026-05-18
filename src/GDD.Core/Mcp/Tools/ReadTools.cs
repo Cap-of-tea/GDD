@@ -21,7 +21,8 @@ public static class ReadTools
                         selector = new { type = "string", description = "CSS selector" }
                     },
                     required = new[] { "player_id", "selector" }
-                }
+                },
+                Annotations = new { readOnlyHint = true, destructiveHint = false, idempotentHint = true, openWorldHint = false }
             },
             async args =>
             {
@@ -56,7 +57,8 @@ public static class ReadTools
                         selector = new { type = "string", description = "CSS selector" }
                     },
                     required = new[] { "player_id", "selector" }
-                }
+                },
+                Annotations = new { readOnlyHint = true, destructiveHint = false, idempotentHint = true, openWorldHint = false }
             },
             async args =>
             {
@@ -88,7 +90,8 @@ public static class ReadTools
                         quality = new { type = "integer", description = "JPEG quality 1-100 (default 80). Lower = smaller/faster.", @default = 80 }
                     },
                     required = new[] { "player_id" }
-                }
+                },
+                Annotations = new { readOnlyHint = true, destructiveHint = false, idempotentHint = true, openWorldHint = false }
             },
             async args =>
             {

@@ -28,7 +28,8 @@ public static class PlayerTools
                         }
                     },
                     required = new[] { "count" }
-                }
+                },
+                Annotations = new { readOnlyHint = false, destructiveHint = false, idempotentHint = false, openWorldHint = false }
             },
             async args =>
             {
@@ -53,7 +54,8 @@ public static class PlayerTools
                         player_id = new { type = "integer", description = "Player ID to remove" }
                     },
                     required = new[] { "player_id" }
-                }
+                },
+                Annotations = new { readOnlyHint = false, destructiveHint = true, idempotentHint = false, openWorldHint = false }
             },
             async args =>
             {
@@ -71,7 +73,8 @@ public static class PlayerTools
             {
                 Name = "gdd_list_windows",
                 Description = "List all active browser players with their current state. Returns JSON array with player ID, name, current URL, status, overlay visibility, and owning MCP session. Use to discover available players before performing actions.",
-                InputSchema = new { type = "object", properties = new { } }
+                InputSchema = new { type = "object", properties = new { } },
+                Annotations = new { readOnlyHint = true, destructiveHint = false, idempotentHint = true, openWorldHint = false }
             },
             async args =>
             {

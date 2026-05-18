@@ -34,7 +34,8 @@ public static class EmulationTools
                         }
                     },
                     required = new[] { "player_id", "preset" }
-                }
+                },
+                Annotations = new { readOnlyHint = false, destructiveHint = false, idempotentHint = true, openWorldHint = false }
             },
             async args =>
             {
@@ -78,7 +79,8 @@ public static class EmulationTools
                         locale = new { type = "string", description = "Custom locale (only with preset='custom')" }
                     },
                     required = new[] { "player_id", "preset" }
-                }
+                },
+                Annotations = new { readOnlyHint = false, destructiveHint = false, idempotentHint = true, openWorldHint = false }
             },
             async args =>
             {
@@ -129,7 +131,8 @@ public static class EmulationTools
                         }
                     },
                     required = new[] { "player_id", "preset" }
-                }
+                },
+                Annotations = new { readOnlyHint = false, destructiveHint = false, idempotentHint = true, openWorldHint = false }
             },
             async args =>
             {
@@ -166,7 +169,8 @@ public static class EmulationTools
                         user_agent = new { type = "string", description = "Custom user agent string" }
                     },
                     required = new[] { "player_id", "width", "height" }
-                }
+                },
+                Annotations = new { readOnlyHint = false, destructiveHint = false, idempotentHint = true, openWorldHint = false }
             },
             async args =>
             {
@@ -206,7 +210,8 @@ public static class EmulationTools
                         locale = new { type = "string", description = "Locale code (e.g. 'ru', 'en-US', 'ja-JP', 'de-DE')" }
                     },
                     required = new[] { "player_id", "locale" }
-                }
+                },
+                Annotations = new { readOnlyHint = false, destructiveHint = false, idempotentHint = true, openWorldHint = false }
             },
             async args =>
             {

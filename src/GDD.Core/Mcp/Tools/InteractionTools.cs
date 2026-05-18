@@ -23,7 +23,8 @@ public static class InteractionTools
                         y = new { type = "number", description = "Y coordinate (optional if selector provided)" }
                     },
                     required = new[] { "player_id" }
-                }
+                },
+                Annotations = new { readOnlyHint = false, destructiveHint = false, idempotentHint = false, openWorldHint = false }
             },
             async args =>
             {
@@ -97,7 +98,8 @@ public static class InteractionTools
                         distance = new { type = "integer", description = "Swipe distance in pixels (default 300)", @default = 300 }
                     },
                     required = new[] { "player_id", "direction" }
-                }
+                },
+                Annotations = new { readOnlyHint = false, destructiveHint = false, idempotentHint = false, openWorldHint = false }
             },
             async args =>
             {
@@ -177,7 +179,8 @@ public static class InteractionTools
                         amount = new { type = "integer", description = "Scroll amount in pixels (default 300)", @default = 300 }
                     },
                     required = new[] { "player_id" }
-                }
+                },
+                Annotations = new { readOnlyHint = false, destructiveHint = false, idempotentHint = false, openWorldHint = false }
             },
             async args =>
             {
@@ -220,7 +223,8 @@ public static class InteractionTools
                         clear = new { type = "boolean", description = "Clear field before typing (default true)", @default = true }
                     },
                     required = new[] { "player_id", "selector", "text" }
-                }
+                },
+                Annotations = new { readOnlyHint = false, destructiveHint = false, idempotentHint = false, openWorldHint = false }
             },
             async args =>
             {
@@ -276,7 +280,8 @@ public static class InteractionTools
                         selector = new { type = "string", description = "CSS selector of element to hover" }
                     },
                     required = new[] { "player_id", "selector" }
-                }
+                },
+                Annotations = new { readOnlyHint = false, destructiveHint = false, idempotentHint = false, openWorldHint = false }
             },
             async args =>
             {
@@ -322,7 +327,8 @@ public static class InteractionTools
                         text = new { type = "string", description = "Option visible text to select (if value not provided)" }
                     },
                     required = new[] { "player_id", "selector" }
-                }
+                },
+                Annotations = new { readOnlyHint = false, destructiveHint = false, idempotentHint = false, openWorldHint = false }
             },
             async args =>
             {
@@ -389,7 +395,8 @@ public static class InteractionTools
                         text = new { type = "string", description = "Text to enter in prompt dialog (optional)" }
                     },
                     required = new[] { "player_id" }
-                }
+                },
+                Annotations = new { readOnlyHint = false, destructiveHint = false, idempotentHint = false, openWorldHint = false }
             },
             async args =>
             {

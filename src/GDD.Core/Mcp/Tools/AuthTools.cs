@@ -28,7 +28,8 @@ public static class AuthTools
                         player_id = new { type = "integer", description = "Player ID (or 0 for all players)" }
                     },
                     required = new[] { "player_id" }
-                }
+                },
+                Annotations = new { readOnlyHint = false, destructiveHint = false, idempotentHint = false, openWorldHint = true }
             },
             async args =>
             {

@@ -28,7 +28,8 @@ public static class DiagnosticsTools
                         last = new { type = "integer", description = "Return only last N entries" }
                     },
                     required = new[] { "player_id" }
-                }
+                },
+                Annotations = new { readOnlyHint = true, destructiveHint = false, idempotentHint = true, openWorldHint = false }
             },
             async args =>
             {
@@ -82,7 +83,8 @@ public static class DiagnosticsTools
                         last = new { type = "integer", description = "Return only last N entries" }
                     },
                     required = new[] { "player_id" }
-                }
+                },
+                Annotations = new { readOnlyHint = true, destructiveHint = false, idempotentHint = true, openWorldHint = false }
             },
             async args =>
             {
@@ -137,7 +139,8 @@ public static class DiagnosticsTools
                         player_id = new { type = "integer", description = "Player ID" }
                     },
                     required = new[] { "player_id" }
-                }
+                },
+                Annotations = new { readOnlyHint = true, destructiveHint = false, idempotentHint = true, openWorldHint = false }
             },
             async args =>
             {
@@ -183,7 +186,8 @@ public static class DiagnosticsTools
                         }
                     },
                     required = new[] { "player_id" }
-                }
+                },
+                Annotations = new { readOnlyHint = false, destructiveHint = true, idempotentHint = true, openWorldHint = false }
             },
             async args =>
             {
@@ -240,7 +244,8 @@ public static class DiagnosticsTools
                         value = new { type = "string", description = "Value to set (for set action)" }
                     },
                     required = new[] { "player_id", "action" }
-                }
+                },
+                Annotations = new { readOnlyHint = false, destructiveHint = true, idempotentHint = false, openWorldHint = false }
             },
             async args =>
             {
@@ -319,7 +324,8 @@ public static class DiagnosticsTools
                         name = new { type = "string", description = "Filter by cookie name (optional, for get)" }
                     },
                     required = new[] { "player_id", "action" }
-                }
+                },
+                Annotations = new { readOnlyHint = false, destructiveHint = true, idempotentHint = false, openWorldHint = false }
             },
             async args =>
             {

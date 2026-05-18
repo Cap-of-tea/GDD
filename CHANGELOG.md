@@ -2,6 +2,13 @@
 
 All notable changes to GDD are documented here.
 
+## [1.4.7] - 2026-05-18
+
+### Added
+
+- **MCP tool annotations** — all 36 tools now include `readOnlyHint`, `destructiveHint`, `idempotentHint`, and `openWorldHint` per MCP spec, enabling safer tool execution in AI clients
+- **Privacy Policy** — README now documents GDD's local-only data handling, no telemetry, and opt-out update checks
+
 ## [1.4.6] - 2026-05-17
 
 ### Changed

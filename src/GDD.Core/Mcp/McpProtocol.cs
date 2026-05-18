@@ -54,6 +54,10 @@ public sealed class McpToolDefinition
 
     [JsonPropertyName("inputSchema")]
     public object InputSchema { get; set; } = new { type = "object" };
+
+    [JsonPropertyName("annotations")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public object? Annotations { get; set; }
 }
 
 public sealed class McpToolCallParams

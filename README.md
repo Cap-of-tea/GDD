@@ -522,6 +522,25 @@ Chromium installs automatically on first run.
 - [GDD-PROMPT.md](GDD-PROMPT.md) — Claude agent instructions for MCP integration
 - [CONTRIBUTING.md](CONTRIBUTING.md) — Contribution guidelines
 
+## Privacy
+
+<details>
+<summary><strong>Privacy Policy</strong></summary>
+
+GDD runs **entirely on your local machine**. No telemetry, no analytics, no data collection.
+
+- **No data leaves your machine** — all browser profiles, screenshots, logs, and cookies stay in local storage
+- **Browser profiles** — stored in `%LOCALAPPDATA%\GDD\Profiles` (Windows) or `~/.local/share/GDD/Profiles` (Linux/macOS)
+- **No third-party services** — GDD does not contact any external APIs except GitHub Releases for optional update checks
+- **Update checks** — `gdd_check_update` makes a single read-only request to `api.github.com`. Opt out by not calling the tool, or set `CheckForUpdates: false` in `appsettings.json`
+- **MCP server** — listens on `localhost` only (default port 9700), never exposed to the network
+
+Contact: **[2vsmirnov@gmail.com](mailto:2vsmirnov@gmail.com)**
+
+</details>
+
+---
+
 ## License
 
 **imVS©, free for personal use.**

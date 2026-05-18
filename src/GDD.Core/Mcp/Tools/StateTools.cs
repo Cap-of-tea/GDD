@@ -24,7 +24,8 @@ public static class StateTools
                         player_id = new { type = "integer", description = "Player ID" }
                     },
                     required = new[] { "player_id" }
-                }
+                },
+                Annotations = new { readOnlyHint = true, destructiveHint = false, idempotentHint = true, openWorldHint = false }
             },
             async args =>
             {
@@ -72,7 +73,8 @@ public static class StateTools
                     {
                         player_id = new { type = "integer", description = "Player ID (0 for all)" }
                     }
-                }
+                },
+                Annotations = new { readOnlyHint = true, destructiveHint = false, idempotentHint = true, openWorldHint = false }
             },
             async args =>
             {

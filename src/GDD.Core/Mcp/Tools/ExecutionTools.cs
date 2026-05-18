@@ -21,7 +21,8 @@ public static class ExecutionTools
                         script = new { type = "string", description = "JavaScript code to execute" }
                     },
                     required = new[] { "player_id", "script" }
-                }
+                },
+                Annotations = new { readOnlyHint = false, destructiveHint = true, idempotentHint = false, openWorldHint = false }
             },
             async args =>
             {

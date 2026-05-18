@@ -29,7 +29,8 @@ public static class HelpTools
                             @enum = new[] { "setup", "tools", "rules", "examples", "architecture", "config" }
                         }
                     }
-                }
+                },
+                Annotations = new { readOnlyHint = true, destructiveHint = false, idempotentHint = true, openWorldHint = false }
             },
             async args =>
             {
