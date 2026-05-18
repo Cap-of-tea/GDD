@@ -1,8 +1,0 @@
-{
-  "mcpServers": {
-    "gdd": {
-      "command": "powershell",
-      "args": ["-ExecutionPolicy", "Bypass", "-File", "c:\\VS\\BrowserXn\\mcp-proxy-auto.ps1"]
-    }
-  }
-}

@@ -41,3 +41,6 @@ Desktop.ini
 appsettings.*.json
 !appsettings.json
 *.env
+
+## Local MCP config
+.mcp.json
