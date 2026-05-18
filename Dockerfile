@@ -12,6 +12,7 @@ ENV PLAYWRIGHT_BROWSERS_PATH=/app/.browsers
 RUN pwsh /app/playwright.ps1 install chromium
 
 FROM mcr.microsoft.com/dotnet/aspnet:8.0
+LABEL io.modelcontextprotocol.server.name="io.github.cap-of-tea/gdd"
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libnss3 libnspr4 libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 \
     libxkbcommon0 libxcomposite1 libxdamage1 libxrandr2 libgbm1 \
