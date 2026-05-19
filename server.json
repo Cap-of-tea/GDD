@@ -1,8 +1,8 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
-  "name": "io.github.cap-of-tea/gdd",
+  "name": "io.github.imVSmirnov/gdd",
   "title": "GDD - AI-Controlled Browser Farm",
-  "description": "Run N isolated Chromium browsers with 36 MCP tools for multi-device testing, screenshots, network/geolocation emulation, and console diagnostics",
+  "description": "AI-controlled browser farm: N isolated Chromium instances with 36 MCP tools",
   "websiteUrl": "https://github.com/Cap-of-tea/GDD",
   "repository": {
     "url": "https://github.com/Cap-of-tea/GDD",
@@ -13,7 +13,7 @@
     {
       "src": "https://raw.githubusercontent.com/Cap-of-tea/GDD/master/Design/gdd-logo-400.png",
       "mimeType": "image/png",
-      "sizes": "400x400"
+      "sizes": ["400x400"]
     }
   ],
   "packages": [

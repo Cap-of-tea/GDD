@@ -44,3 +44,6 @@ appsettings.*.json
 
 ## Local MCP config
 .mcp.json
+
+## Downloaded tools
+mcp-publisher.exe
