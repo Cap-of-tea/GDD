@@ -1,0 +1,13 @@
+startCommand:
+  type: stdio
+
+configSchema:
+  type: object
+  required: []
+  properties: {}
+
+commandFunction: |-
+  (config) => ({
+    command: 'docker',
+    args: ['run', '--rm', '-p', '9700:9700', 'ghcr.io/cap-of-tea/gdd:1.5.0']
+  })
