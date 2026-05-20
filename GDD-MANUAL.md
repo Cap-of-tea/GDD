@@ -49,6 +49,14 @@ Claude sees and controls browsers like a human: opens pages, taps buttons, reads
 
 GDD starts an MCP HTTP server on port 9700 (auto-fallback 9701..9709 if occupied).
 
+**Docker:**
+
+```bash
+docker run -p 9700:9700 ghcr.io/cap-of-tea/gdd:1.5.0
+```
+
+Runs headless with all Chromium dependencies pre-installed. No setup needed.
+
 ### Claude Code Setup
 
 Two connection methods — choose one:
@@ -161,7 +169,7 @@ Returns JSON array of all active players:
 
 ```json
 [
-  { "id": 1, "name": "Player 1", "url": "about:blank", "status": "Ready", "overlay_open": false }
+  { "id": 1, "name": "Player 1", "url": "about:blank", "status": "Ready", "overlay_open": false, "session": "a1b2c3d4" }
 ]
 ```
 
@@ -204,11 +212,18 @@ Navigate forward in browser history.
 
 ### 3.3 Interaction
 
-#### `gdd_tap(player_id, selector?, x?, y?)`
+#### `gdd_tap(player_id, selector?, x?, y?, humanize?)`
 
-Tap element by CSS selector (preferred) or coordinates. Uses touch events via CDP.
+Tap element by CSS selector (preferred) or coordinates. Dispatches touch events followed by a full mouse event chain (`mouseMoved` → `mousePressed` → `mouseReleased`) via CDP, so both touch listeners and click/pointerdown handlers fire.
 
 Either `selector` OR `x`+`y` required. Selector resolves to element center via `getBoundingClientRect()`.
+
+| Param | Type | Default | Description |
+| ----- | ---- | ------- | ----------- |
+| `selector` | string | — | CSS selector (resolves to element center) |
+| `x` | number | — | X coordinate (CSS pixels) |
+| `y` | number | — | Y coordinate (CSS pixels) |
+| `humanize` | boolean | false | Move mouse along a cubic Bézier curve with natural easing and micro-jitter before clicking (0.5–1.5s duration) |
 
 #### `gdd_swipe(player_id, direction, distance?)`
 
@@ -236,9 +251,14 @@ Type text into input/textarea.
 
 Uses native value setter + dispatches `input` and `change` events. Set `clear=false` to append.
 
-#### `gdd_hover(player_id, selector)`
+#### `gdd_hover(player_id, selector, humanize?)`
 
 Hover over an element (triggers `mouseover`/`mouseenter` events). Useful for tooltips, dropdown menus, and hover states.
+
+| Param | Type | Default | Description |
+| ----- | ---- | ------- | ----------- |
+| `selector` | string | — | CSS selector of the element to hover |
+| `humanize` | boolean | false | Move mouse along a cubic Bézier curve with natural easing and micro-jitter (0.5–1.5s duration) |
 
 #### `gdd_select(player_id, selector, value?, text?)`
 
@@ -356,7 +376,7 @@ Examples: `"ru"`, `"en-US"`, `"ja-JP"`, `"de-DE"`
 Auto-register/login against the backend.
 
 - `player_id=0` — authenticate all players
-- Generates credentials: `player{id}@gdd.test` / `GDD-Player{id}!`
+- Generates credentials: `player{id}@gdd.test` / `BxN-Player{id}!` (username: `bxn_player{id}`)
 - Injects tokens into `localStorage["noise-auth"]`
 - Navigates to frontend URL
 - Batches 8 players at a time with 500ms delay
@@ -372,7 +392,12 @@ Full player state as JSON:
 ```json
 {
   "player_id": 1,
+  "player_name": "Player 1",
   "url": "https://app.example.com/dashboard",
+  "status": "Ready",
+  "overlay_open": false,
+  "network_status": "Online",
+  "notification_count": 0,
   "device": { "name": "iPhone 15 Pro", "width": 393, "height": 852, "scale": 3, "mobile": true },
   "console_error_count": 2,
   "network_error_count": 0,
@@ -439,7 +464,15 @@ Read or clear browser cookies.
 
 ---
 
-### Update
+### 3.10 Help
+
+#### `gdd_get_manual()`
+
+Returns the full GDD manual (this document). No parameters. Useful for AI agents to self-learn GDD capabilities without external documentation.
+
+---
+
+### 3.11 Update
 
 #### `gdd_check_update()`
 

@@ -2,6 +2,22 @@
 
 All notable changes to GDD are documented here.
 
+## [1.5.0] - 2026-05-20
+
+### Fixed
+
+- **gdd_tap now clicks custom components** — dispatches full mouse event chain (mouseMoved → mousePressed → mouseReleased) after touch events; fixes popover-dropdowns, toggle-chips, and other components that listen for `click`/`pointerdown` instead of touch events
+
+### Added
+
+- **`humanize` parameter** for `gdd_tap` and `gdd_hover` — moves mouse along a cubic Bézier curve with natural easing and micro-jitter before clicking; random duration 0.5–1.5s per movement
+- **Docker support** — working Dockerfile with .dockerignore, full Playwright runtime deps, published to GHCR (`ghcr.io/cap-of-tea/gdd`)
+- **Official MCP Registry** — GDD listed at registry.modelcontextprotocol.io
+
+### Changed
+
+- Downgraded Serilog.Settings.Configuration 10.0.0 → 8.0.4 for .NET 8 SDK compatibility
+
 ## [1.4.7] - 2026-05-18
 
 ### Added

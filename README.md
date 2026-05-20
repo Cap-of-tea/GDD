@@ -13,6 +13,7 @@
   <a href="https://github.com/Cap-of-tea/GDD/releases/latest"><img src="https://img.shields.io/github/v/release/Cap-of-tea/GDD?style=flat-square&color=blue" alt="Release" /></a>
   <img src="https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-0078D6?style=flat-square" alt="Platforms" />
   <a href="https://modelcontextprotocol.io/"><img src="https://img.shields.io/badge/MCP-compatible-44CC11?style=flat-square" alt="MCP" /></a>
+  <a href="https://registry.modelcontextprotocol.io"><img src="https://img.shields.io/badge/MCP%20Registry-listed-44CC11?style=flat-square" alt="MCP Registry" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-free%20for%20personal%20use-blue?style=flat-square" alt="License" /></a>
 </p>
 <p align="center">
@@ -54,6 +55,7 @@ GDD runs N isolated Chromium instances, each with its own profile, cookies, devi
 | **macOS Intel** | [gdd-macos-x64.tar.gz](https://github.com/Cap-of-tea/GDD/releases/latest/download/gdd-macos-x64.tar.gz) | `bash Scripts/setup-macos.sh && ./GDD.Headless` |
 | **Windows** | [gdd-win-x64.tar.gz](https://github.com/Cap-of-tea/GDD/releases/latest/download/gdd-win-x64.tar.gz) | `.\GDD.Headless.exe` |
 | **Windows GUI** | [gdd-windows-gui.tar.gz](https://github.com/Cap-of-tea/GDD/releases/latest/download/gdd-windows-gui.tar.gz) | Extract, run `GDD.exe` ([WebView2](https://developer.microsoft.com/en-us/microsoft-edge/webview2/) required) |
+| **Docker** | `ghcr.io/cap-of-tea/gdd` | `docker run -p 9700:9700 ghcr.io/cap-of-tea/gdd:1.5.0` |
 
 Self-contained binary, ~70 MB. No .NET installation needed. Chromium downloads automatically on first launch.
 
@@ -62,6 +64,22 @@ Self-contained binary, ~70 MB. No .NET installation needed. Chromium downloads a
 ```bash
 curl -sL https://github.com/Cap-of-tea/GDD/releases/latest/download/gdd-linux-x64.tar.gz | tar xz && chmod +x GDD.Headless && ./GDD.Headless
 ```
+
+<details>
+<summary><strong>Docker</strong></summary>
+
+```bash
+# Run (headless, port 9700)
+docker run -p 9700:9700 ghcr.io/cap-of-tea/gdd:1.5.0
+
+# Or build locally
+docker build -t gdd .
+docker run -p 9700:9700 gdd
+```
+
+The Docker image runs in headless mode with all Chromium dependencies pre-installed.
+
+</details>
 
 By default, browsers launch in **headed** mode (visible windows). Add `--headless` for CI/CD.
 
@@ -256,10 +274,12 @@ GDD uses standard JSON-RPC 2.0 — works with `curl`, Python, Node.js, or any HT
 - **AI-native** — 36 MCP tools for Claude Code, Cursor, or any MCP-compatible client
 - **Cross-platform** — Windows GUI with live video wall + headed/headless on Linux & macOS
 - **Full interaction** — Navigate, tap, type, swipe, scroll, hover, handle dialogs, take screenshots
+- **Human-like input** — `humanize=true` moves the mouse along a cubic Bézier curve with natural easing and micro-jitter before clicking
 - **Device emulation** — Screen size, DPR, touch, user agent, geolocation, timezone, language
 - **Network control** — Simulate 4G, Fast 3G, Slow 3G, or offline per browser
 - **Diagnostics** — Console errors, network traffic, performance metrics, push notifications
 - **Error beacon** — Every tool response warns about JS errors across all browsers automatically
+- **Docker-ready** — Official image on GHCR (`ghcr.io/cap-of-tea/gdd`), listed on the [MCP Registry](https://registry.modelcontextprotocol.io)
 - **Self-updating** — Built-in version check and one-command update
 
 ---
@@ -288,11 +308,11 @@ GDD uses standard JSON-RPC 2.0 — works with `curl`, Python, Node.js, or any HT
 
 | Tool | Description |
 |------|-------------|
-| `gdd_tap` | Tap element by CSS selector or coordinates |
+| `gdd_tap` | Tap element by CSS selector or coordinates; dispatches touch + mouse/click events. `humanize=true` moves mouse along a Bézier curve |
 | `gdd_swipe` | Swipe gesture (up/down/left/right) |
 | `gdd_scroll` | Scroll page or element |
 | `gdd_type` | Type text into input fields |
-| `gdd_hover` | Hover over element |
+| `gdd_hover` | Hover over element. `humanize=true` moves mouse along a Bézier curve |
 | `gdd_select` | Select option from `<select>` dropdown |
 | `gdd_dialog` | Handle JS alert/confirm/prompt dialogs |
 

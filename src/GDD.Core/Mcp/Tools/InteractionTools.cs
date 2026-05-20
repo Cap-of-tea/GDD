@@ -1,5 +1,6 @@
 using System.Text.Json;
 using GDD.Abstractions;
+using GDD.Core.Services;
 
 namespace GDD.Mcp.Tools;
 
@@ -11,7 +12,7 @@ public static class InteractionTools
             new McpToolDefinition
             {
                 Name = "gdd_tap",
-                Description = "Tap on an element by CSS selector or at exact (x, y) coordinates in CSS pixels. Dispatches touchStart/touchEnd events. Provide either a selector (element center is tapped) or x,y coordinates from a gdd_screenshot. Use gdd_screenshot first to identify tap targets.",
+                Description = "Tap on an element by CSS selector or at exact (x, y) coordinates in CSS pixels. Dispatches touch and mouse/click events. Provide either a selector (element center is tapped) or x,y coordinates from a gdd_screenshot. Set humanize=true for natural mouse movement (0.5-1.5s curve).",
                 InputSchema = new
                 {
                     type = "object",
@@ -20,7 +21,8 @@ public static class InteractionTools
                         player_id = new { type = "integer", description = "Player ID" },
                         selector = new { type = "string", description = "CSS selector to tap (optional if x,y provided)" },
                         x = new { type = "number", description = "X coordinate (optional if selector provided)" },
-                        y = new { type = "number", description = "Y coordinate (optional if selector provided)" }
+                        y = new { type = "number", description = "Y coordinate (optional if selector provided)" },
+                        humanize = new { type = "boolean", description = "Move mouse along a natural curve before clicking (0.5-1.5s). Default: false" }
                     },
                     required = new[] { "player_id" }
                 },
@@ -80,7 +82,33 @@ public static class InteractionTools
                         timestamp = ts + 0.05
                     }));
 
-                return McpResult.Text($"Tapped at ({x:F0}, {y:F0}) on player {playerId}");
+                await Task.Delay(30);
+
+                var humanize = args?.TryGetProperty("humanize", out var hEl) == true && hEl.GetBoolean();
+
+                if (humanize)
+                {
+                    var (startX, startY) = MouseMovementService.RandomStart(x, y);
+                    var path = MouseMovementService.GeneratePath(startX, startY, x, y);
+                    foreach (var pt in path)
+                    {
+                        await engine.CallCdpMethodAsync("Input.dispatchMouseEvent",
+                            JsonSerializer.Serialize(new { type = "mouseMoved", x = pt.X, y = pt.Y, button = "none", buttons = 0 }));
+                        await Task.Delay(pt.DelayMs);
+                    }
+                }
+                else
+                {
+                    await engine.CallCdpMethodAsync("Input.dispatchMouseEvent",
+                        JsonSerializer.Serialize(new { type = "mouseMoved", x, y, button = "none", buttons = 0 }));
+                }
+
+                await engine.CallCdpMethodAsync("Input.dispatchMouseEvent",
+                    JsonSerializer.Serialize(new { type = "mousePressed", x, y, button = "left", buttons = 1, clickCount = 1 }));
+                await engine.CallCdpMethodAsync("Input.dispatchMouseEvent",
+                    JsonSerializer.Serialize(new { type = "mouseReleased", x, y, button = "left", buttons = 0, clickCount = 1 }));
+
+                return McpResult.Text($"Tapped at ({x:F0}, {y:F0}) on player {playerId}{(humanize ? " (humanized)" : "")}");
             });
 
         registry.Register(
@@ -277,7 +305,8 @@ public static class InteractionTools
                     properties = new
                     {
                         player_id = new { type = "integer", description = "Player ID" },
-                        selector = new { type = "string", description = "CSS selector of element to hover" }
+                        selector = new { type = "string", description = "CSS selector of element to hover" },
+                        humanize = new { type = "boolean", description = "Move mouse along a natural curve (0.5-1.5s). Default: false" }
                     },
                     required = new[] { "player_id", "selector" }
                 },
@@ -305,10 +334,26 @@ public static class InteractionTools
                 var x = doc.RootElement.GetProperty("x").GetDouble();
                 var y = doc.RootElement.GetProperty("y").GetDouble();
 
-                await player.Engine.CallCdpMethodAsync("Input.dispatchMouseEvent",
-                    JsonSerializer.Serialize(new { type = "mouseMoved", x, y, button = "none", buttons = 0 }));
+                var humanize = args?.TryGetProperty("humanize", out var hEl) == true && hEl.GetBoolean();
 
-                return McpResult.Text($"Hovered over '{selector}' at ({x:F0}, {y:F0}) on player {playerId}");
+                if (humanize)
+                {
+                    var (startX, startY) = MouseMovementService.RandomStart(x, y);
+                    var path = MouseMovementService.GeneratePath(startX, startY, x, y);
+                    foreach (var pt in path)
+                    {
+                        await player.Engine.CallCdpMethodAsync("Input.dispatchMouseEvent",
+                            JsonSerializer.Serialize(new { type = "mouseMoved", x = pt.X, y = pt.Y, button = "none", buttons = 0 }));
+                        await Task.Delay(pt.DelayMs);
+                    }
+                }
+                else
+                {
+                    await player.Engine.CallCdpMethodAsync("Input.dispatchMouseEvent",
+                        JsonSerializer.Serialize(new { type = "mouseMoved", x, y, button = "none", buttons = 0 }));
+                }
+
+                return McpResult.Text($"Hovered over '{selector}' at ({x:F0}, {y:F0}) on player {playerId}{(humanize ? " (humanized)" : "")}");
             });
 
         registry.Register(
