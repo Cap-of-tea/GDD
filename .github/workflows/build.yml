@@ -143,6 +143,12 @@ jobs:
     permissions:
       contents: write
     steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            mcpb
+            Design
+
       - uses: actions/download-artifact@v4
         with:
           path: artifacts/
@@ -154,7 +160,15 @@ jobs:
             tar -czf "${dir}.tar.gz" -C "$dir" .
           done
 
+      - name: Package MCPB desktop extensions
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          chmod +x mcpb/build-mcpb.sh
+          mcpb/build-mcpb.sh "$VERSION" artifacts Design/gdd-logo-400.png artifacts
+
       - uses: softprops/action-gh-release@v2
         with:
-          files: artifacts/*.tar.gz
+          files: |
+            artifacts/*.tar.gz
+            artifacts/*.mcpb
           generate_release_notes: true

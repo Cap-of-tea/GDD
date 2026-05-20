@@ -56,6 +56,7 @@ GDD runs N isolated Chromium instances, each with its own profile, cookies, devi
 | **Windows** | [gdd-win-x64.tar.gz](https://github.com/Cap-of-tea/GDD/releases/latest/download/gdd-win-x64.tar.gz) | `.\GDD.Headless.exe` |
 | **Windows GUI** | [gdd-windows-gui.tar.gz](https://github.com/Cap-of-tea/GDD/releases/latest/download/gdd-windows-gui.tar.gz) | Extract, run `GDD.exe` ([WebView2](https://developer.microsoft.com/en-us/microsoft-edge/webview2/) required) |
 | **Docker** | `ghcr.io/cap-of-tea/gdd` | `docker run -p 9700:9700 ghcr.io/cap-of-tea/gdd:1.5.0` |
+| **Claude Desktop** | [Win](https://github.com/Cap-of-tea/GDD/releases/latest/download/gdd-win-x64.mcpb) / [Mac ARM](https://github.com/Cap-of-tea/GDD/releases/latest/download/gdd-macos-arm64.mcpb) / [Mac Intel](https://github.com/Cap-of-tea/GDD/releases/latest/download/gdd-macos-x64.mcpb) (.mcpb) | Open `.mcpb` file — installs as desktop extension |
 
 Self-contained binary, ~70 MB. No .NET installation needed. Chromium downloads automatically on first launch.
 
@@ -100,6 +101,8 @@ Add to `.mcp.json` and restart your AI client:
 ```
 
 That's it. Start GDD, tell Claude or Cursor to test your app.
+
+> **Claude Desktop users:** Download the `.mcpb` file from [Releases](https://github.com/Cap-of-tea/GDD/releases/latest) and open it — GDD installs as a one-click desktop extension. No manual config needed.
 
 <details>
 <summary><strong>Config file locations</strong></summary>
