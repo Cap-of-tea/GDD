@@ -52,7 +52,7 @@ GDD starts an MCP HTTP server on port 9700 (auto-fallback 9701..9709 if occupied
 **Docker:**
 
 ```bash
-docker run -p 9700:9700 ghcr.io/cap-of-tea/gdd:1.5.0
+docker run -p 9700:9700 ghcr.io/cap-of-tea/gdd:1.5.1
 ```
 
 Runs headless with all Chromium dependencies pre-installed. No setup needed.

@@ -186,7 +186,6 @@ public partial class MainViewModel : ObservableObject, IPlayerManager
 
         player.Dispose();
         PlayerCount = Players.Count;
-        StatusText = $"Players: {PlayerCount}";
     }
 
     [RelayCommand]

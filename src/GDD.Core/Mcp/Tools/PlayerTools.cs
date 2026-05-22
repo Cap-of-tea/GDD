@@ -72,7 +72,7 @@ public static class PlayerTools
             new McpToolDefinition
             {
                 Name = "gdd_list_windows",
-                Description = "List all active browser players with their current state. Returns JSON array with player ID, name, current URL, status, overlay visibility, and owning MCP session. Use to discover available players before performing actions.",
+                Description = "List all active browser players. Each player is an isolated browser context (separate cookies, localStorage, sessions — never shared between players). Returns JSON array with player ID, name, URL, status, overlay visibility, and owner. Owner is 'gui' for players created via GUI (accessible to all MCP clients) or a session ID prefix for MCP-created players.",
                 InputSchema = new { type = "object", properties = new { } },
                 Annotations = new { readOnlyHint = true, destructiveHint = false, idempotentHint = true, openWorldHint = false }
             },
@@ -85,7 +85,7 @@ public static class PlayerTools
                     url = p.CurrentUrl,
                     status = p.StatusText,
                     overlay_open = p.IsOverlayOpen,
-                    session = p.OwnerSessionId is not null ? p.OwnerSessionId[..8] : "shared"
+                    owner = p.OwnerSessionId is not null ? p.OwnerSessionId[..8] : "gui"
                 });
                 await Task.CompletedTask;
                 return McpResult.Text(JsonSerializer.Serialize(players, new JsonSerializerOptions { WriteIndented = true }));

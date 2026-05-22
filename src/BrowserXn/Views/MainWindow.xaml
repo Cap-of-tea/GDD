@@ -93,14 +93,9 @@
                             ToolTip="Navigate all players to this URL" />
                 </StackPanel>
 
-                <!-- Right: API + Status -->
+                <!-- Right: placeholder for future toolbar items -->
                 <StackPanel DockPanel.Dock="Right" Orientation="Horizontal"
-                            VerticalAlignment="Center" HorizontalAlignment="Right">
-                    <TextBlock Text="{Binding StatusText}"
-                               Foreground="{StaticResource TextSecondaryBrush}"
-                               VerticalAlignment="Center"
-                               FontSize="13" />
-                </StackPanel>
+                            VerticalAlignment="Center" HorizontalAlignment="Right" />
             </DockPanel>
         </Border>
 
@@ -139,11 +134,6 @@
                 Padding="12,4">
             <DockPanel>
                 <TextBlock DockPanel.Dock="Right"
-                           Text="{Binding PlayerCount, StringFormat='Players: {0}'}"
-                           Foreground="{StaticResource TextSecondaryBrush}"
-                           FontSize="12"
-                           VerticalAlignment="Center" />
-                <TextBlock DockPanel.Dock="Right"
                            Text="{Binding UpdateVersion, StringFormat='⚠ Update v{0} available'}"
                            Visibility="{Binding UpdateAvailable, Converter={StaticResource BoolToVis}}"
                            Foreground="#FFD700"
@@ -157,6 +147,11 @@
                            FontFamily="Cascadia Code,Consolas,Courier New"
                            VerticalAlignment="Center"
                            ToolTip="MCP API endpoint" />
+                <TextBlock Text="{Binding PlayerCount, StringFormat='Players: {0}'}"
+                           Foreground="{StaticResource TextSecondaryBrush}"
+                           FontSize="12"
+                           VerticalAlignment="Center"
+                           Margin="16,0,0,0" />
                 <TextBlock Text="{Binding StatusText}"
                            Foreground="{StaticResource TextSecondaryBrush}"
                            FontSize="12"

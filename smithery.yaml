@@ -9,5 +9,5 @@ configSchema:
 commandFunction: |-
   (config) => ({
     command: 'docker',
-    args: ['run', '--rm', '-p', '9700:9700', 'ghcr.io/cap-of-tea/gdd:1.5.0']
+    args: ['run', '--rm', '-p', '9700:9700', 'ghcr.io/cap-of-tea/gdd:1.5.1']
   })

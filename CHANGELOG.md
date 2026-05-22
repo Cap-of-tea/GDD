@@ -2,6 +2,17 @@
 
 All notable changes to GDD are documented here.
 
+## [1.5.1] - 2026-05-22
+
+### Fixed
+
+- **Misleading `session: "shared"` in gdd_list_windows** — renamed to `owner: "gui"` to prevent LLMs from incorrectly assuming shared browser state between players
+- **Duplicate "Players: N" counter in GUI** — removed redundant displays from toolbar and status bar right; single counter now shown in status bar left
+
+### Changed
+
+- **gdd_list_windows description** — now explicitly states that each player has an isolated browser context (separate cookies, localStorage, sessions)
+
 ## [1.5.0] - 2026-05-20
 
 ### Fixed
