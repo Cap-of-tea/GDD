@@ -44,7 +44,7 @@ public static class InteractionTools
                         $@"(function() {{ var el = document.querySelector('{selector}'); if (!el) return null; var r = el.getBoundingClientRect(); return {{x: r.x + r.width/2, y: r.y + r.height/2}}; }})()");
 
                     if (rectJson == "null" || rectJson == "\"null\"")
-                        return McpResult.Error($"Element '{selectorEl.GetString()}' not found");
+                        return await McpResult.ElementNotFound(player, selectorEl.GetString()!);
 
                     var json = rectJson;
                     if (json.StartsWith("\""))
@@ -289,7 +289,7 @@ public static class InteractionTools
 
                 var result = await player.Engine.ExecuteJavaScriptAsync(script);
                 if (result.Contains("not_found"))
-                    return McpResult.Error($"Element '{selector}' not found");
+                    return await McpResult.ElementNotFound(player, selector);
 
                 return McpResult.Text($"Typed into '{selector}' on player {playerId}");
             });
@@ -325,7 +325,7 @@ public static class InteractionTools
                     $@"(function() {{ var el = document.querySelector('{escapedSelector}'); if (!el) return null; var r = el.getBoundingClientRect(); return {{x: r.x + r.width/2, y: r.y + r.height/2}}; }})()");
 
                 if (rectJson == "null" || rectJson == "\"null\"")
-                    return McpResult.Error($"Element '{selector}' not found");
+                    return await McpResult.ElementNotFound(player, selector);
 
                 var json = rectJson;
                 if (json.StartsWith("\""))
@@ -418,7 +418,7 @@ public static class InteractionTools
 
                 var result = await player.Engine.ExecuteJavaScriptAsync(script);
                 if (result.Contains("not_found") && !result.Contains("option"))
-                    return McpResult.Error($"Element '{selector}' not found");
+                    return await McpResult.ElementNotFound(player, selector);
                 if (result.Contains("option_not_found"))
                     return McpResult.Error($"Option not found in '{selector}'");
 

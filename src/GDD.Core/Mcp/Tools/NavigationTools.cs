@@ -40,7 +40,7 @@ public static class NavigationTools
             new McpToolDefinition
             {
                 Name = "gdd_wait",
-                Description = "Wait for a CSS selector to appear in the DOM. Polls every 200ms until the element is found or timeout is reached. Returns the elapsed time on success. Use after gdd_navigate or gdd_tap to wait for dynamic content.",
+                Description = "Wait for a CSS selector to appear in the DOM. Polls every 200ms until the element is found or timeout is reached. Returns the elapsed time on success. On timeout, returns a screenshot of the current page state. IMPORTANT: use gdd_screenshot or gdd_read first to discover actual CSS selectors — do not guess.",
                 InputSchema = new
                 {
                     type = "object",
@@ -79,7 +79,7 @@ public static class NavigationTools
                     elapsed += 200;
                 }
 
-                return McpResult.Error($"Timeout: '{selector}' not found after {timeout}ms");
+                return await McpResult.ElementNotFound(player, selector, $"Timeout after {timeout}ms");
             });
 
         registry.Register(

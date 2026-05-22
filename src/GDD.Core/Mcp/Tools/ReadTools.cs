@@ -37,7 +37,7 @@ public static class ReadTools
                     $"document.querySelector('{escaped}')?.textContent ?? null");
 
                 if (result == "null")
-                    return McpResult.Error($"Element '{selector}' not found");
+                    return await McpResult.ElementNotFound(player, selector);
 
                 var text = JsonSerializer.Deserialize<string>(result);
                 return McpResult.Text(text ?? "");
