@@ -2,6 +2,17 @@
 
 All notable changes to GDD are documented here.
 
+## [1.5.2] - 2026-05-22
+
+### Added
+
+- **Auto-screenshot on element-not-found** — when any selector-based tool (`gdd_tap`, `gdd_type`, `gdd_hover`, `gdd_select`, `gdd_read`, `gdd_wait`) fails to find an element, the error response now includes a screenshot of the current page state. This lets the LLM see the actual page and self-correct in one retry instead of guessing selectors blindly
+- **Page load check before error screenshot** — checks `document.readyState` up to 3 times (1s interval) before capturing; if page is still loading, returns text-only error without screenshot
+
+### Changed
+
+- **gdd_wait description** — updated to mention screenshot on timeout and warn against guessing selectors
+
 ## [1.5.1] - 2026-05-22
 
 ### Fixed

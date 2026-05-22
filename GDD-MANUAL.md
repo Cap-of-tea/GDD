@@ -190,7 +190,7 @@ Wait for CSS selector to appear. Polls every 200ms.
 | `selector` | string | — |
 | `timeout` | integer (ms) | 5000 |
 
-Returns: `"Found '.btn-submit' after 800ms"` or `"Timeout: '.btn-submit' not found after 5000ms"`
+Returns: `"Found '.btn-submit' after 800ms"` on success. On timeout: error with screenshot of current page state so you can see actual elements. IMPORTANT: use `gdd_screenshot` or `gdd_read` first to discover real selectors — do not guess.
 
 #### `gdd_reload(player_id, hard?)`
 
@@ -287,7 +287,7 @@ Handle JavaScript alert/confirm/prompt dialogs.
 
 #### `gdd_read(player_id, selector)`
 
-Returns `textContent` of first matching element.
+Returns `textContent` of first matching element. If selector not found, returns error with screenshot.
 
 #### `gdd_read_all(player_id, selector)`
 
@@ -515,6 +515,7 @@ Always screenshot **before and after** every significant action. Never guess UI 
 | Rule | Why |
 | ---- | --- |
 | **Wait after navigation** | **ALWAYS** `gdd_wait(selector)` after `gdd_navigate` — page is NOT loaded when navigate returns. Screenshot without wait = incomplete/blank page |
+| **Don't guess selectors** | If a tool returns "Element not found" with a screenshot — look at the screenshot to find the correct selector. Use `gdd_read` or `gdd_screenshot` to discover actual selectors before retrying |
 | Tap by selectors, not coordinates | Selectors are reliable across all devices. Screenshot coordinates are CSS pixels and can be used as fallback |
 | `gdd_execute_js` is a last resort | Only for reading state (localStorage, JS variables). Never for `fetch`/`XHR`/API calls |
 | Scroll before tap | Elements below the fold need `gdd_scroll` before interaction |
