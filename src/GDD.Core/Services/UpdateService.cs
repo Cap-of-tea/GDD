@@ -17,9 +17,17 @@ public sealed class UpdateService
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly bool _isGui;
     private UpdateInfo? _cachedUpdate;
-    private bool _checked;
+    private DateTime _lastCheckUtc = DateTime.MinValue;
+    private bool _beaconShown;
 
     public UpdateInfo? CachedUpdate => _cachedUpdate;
+
+    public bool ShouldShowUpdateBeacon()
+    {
+        if (_cachedUpdate is null || _beaconShown) return false;
+        _beaconShown = true;
+        return true;
+    }
 
     public record UpdateInfo(string Version, string DownloadUrl, string ReleaseNotes, long SizeBytes);
 
@@ -31,7 +39,8 @@ public sealed class UpdateService
 
     public async Task<UpdateInfo?> CheckForUpdateAsync(CancellationToken ct = default)
     {
-        if (_checked) return _cachedUpdate;
+        if (DateTime.UtcNow - _lastCheckUtc < TimeSpan.FromHours(24))
+            return _cachedUpdate;
 
         try
         {
@@ -42,7 +51,7 @@ public sealed class UpdateService
             if (!response.IsSuccessStatusCode)
             {
                 Logger.Warning("GitHub API returned {StatusCode}", response.StatusCode);
-                _checked = true;
+                _lastCheckUtc = DateTime.UtcNow;
                 return null;
             }
 
@@ -59,7 +68,7 @@ public sealed class UpdateService
             {
                 Logger.Information("No update available (current={Current}, latest={Latest})",
                     GddVersion.Current, latestVersion);
-                _checked = true;
+                _lastCheckUtc = DateTime.UtcNow;
                 return null;
             }
 
@@ -91,7 +100,7 @@ public sealed class UpdateService
             if (downloadUrl is null)
             {
                 Logger.Warning("No matching asset found for RID {Rid} in release {Version}", rid, latestVersion);
-                _checked = true;
+                _lastCheckUtc = DateTime.UtcNow;
                 return null;
             }
 
@@ -100,7 +109,8 @@ public sealed class UpdateService
                 : "";
 
             _cachedUpdate = new UpdateInfo(latestVersion, downloadUrl, releaseNotes, sizeBytes);
-            _checked = true;
+            _lastCheckUtc = DateTime.UtcNow;
+            _beaconShown = false;
 
             Logger.Information("Update available: v{Current} → v{Latest} ({SizeMb:F1} MB)",
                 GddVersion.Current, latestVersion, sizeBytes / 1048576.0);
@@ -110,7 +120,7 @@ public sealed class UpdateService
         catch (Exception ex)
         {
             Logger.Warning(ex, "Failed to check for updates");
-            _checked = true;
+            _lastCheckUtc = DateTime.UtcNow;
             return null;
         }
     }

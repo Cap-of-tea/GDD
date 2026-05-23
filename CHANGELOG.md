@@ -2,6 +2,17 @@
 
 All notable changes to GDD are documented here.
 
+## [1.5.3] - 2026-05-23
+
+### Added
+
+- **Update beacon** — when a new GDD version is available, notifies Claude once per day via tool response. Claude asks the user before updating. Checks GitHub API every 24 hours (previously only at startup)
+
+### Changed
+
+- **Error beacon moved to top** — console error warnings now prepend to tool responses instead of appending, so Claude processes them before the main result
+- **Error beacon on errors** — console error warnings now show on error responses too (e.g. element-not-found), providing context that may explain the failure
+
 ## [1.5.2] - 2026-05-22
 
 ### Added

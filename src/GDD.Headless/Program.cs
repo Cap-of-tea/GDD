@@ -183,6 +183,7 @@ HelpTools.Register(registry);
 
 var updateService = host.Services.GetRequiredService<UpdateService>();
 UpdateTools.Register(registry, updateService);
+registry.SetUpdateService(updateService);
 
 var mcpServer = host.Services.GetRequiredService<McpServer>();
 mcpServer.SetUpdateService(updateService);

@@ -113,6 +113,7 @@ public partial class App : Application
 
         var updateService = _host.Services.GetRequiredService<UpdateService>();
         UpdateTools.Register(registry, updateService);
+        registry.SetUpdateService(updateService);
     }
 
     private void StartMcpServer()
