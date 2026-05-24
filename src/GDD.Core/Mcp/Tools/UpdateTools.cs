@@ -66,9 +66,14 @@ public static class UpdateTools
                     return McpResult.Text($"Already up to date (v{GddVersion.Current}).");
 
                 var archive = await updateService.DownloadUpdateAsync(update);
-                await updateService.ApplyUpdateAsync(archive);
 
-                return McpResult.Text($"Update to v{update.Version} applied. GDD is restarting...");
+                _ = Task.Run(async () =>
+                {
+                    await Task.Delay(2000);
+                    await updateService.ApplyUpdateAsync(archive);
+                });
+
+                return McpResult.Text($"Update to v{update.Version} downloaded. GDD is restarting — the MCP connection will drop briefly.");
             });
     }
 }
