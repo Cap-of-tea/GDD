@@ -6,20 +6,25 @@ namespace GDD.Desktop.Platform;
 /// <summary>Marshals work onto the Avalonia UI thread.</summary>
 public sealed class AvaloniaDispatcher : IMainThreadDispatcher
 {
-    public Task InvokeAsync(Func<Task> action)
+    public async Task InvokeAsync(Func<Task> action)
     {
         if (Dispatcher.UIThread.CheckAccess())
-            return action();
-        return Dispatcher.UIThread.InvokeAsync(action);
+        {
+            await action();
+            return;
+        }
+        // Avalonia unwraps the inner Task for the Func<Task> overload, so awaiting
+        // completes only when `action`'s task completes.
+        await Dispatcher.UIThread.InvokeAsync(action);
     }
 
-    public Task InvokeAsync(Action action)
+    public async Task InvokeAsync(Action action)
     {
         if (Dispatcher.UIThread.CheckAccess())
         {
             action();
-            return Task.CompletedTask;
+            return;
         }
-        return Dispatcher.UIThread.InvokeAsync(action).GetTask();
+        await Dispatcher.UIThread.InvokeAsync(action);
     }
 }

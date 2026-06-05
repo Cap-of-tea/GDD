@@ -202,9 +202,10 @@ public sealed class DesktopPlayerManager : IPlayerManager, IAsyncDisposable
 
         _ = _dispatcher.InvokeAsync(() =>
         {
-            var old = ctx.Thumbnail;
+            // Dispose the frame from two generations ago — it is no longer being rendered.
+            ctx.PendingDispose?.Dispose();
+            ctx.PendingDispose = ctx.Thumbnail;
             ctx.Thumbnail = bmp;
-            old?.Dispose();
         });
     }
 

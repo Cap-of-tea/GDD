@@ -12,12 +12,8 @@
 
     <Border.ContextMenu>
       <ContextMenu>
-        <MenuItem Header="Settings…"
-                  Command="{Binding $parent[Window].DataContext.OpenSettingsCommand}"
-                  CommandParameter="{Binding}" />
-        <MenuItem Header="Remove"
-                  Command="{Binding $parent[Window].DataContext.RemovePlayerCommand}"
-                  CommandParameter="{Binding}" />
+        <MenuItem Header="Settings…" Click="OnSettingsClicked" />
+        <MenuItem Header="Remove" Click="OnRemoveClicked" />
       </ContextMenu>
     </Border.ContextMenu>
 

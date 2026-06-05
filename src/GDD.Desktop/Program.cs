@@ -27,6 +27,15 @@ internal static class Program
         var browsersPath = Path.Combine(AppContext.BaseDirectory, ".browsers");
         Environment.SetEnvironmentVariable("PLAYWRIGHT_BROWSERS_PATH", browsersPath);
 
+        // Diagnostics: capture Avalonia logs (incl. binding errors, which go to Trace) to a file.
+        if (Environment.GetEnvironmentVariable("GDD_TRACE") is { Length: > 0 })
+        {
+            var traceFile = Path.Combine(AppContext.BaseDirectory, "logs", "avalonia-trace.log");
+            Directory.CreateDirectory(Path.GetDirectoryName(traceFile)!);
+            System.Diagnostics.Trace.Listeners.Add(new System.Diagnostics.TextWriterTraceListener(traceFile));
+            System.Diagnostics.Trace.AutoFlush = true;
+        }
+
         try
         {
             BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);

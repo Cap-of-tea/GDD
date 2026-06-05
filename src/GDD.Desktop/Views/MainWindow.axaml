@@ -29,7 +29,7 @@
                   <DataTemplate>
                     <Button Classes="toolbar" HorizontalAlignment="Stretch" Margin="0,2"
                             Content="{Binding Name}"
-                            Command="{Binding $parent[Window].DataContext.AddPresetCommand}"
+                            Command="{Binding $parent[ItemsControl].DataContext.AddPresetCommand}"
                             CommandParameter="{Binding}" />
                   </DataTemplate>
                 </ItemsControl.ItemTemplate>

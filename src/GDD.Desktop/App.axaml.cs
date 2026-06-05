@@ -47,7 +47,14 @@ public partial class App : Application
             desktop.ShutdownRequested += (_, _) =>
             {
                 try { _mcpServer?.Dispose(); } catch { }
-                try { _manager?.DisposeAsync().AsTask().GetAwaiter().GetResult(); } catch { }
+                // Dispose browsers off the UI thread with a bound — avoids a sync-over-async
+                // deadlock if Playwright's CloseAsync marshals back to the UI thread.
+                try
+                {
+                    if (_manager is not null)
+                        Task.Run(() => _manager.DisposeAsync().AsTask()).Wait(TimeSpan.FromSeconds(5));
+                }
+                catch { }
                 Log.CloseAndFlush();
             };
         }

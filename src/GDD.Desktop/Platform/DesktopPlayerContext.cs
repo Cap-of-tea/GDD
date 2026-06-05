@@ -28,6 +28,9 @@ public sealed partial class DesktopPlayerContext : ObservableObject, IPlayerCont
 
     [ObservableProperty] private Bitmap? _thumbnail;
 
+    /// <summary>Previous frame's bitmap, disposed two frames later to avoid a render race.</summary>
+    internal Bitmap? PendingDispose { get; set; }
+
     public bool IsOverlayOpen => false;
     public string? OwnerSessionId { get; set; }
     public IBrowserEngine? Engine { get; set; }
