@@ -8,8 +8,9 @@ using Serilog;
 namespace GDD.Desktop.Engines;
 
 /// <summary>
-/// Headed Playwright engine for GDD.Desktop. Copy of GDD.Headless PlaywrightEngine
-/// plus CDP screencast support for live thumbnails (Page.startScreencast).
+/// Playwright engine for GDD.Desktop. Same as GDD.Headless PlaywrightEngine, plus CDP
+/// input dispatch (Input.dispatch*) so the in-app interactive overlay can drive the page.
+/// Runs headless by default (no OS windows); the grid shows polled thumbnails.
 /// </summary>
 public sealed class PlaywrightHeadedEngine : IBrowserEngine
 {
@@ -23,9 +24,6 @@ public sealed class PlaywrightHeadedEngine : IBrowserEngine
     private ICDPSession? _cdpSession;
     private readonly ConcurrentDictionary<IRequest, string> _requestIds = new();
 
-    private ICDPSessionEvent? _screencastEvent;
-    private EventHandler<JsonElement?>? _screencastHandler;
-
     public int PlayerId { get; }
     public string UserDataFolder { get; }
     public bool IsInitialized => _page is not null;
@@ -34,9 +32,6 @@ public sealed class PlaywrightHeadedEngine : IBrowserEngine
     public event EventHandler<NotificationEventArgs>? NotificationReceived;
     public event EventHandler<string>? NavigationCompleted;
     public event EventHandler<string>? TitleChanged;
-
-    /// <summary>Fires for each screencast frame as raw JPEG bytes.</summary>
-    public event EventHandler<byte[]>? ScreencastFrame;
 
     public PlaywrightHeadedEngine(int playerId, IBrowser browser, AppConfig config, DevicePreset? device = null)
     {
@@ -131,7 +126,7 @@ public sealed class PlaywrightHeadedEngine : IBrowserEngine
             }
         }
 
-        Logger.Information("Playwright headed engine initialized for Player {Id}", PlayerId);
+        Logger.Information("Playwright engine initialized for Player {Id}", PlayerId);
     }
 
     public async Task NavigateAsync(string url)
@@ -200,79 +195,50 @@ public sealed class PlaywrightHeadedEngine : IBrowserEngine
         await _page.AddInitScriptAsync(script);
     }
 
-    /// <summary>Raise/focus this player's Chromium window (CDP Page.bringToFront).</summary>
-    public async Task BringToFrontAsync()
-    {
-        if (_page is null) return;
-        try { await _page.BringToFrontAsync(); }
-        catch (Exception ex) { Logger.Debug("BringToFront failed for Player {Id}: {Message}", PlayerId, ex.Message); }
-    }
+    // ── Input dispatch (for the in-app interactive overlay) ───────────────
 
-    // ── Screencast (live thumbnails) ──────────────────────────────────────
-
-    public async Task StartScreencastAsync(int quality = 50, int everyNthFrame = 2, int maxWidth = 0, int maxHeight = 0)
-    {
-        if (_cdpSession is null || _screencastEvent is not null) return;
-
-        _screencastEvent = _cdpSession.Event("Page.screencastFrame");
-        _screencastHandler = OnScreencastFrame;
-        _screencastEvent.OnEvent += _screencastHandler;
-
-        var args = new Dictionary<string, object>
-        {
-            ["format"] = "jpeg",
-            ["quality"] = quality,
-            ["everyNthFrame"] = everyNthFrame
-        };
-        if (maxWidth > 0) args["maxWidth"] = maxWidth;
-        if (maxHeight > 0) args["maxHeight"] = maxHeight;
-
-        try
-        {
-            await _cdpSession.SendAsync("Page.startScreencast", args);
-            Logger.Debug("Screencast started for Player {Id}", PlayerId);
-        }
-        catch (Exception ex)
-        {
-            Logger.Warning(ex, "Failed to start screencast for Player {Id}", PlayerId);
-        }
-    }
-
-    public async Task StopScreencastAsync()
+    public async Task DispatchMouseAsync(string type, double x, double y, string? button = null, int clickCount = 0)
     {
         if (_cdpSession is null) return;
-        try { await _cdpSession.SendAsync("Page.stopScreencast"); }
-        catch { /* best effort */ }
-
-        if (_screencastEvent is not null && _screencastHandler is not null)
-            _screencastEvent.OnEvent -= _screencastHandler;
-        _screencastEvent = null;
-        _screencastHandler = null;
+        var p = new Dictionary<string, object> { ["type"] = type, ["x"] = x, ["y"] = y };
+        if (!string.IsNullOrEmpty(button))
+        {
+            p["button"] = button;
+            p["buttons"] = button == "left" ? 1 : button == "right" ? 2 : button == "middle" ? 4 : 0;
+        }
+        if (clickCount > 0) p["clickCount"] = clickCount;
+        try { await _cdpSession.SendAsync("Input.dispatchMouseEvent", p); }
+        catch (Exception ex) { Logger.Debug("dispatchMouse failed P{Id}: {M}", PlayerId, ex.Message); }
     }
 
-    private async void OnScreencastFrame(object? sender, JsonElement? eventArgs)
+    public async Task DispatchWheelAsync(double x, double y, double deltaX, double deltaY)
     {
-        if (eventArgs is not { } e) return;
+        if (_cdpSession is null) return;
         try
         {
-            var data = e.GetProperty("data").GetString();
-            var sessionId = e.GetProperty("sessionId").GetInt32();
-
-            if (!string.IsNullOrEmpty(data))
+            await _cdpSession.SendAsync("Input.dispatchMouseEvent", new Dictionary<string, object>
             {
-                var bytes = Convert.FromBase64String(data);
-                ScreencastFrame?.Invoke(this, bytes);
-            }
+                ["type"] = "mouseWheel", ["x"] = x, ["y"] = y, ["deltaX"] = deltaX, ["deltaY"] = deltaY
+            });
+        }
+        catch (Exception ex) { Logger.Debug("dispatchWheel failed P{Id}: {M}", PlayerId, ex.Message); }
+    }
 
-            // Must ack or Chromium stops sending frames.
-            if (_cdpSession is not null)
-                await _cdpSession.SendAsync("Page.screencastFrameAck",
-                    new Dictionary<string, object> { ["sessionId"] = sessionId });
-        }
-        catch (Exception ex)
-        {
-            Logger.Debug("Screencast frame handling failed for Player {Id}: {Message}", PlayerId, ex.Message);
-        }
+    public async Task DispatchKeyAsync(string type, string key, int virtualKeyCode, string? text = null)
+    {
+        if (_cdpSession is null) return;
+        var p = new Dictionary<string, object> { ["type"] = type, ["key"] = key };
+        if (!string.IsNullOrEmpty(text)) { p["text"] = text; }
+        if (virtualKeyCode > 0) { p["windowsVirtualKeyCode"] = virtualKeyCode; p["nativeVirtualKeyCode"] = virtualKeyCode; }
+        try { await _cdpSession.SendAsync("Input.dispatchKeyEvent", p); }
+        catch (Exception ex) { Logger.Debug("dispatchKey failed P{Id}: {M}", PlayerId, ex.Message); }
+    }
+
+    public async Task InsertTextAsync(string text)
+    {
+        if (_cdpSession is null || string.IsNullOrEmpty(text)) return;
+        try { await _cdpSession.SendAsync("Input.insertText", new Dictionary<string, object> { ["text"] = text }); }
+        catch (Exception ex) { Logger.Debug("insertText failed P{Id}: {M}", PlayerId, ex.Message); }
     }
 
     public ICdpEventSubscription SubscribeToCdpEvent(string eventName)
@@ -351,8 +317,6 @@ public sealed class PlaywrightHeadedEngine : IBrowserEngine
 
     public async ValueTask DisposeAsync()
     {
-        await StopScreencastAsync();
-
         if (_cdpSession is not null)
         {
             try { await _cdpSession.DetachAsync(); } catch { }

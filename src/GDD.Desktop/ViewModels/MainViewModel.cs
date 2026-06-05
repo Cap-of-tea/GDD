@@ -32,6 +32,8 @@ public partial class MainViewModel : ObservableObject
     private readonly LocationEmulationService _locationService;
     private readonly NetworkEmulationService _networkService;
     private readonly TelegramInjectionService _telegramService;
+    private readonly Services.IThumbnailService _thumbnails;
+    private readonly Dictionary<int, Views.PlayerOverlayWindow> _overlays = new();
 
     [ObservableProperty] private string _statusText = "Ready";
     [ObservableProperty] private string _defaultUrl;
@@ -55,7 +57,8 @@ public partial class MainViewModel : ObservableObject
         DeviceEmulationService deviceService,
         LocationEmulationService locationService,
         NetworkEmulationService networkService,
-        TelegramInjectionService telegramService)
+        TelegramInjectionService telegramService,
+        Services.IThumbnailService thumbnails)
     {
         _manager = manager;
         _config = config;
@@ -66,6 +69,7 @@ public partial class MainViewModel : ObservableObject
         _locationService = locationService;
         _networkService = networkService;
         _telegramService = telegramService;
+        _thumbnails = thumbnails;
         _defaultUrl = config.FrontendUrl;
 
         Players.CollectionChanged += OnPlayersChanged;
@@ -229,9 +233,18 @@ public partial class MainViewModel : ObservableObject
     private void BringToFront(DesktopPlayerContext? player)
     {
         if (player is null) return;
-        if (player.Engine is Engines.PlaywrightHeadedEngine engine)
-            _ = engine.BringToFrontAsync();
-        StatusText = $"Focus {player.PlayerName}";
+
+        if (_overlays.TryGetValue(player.PlayerId, out var existing))
+        {
+            existing.Activate();
+            return;
+        }
+
+        var overlay = new Views.PlayerOverlayWindow(player, _thumbnails);
+        _overlays[player.PlayerId] = overlay;
+        overlay.Closed += (_, _) => _overlays.Remove(player.PlayerId);
+        overlay.Show();
+        StatusText = $"Opened {player.PlayerName}";
     }
 
     private static Avalonia.Controls.Window? MainWindow

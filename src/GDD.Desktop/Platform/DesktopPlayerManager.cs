@@ -220,7 +220,16 @@ public sealed class DesktopPlayerManager : IPlayerManager, IAsyncDisposable
             _playwright = await Playwright.CreateAsync();
             _browser = await _playwright.Chromium.LaunchAsync(new BrowserTypeLaunchOptions
             {
-                Headless = !_config.Headed
+                Headless = !_config.Headed,
+                // Keep off-screen / occluded windows rendering so screencast thumbnails
+                // stay live while the real Chromium windows are hidden until demanded.
+                Args =
+                [
+                    "--disable-backgrounding-occluded-windows",
+                    "--disable-features=CalculateNativeWinOcclusion",
+                    "--disable-renderer-backgrounding",
+                    "--disable-background-timer-throttling"
+                ]
             });
             Logger.Information("Chromium launched ({Mode})", _config.Headed ? "headed" : "headless");
         }

@@ -84,7 +84,7 @@ public partial class App : Application
         services.AddSingleton(config);
 
         services.AddSingleton<IMainThreadDispatcher, AvaloniaDispatcher>();
-        services.AddSingleton<IThumbnailService, ScreencastThumbnailService>();
+        services.AddSingleton<IThumbnailService, PollingThumbnailService>();
 
         services.AddSingleton<CdpService>();
         services.AddSingleton<DeviceEmulationService>();
