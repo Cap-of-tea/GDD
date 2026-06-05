@@ -20,7 +20,7 @@ jobs:
       - run: dotnet publish src/BrowserXn/BrowserXn.csproj -c Release -p:PublishSingleFile=true -o publish/win-gui
       - uses: actions/upload-artifact@v4
         with:
-          name: gdd-windows-gui
+          name: GDD-Desktop-Windows
           path: publish/win-gui/
 
       - name: Create update artifact (without browsers)
@@ -30,7 +30,7 @@ jobs:
           Remove-Item -Recurse -Force publish/win-gui-update/logs -ErrorAction SilentlyContinue
       - uses: actions/upload-artifact@v4
         with:
-          name: gdd-windows-gui-update
+          name: GDD-Desktop-Windows-Update
           path: publish/win-gui-update/
 
   build-headless:
@@ -39,16 +39,16 @@ jobs:
         include:
           - os: windows-latest
             rid: win-x64
-            artifact: gdd-win-x64
+            artifact: GDD-Server-Windows
           - os: ubuntu-22.04
             rid: linux-x64
-            artifact: gdd-linux-x64
+            artifact: GDD-Server-Linux
           - os: macos-14
             rid: osx-arm64
-            artifact: gdd-macos-arm64
+            artifact: GDD-Server-macOS-ARM
           - os: macos-14
             rid: osx-x64
-            artifact: gdd-macos-x64
+            artifact: GDD-Server-macOS-Intel
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -156,8 +156,16 @@ jobs:
       - name: Package archives
         run: |
           cd artifacts
-          for dir in gdd-*; do
-            tar -czf "${dir}.tar.gz" -C "$dir" .
+          for dir in GDD-*; do
+            [ -d "$dir" ] || continue
+            case "$dir" in
+              *Windows*)
+                (cd "$dir" && zip -qr "../${dir}.zip" .)
+                ;;
+              *)
+                tar -czf "${dir}.tar.gz" -C "$dir" .
+                ;;
+            esac
           done
 
       - name: Package MCPB desktop extensions
@@ -170,5 +178,6 @@ jobs:
         with:
           files: |
             artifacts/*.tar.gz
+            artifacts/*.zip
             artifacts/*.mcpb
           generate_release_notes: true

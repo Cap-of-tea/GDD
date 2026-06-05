@@ -65,7 +65,7 @@ Two connection methods — choose one:
 
 GDD must be running beforehand (manually, via launchd/systemd, or nohup).
 
-`.mcp.json` (in project root or `~/.claude/.mcp.json` globally):
+`.mcp.json` (in project root or `~/.claude/mcp.json` globally):
 
 ```json
 {
@@ -117,7 +117,7 @@ For headless mode, add `"--headless"` to the `args` array.
 
 | Client | Project config | Global config |
 | --- | --- | --- |
-| Claude Code | `<project>/.mcp.json` | `~/.claude/.mcp.json` |
+| Claude Code | `<project>/.mcp.json` | `~/.claude/mcp.json` |
 | Cursor | `<project>/.cursor/mcp.json` | `~/.cursor/mcp.json` |
 | VS Code / Windsurf / Antigravity | `<project>/.vscode/mcp.json` | IDE `settings.json` |
 

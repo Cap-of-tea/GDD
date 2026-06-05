@@ -434,15 +434,15 @@ GitHub Actions builds 5 targets on every push to master:
 
 | Target | Runner | Output |
 | ------ | ------ | ------ |
-| `gdd-windows-gui` | windows-latest | WPF + WebView2 single-file EXE |
-| `gdd-win-x64` | windows-latest | Playwright (headless/headed) |
-| `gdd-linux-x64` | ubuntu-22.04 | Playwright (headless/headed) |
-| `gdd-macos-arm64` | macos-14 | Apple Silicon (M1/M2/M3/M4) |
-| `gdd-macos-x64` | macos-14 | Intel Mac (cross-compiled on ARM, Chromium from CDN) |
+| `GDD-Desktop-Windows` | windows-latest | WPF + WebView2 single-file EXE |
+| `GDD-Server-Windows` | windows-latest | Playwright (headless/headed) |
+| `GDD-Server-Linux` | ubuntu-22.04 | Playwright (headless/headed) |
+| `GDD-Server-macOS-ARM` | macos-14 | Apple Silicon (M1/M2/M3/M4) |
+| `GDD-Server-macOS-Intel` | macos-14 | Intel Mac (cross-compiled on ARM, Chromium from CDN) |
 
 Each build runs a smoke test: starts GDD.Headless, queries `tools/list` via HTTP, verifies 36 tools are registered. The osx-x64 target is cross-compiled on an ARM runner (macos-14) and skips the smoke test since ARM `pwsh` cannot load x64 .NET assemblies.
 
-Tags matching `v*` trigger GitHub Releases with `tar.gz` archives for all targets.
+Tags matching `v*` trigger GitHub Releases with `.zip` (Windows) and `.tar.gz` (Linux/macOS) archives for all targets.
 
 ---
 

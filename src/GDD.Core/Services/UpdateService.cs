@@ -73,8 +73,9 @@ public sealed class UpdateService
             }
 
             var rid = GetRuntimeId();
-            var assetName = $"gdd-{rid}-update.tar.gz";
-            var fallbackName = $"gdd-{rid}.tar.gz";
+            var ext = OperatingSystem.IsWindows() ? ".zip" : ".tar.gz";
+            var assetName = $"GDD-{rid}-Update{ext}";
+            var fallbackName = $"GDD-{rid}{ext}";
             string? downloadUrl = null;
             long sizeBytes = 0;
 
@@ -128,7 +129,8 @@ public sealed class UpdateService
     public async Task<string> DownloadUpdateAsync(UpdateInfo info, IProgress<double>? progress = null, CancellationToken ct = default)
     {
         var client = _httpClientFactory.CreateClient("GitHubApi");
-        var tempPath = Path.Combine(Path.GetTempPath(), $"gdd-update-{info.Version}.tar.gz");
+        var ext = OperatingSystem.IsWindows() ? ".zip" : ".tar.gz";
+        var tempPath = Path.Combine(Path.GetTempPath(), $"gdd-update-{info.Version}{ext}");
 
         using var response = await client.GetAsync(info.DownloadUrl, HttpCompletionOption.ResponseHeadersRead, ct);
         response.EnsureSuccessStatusCode();
@@ -163,9 +165,16 @@ public sealed class UpdateService
             Directory.Delete(stagingDir, true);
         Directory.CreateDirectory(stagingDir);
 
-        await using var fileStream = File.OpenRead(archivePath);
-        await using var gzipStream = new GZipStream(fileStream, CompressionMode.Decompress);
-        await TarFile.ExtractToDirectoryAsync(gzipStream, stagingDir, overwriteFiles: true);
+        if (archivePath.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
+        {
+            ZipFile.ExtractToDirectory(archivePath, stagingDir, entryNameEncoding: null, overwriteFiles: true);
+        }
+        else
+        {
+            await using var fileStream = File.OpenRead(archivePath);
+            await using var gzipStream = new GZipStream(fileStream, CompressionMode.Decompress);
+            await TarFile.ExtractToDirectoryAsync(gzipStream, stagingDir, overwriteFiles: true);
+        }
 
         RemovePreservedFromStaging(stagingDir);
 
@@ -230,11 +239,12 @@ public sealed class UpdateService
     private string GetRuntimeId()
     {
         if (OperatingSystem.IsWindows())
-            return _isGui ? "windows-gui" : "win-x64";
+            return _isGui ? "Desktop-Windows" : "Server-Windows";
         if (OperatingSystem.IsLinux())
-            return "linux-x64";
+            return "Server-Linux";
         if (OperatingSystem.IsMacOS())
-            return RuntimeInformation.OSArchitecture == Architecture.Arm64 ? "macos-arm64" : "macos-x64";
+            return RuntimeInformation.OSArchitecture == Architecture.Arm64
+                ? "Server-macOS-ARM" : "Server-macOS-Intel";
         return "unknown";
     }
 

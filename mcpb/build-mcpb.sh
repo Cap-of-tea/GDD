@@ -84,7 +84,7 @@ build_bundle() {
 }
 EOF
 
-  local MCPB_FILE="$OUTPUT_DIR/gdd-${OUTPUT_NAME}.mcpb"
+  local MCPB_FILE="$OUTPUT_DIR/GDD-${OUTPUT_NAME}.mcpb"
   (cd "$WORK" && zip -qr "$MCPB_FILE" . -x "*.DS_Store" "*.gitkeep")
 
   local SIZE
@@ -96,8 +96,8 @@ EOF
 
 # Build bundles for Win + Mac (Claude Desktop platforms only)
 # Args: RID, CI artifact name, output name
-build_bundle "win-x64"   "gdd-win-x64"      "win-x64"
-build_bundle "osx-arm64" "gdd-macos-arm64"   "macos-arm64"
-build_bundle "osx-x64"   "gdd-macos-x64"     "macos-x64"
+build_bundle "win-x64"   "GDD-Server-Windows"      "Server-Windows"
+build_bundle "osx-arm64" "GDD-Server-macOS-ARM"    "Server-macOS-ARM"
+build_bundle "osx-x64"   "GDD-Server-macOS-Intel"  "Server-macOS-Intel"
 
 echo "Done. MCPB bundles in $OUTPUT_DIR"

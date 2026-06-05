@@ -49,6 +49,8 @@ public partial class App : Application
             })
             .Build();
 
+        McpConfigService.EnsureRegistered(AppContext.BaseDirectory);
+
         RegisterMcpTools();
         StartMcpServer();
 

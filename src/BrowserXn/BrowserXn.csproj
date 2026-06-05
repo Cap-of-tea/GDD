@@ -40,6 +40,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Content Include="..\GDD.Headless\Scripts\mcp-proxy.ps1" Link="Scripts\mcp-proxy.ps1">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
     <None Update="appsettings.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

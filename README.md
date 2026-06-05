@@ -50,20 +50,20 @@ GDD runs N isolated Chromium instances, each with its own profile, cookies, devi
 
 | Platform | Download | Run |
 |----------|----------|-----|
-| **Linux** | [gdd-linux-x64.tar.gz](https://github.com/Cap-of-tea/GDD/releases/latest/download/gdd-linux-x64.tar.gz) | `chmod +x GDD.Headless && ./GDD.Headless` |
-| **macOS ARM** | [gdd-macos-arm64.tar.gz](https://github.com/Cap-of-tea/GDD/releases/latest/download/gdd-macos-arm64.tar.gz) | `bash Scripts/setup-macos.sh && ./GDD.Headless` |
-| **macOS Intel** | [gdd-macos-x64.tar.gz](https://github.com/Cap-of-tea/GDD/releases/latest/download/gdd-macos-x64.tar.gz) | `bash Scripts/setup-macos.sh && ./GDD.Headless` |
-| **Windows** | [gdd-win-x64.tar.gz](https://github.com/Cap-of-tea/GDD/releases/latest/download/gdd-win-x64.tar.gz) | `.\GDD.Headless.exe` |
-| **Windows GUI** | [gdd-windows-gui.tar.gz](https://github.com/Cap-of-tea/GDD/releases/latest/download/gdd-windows-gui.tar.gz) | Extract, run `GDD.exe` ([WebView2](https://developer.microsoft.com/en-us/microsoft-edge/webview2/) required) |
-| **Docker** | `ghcr.io/cap-of-tea/gdd` | `docker run -p 9700:9700 ghcr.io/cap-of-tea/gdd:1.5.3` |
-| **Claude Desktop** | [Win](https://github.com/Cap-of-tea/GDD/releases/latest/download/gdd-win-x64.mcpb) / [Mac ARM](https://github.com/Cap-of-tea/GDD/releases/latest/download/gdd-macos-arm64.mcpb) / [Mac Intel](https://github.com/Cap-of-tea/GDD/releases/latest/download/gdd-macos-x64.mcpb) (.mcpb) | Open `.mcpb` file — installs as desktop extension |
+| **Linux** | [GDD-Server-Linux.tar.gz](https://github.com/Cap-of-tea/GDD/releases/latest/download/GDD-Server-Linux.tar.gz) | `chmod +x GDD.Headless && ./GDD.Headless` |
+| **macOS ARM** | [GDD-Server-macOS-ARM.tar.gz](https://github.com/Cap-of-tea/GDD/releases/latest/download/GDD-Server-macOS-ARM.tar.gz) | `bash Scripts/setup-macos.sh && ./GDD.Headless` |
+| **macOS Intel** | [GDD-Server-macOS-Intel.tar.gz](https://github.com/Cap-of-tea/GDD/releases/latest/download/GDD-Server-macOS-Intel.tar.gz) | `bash Scripts/setup-macos.sh && ./GDD.Headless` |
+| **Windows** | [GDD-Server-Windows.zip](https://github.com/Cap-of-tea/GDD/releases/latest/download/GDD-Server-Windows.zip) | `.\GDD.Headless.exe` |
+| **Windows GUI** | [GDD-Desktop-Windows.zip](https://github.com/Cap-of-tea/GDD/releases/latest/download/GDD-Desktop-Windows.zip) | Extract, run `GDD.exe` ([WebView2](https://developer.microsoft.com/en-us/microsoft-edge/webview2/) required) |
+| **Docker** | `ghcr.io/cap-of-tea/gdd` | `docker run -p 9700:9700 ghcr.io/cap-of-tea/gdd` |
+| **Claude Desktop** | [Win](https://github.com/Cap-of-tea/GDD/releases/latest/download/GDD-Server-Windows.mcpb) / [Mac ARM](https://github.com/Cap-of-tea/GDD/releases/latest/download/GDD-Server-macOS-ARM.mcpb) / [Mac Intel](https://github.com/Cap-of-tea/GDD/releases/latest/download/GDD-Server-macOS-Intel.mcpb) (.mcpb) | Open `.mcpb` file — installs as desktop extension |
 
 Self-contained binary, ~70 MB. No .NET installation needed. Chromium downloads automatically on first launch.
 
 **One-liner (Linux):**
 
 ```bash
-curl -sL https://github.com/Cap-of-tea/GDD/releases/latest/download/gdd-linux-x64.tar.gz | tar xz && chmod +x GDD.Headless && ./GDD.Headless
+curl -sL https://github.com/Cap-of-tea/GDD/releases/latest/download/GDD-Server-Linux.tar.gz | tar xz && chmod +x GDD.Headless && ./GDD.Headless
 ```
 
 <details>
@@ -71,7 +71,7 @@ curl -sL https://github.com/Cap-of-tea/GDD/releases/latest/download/gdd-linux-x6
 
 ```bash
 # Run (headless, port 9700)
-docker run -p 9700:9700 ghcr.io/cap-of-tea/gdd:1.5.3
+docker run -p 9700:9700 ghcr.io/cap-of-tea/gdd
 
 # Or build locally
 docker build -t gdd .

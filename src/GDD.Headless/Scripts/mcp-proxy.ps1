@@ -1,6 +1,11 @@
 $ErrorActionPreference = 'Stop'
 $scriptDir = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
-$gddExe = Join-Path $scriptDir "GDD.Headless.exe"
+$gddExePath = Join-Path $scriptDir "GDD.exe"
+if (Test-Path $gddExePath) {
+    $gddExe = $gddExePath
+} else {
+    $gddExe = Join-Path $scriptDir "GDD.Headless.exe"
+}
 $baseUrl = "http://localhost:9700/mcp"
 $gddProcess = $null
 $gddArgs = @()

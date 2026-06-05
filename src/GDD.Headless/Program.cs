@@ -154,6 +154,8 @@ if (doUpdate)
 
 await PlaywrightSetup.EnsureBrowserAsync();
 
+McpConfigService.EnsureRegistered(AppContext.BaseDirectory);
+
 var registry = host.Services.GetRequiredService<McpToolRegistry>();
 var playerManager = host.Services.GetRequiredService<IPlayerManager>();
 var appConfig = host.Services.GetRequiredService<AppConfig>();
