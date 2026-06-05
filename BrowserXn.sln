@@ -11,6 +11,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{9C78CC15-8F9
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GDD.Headless", "src\GDD.Headless\GDD.Headless.csproj", "{F9BDBD9B-5434-48C1-919A-2333BD86865C}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GDD.Desktop", "src\GDD.Desktop\GDD.Desktop.csproj", "{04D8BEC0-609E-4E84-A57F-A357A83A6A30}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -29,8 +31,13 @@ Global
 		{F9BDBD9B-5434-48C1-919A-2333BD86865C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F9BDBD9B-5434-48C1-919A-2333BD86865C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F9BDBD9B-5434-48C1-919A-2333BD86865C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{04D8BEC0-609E-4E84-A57F-A357A83A6A30}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{04D8BEC0-609E-4E84-A57F-A357A83A6A30}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{04D8BEC0-609E-4E84-A57F-A357A83A6A30}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{04D8BEC0-609E-4E84-A57F-A357A83A6A30}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{F9BDBD9B-5434-48C1-919A-2333BD86865C} = {9C78CC15-8F9A-4962-8639-E5E45B74863C}
+		{04D8BEC0-609E-4E84-A57F-A357A83A6A30} = {9C78CC15-8F9A-4962-8639-E5E45B74863C}
 	EndGlobalSection
 EndGlobal

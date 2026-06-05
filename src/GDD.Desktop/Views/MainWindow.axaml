@@ -1,0 +1,56 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:GDD.Desktop.ViewModels"
+        x:Class="GDD.Desktop.Views.MainWindow"
+        x:DataType="vm:MainViewModel"
+        Width="1100" Height="720"
+        Title="GDD — Desktop"
+        Background="#FF090B1A">
+
+  <DockPanel LastChildFill="True">
+
+    <!-- Toolbar -->
+    <Border DockPanel.Dock="Top" Background="#FF2A2A35" Padding="10,8">
+      <StackPanel Orientation="Horizontal" Spacing="8">
+        <Button Content="Add Player" Command="{Binding AddPlayerCommand}" />
+        <TextBox Width="380" Watermark="URL" Text="{Binding DefaultUrl}" VerticalAlignment="Center" />
+        <Button Content="Navigate All" Command="{Binding NavigateAllCommand}" />
+        <Button Content="Close All" Command="{Binding CloseAllCommand}" />
+      </StackPanel>
+    </Border>
+
+    <!-- Status bar -->
+    <Border DockPanel.Dock="Bottom" Background="#FF2A2A35" Padding="10,4">
+      <Grid ColumnDefinitions="*,Auto">
+        <TextBlock Grid.Column="0" Foreground="#FFFAFAFA" Text="{Binding StatusText}" />
+        <TextBlock Grid.Column="1" Foreground="#FF8C8C8C" Text="{Binding Version}" />
+      </Grid>
+    </Border>
+
+    <!-- Player grid (placeholder for Этап 2 VideoWallPanel) -->
+    <ScrollViewer>
+      <ItemsControl ItemsSource="{Binding Players}" Margin="8">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate>
+            <WrapPanel />
+          </ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate>
+            <Border Margin="6" Width="200" Height="360" Background="#FF1A1A24"
+                    BorderBrush="#FF3A3A4A" BorderThickness="1" CornerRadius="4">
+              <Grid RowDefinitions="Auto,*,Auto">
+                <TextBlock Grid.Row="0" Margin="6,4" Foreground="#FFFAFAFA"
+                           Text="{Binding PlayerName}" />
+                <Image Grid.Row="1" Source="{Binding Thumbnail}" Stretch="Uniform" />
+                <TextBlock Grid.Row="2" Margin="6,4" Foreground="#FF8C8C8C" FontSize="11"
+                           TextTrimming="CharacterEllipsis" Text="{Binding StatusText}" />
+              </Grid>
+            </Border>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </ScrollViewer>
+
+  </DockPanel>
+</Window>
