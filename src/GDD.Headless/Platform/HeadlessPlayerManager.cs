@@ -99,7 +99,7 @@ public sealed class HeadlessPlayerManager : IPlayerManager, IAsyncDisposable
         try
         {
             await EnsureBrowserAsync();
-            var engine = new PlaywrightEngine(ctx.PlayerId, _browser!, _config);
+            var engine = new PlaywrightEngine(ctx.PlayerId, _browser!, _config, ctx.SelectedDevice);
             await engine.InitializeAsync(null, ctx.CurrentUrl);
             ctx.Engine = engine;
 

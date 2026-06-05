@@ -13,6 +13,7 @@ public sealed class PlaywrightEngine : IBrowserEngine
 
     private readonly IBrowser _browser;
     private readonly AppConfig _config;
+    private readonly DevicePreset _initialDevice;
     private IBrowserContext? _context;
     private IPage? _page;
     private ICDPSession? _cdpSession;
@@ -27,23 +28,24 @@ public sealed class PlaywrightEngine : IBrowserEngine
     public event EventHandler<string>? NavigationCompleted;
     public event EventHandler<string>? TitleChanged;
 
-    public PlaywrightEngine(int playerId, IBrowser browser, AppConfig config)
+    public PlaywrightEngine(int playerId, IBrowser browser, AppConfig config, DevicePreset? device = null)
     {
         PlayerId = playerId;
         _browser = browser;
         _config = config;
+        _initialDevice = device ?? DevicePresets.Default;
         UserDataFolder = Path.Combine(config.GetDataFolderRoot(), $"Player_{playerId}");
     }
 
     public async Task InitializeAsync(object? hostHandle, string startUrl)
     {
-        var device = DevicePresets.Default;
         _context = await _browser.NewContextAsync(new BrowserNewContextOptions
         {
-            ViewportSize = new ViewportSize { Width = device.Width, Height = device.Height },
-            DeviceScaleFactor = (float)device.DeviceScaleFactor,
-            IsMobile = device.IsMobile,
-            UserAgent = device.UserAgent,
+            ViewportSize = new ViewportSize { Width = _initialDevice.Width, Height = _initialDevice.Height },
+            DeviceScaleFactor = (float)_initialDevice.DeviceScaleFactor,
+            IsMobile = _initialDevice.IsMobile,
+            HasTouch = _initialDevice.HasTouch,
+            UserAgent = _initialDevice.UserAgent,
             Permissions = ["notifications"]
         });
 
