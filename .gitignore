@@ -47,3 +47,9 @@ appsettings.*.json
 
 ## Downloaded tools
 mcp-publisher.exe
+
+## Test/screenshot scratch artifacts
+.scratch/
+*_screenshot.*
+vaio_hn_*
+hn_thread.html
