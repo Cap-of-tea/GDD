@@ -2,6 +2,25 @@
 
 All notable changes to GDD are documented here.
 
+## [1.7.1] - 2026-06-05
+
+### Fixed
+
+- **Hardcoded iPhone 15 Pro in Headless mode** — `PlaywrightEngine` always created browser context with iPhone 15 Pro preset, ignoring the device specified in `gdd_add_players`. Desktop and tablet presets got wrong viewport, mobile flag, and touch settings on macOS/Linux. Now passes `SelectedDevice` through to `BrowserNewContextOptions` including `HasTouch` for correct tablet support
+
+## [1.7.0] - 2026-06-05
+
+### Added
+
+- **MCP auto-registration** — on first launch, GDD registers itself in `~/.claude/mcp.json` and `~/.cursor/mcp.json` via stdio proxy. No manual config needed
+- **Stdio proxy auto-detection** — `mcp-proxy.ps1` detects GDD.exe (GUI) vs GDD.Headless.exe automatically
+
+### Changed
+
+- **Archive naming** — renamed from `gdd-win-x64` to `GDD-Server-Windows`, `gdd-windows-gui` to `GDD-Desktop-Windows`, etc. for clarity
+- **Windows archives use .zip** — Windows builds now packaged as `.zip` instead of `.tar.gz`
+- **Config path fix** — corrected `~/.claude/.mcp.json` → `~/.claude/mcp.json` in documentation
+
 ## [1.5.3] - 2026-05-23
 
 ### Added
