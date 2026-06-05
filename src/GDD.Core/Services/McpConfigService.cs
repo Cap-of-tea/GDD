@@ -33,12 +33,31 @@ public static class McpConfigService
             var entry = BuildEntry(proxyPath);
 
             var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-            RegisterInFile(Path.Combine(home, ".claude", "mcp.json"), entry);
-            RegisterInFile(Path.Combine(home, ".cursor", "mcp.json"), entry);
+            RegisterInFile(Path.Combine(home, ".claude", "mcp.json"), "gdd", entry);
+            RegisterInFile(Path.Combine(home, ".cursor", "mcp.json"), "gdd", entry);
         }
         catch (Exception ex)
         {
             Logger.Warning(ex, "MCP auto-registration failed");
+        }
+    }
+
+    /// <summary>
+    /// Registers an HTTP MCP entry (for persistent servers like the GUI). Uses a distinct
+    /// server name so it can coexist with the stdio-proxy "gdd" entry.
+    /// </summary>
+    public static void EnsureRegisteredHttp(string serverName, int port)
+    {
+        try
+        {
+            var entry = new JsonObject { ["url"] = $"http://localhost:{port}/mcp" };
+            var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+            RegisterInFile(Path.Combine(home, ".claude", "mcp.json"), serverName, entry);
+            RegisterInFile(Path.Combine(home, ".cursor", "mcp.json"), serverName, entry);
+        }
+        catch (Exception ex)
+        {
+            Logger.Warning(ex, "MCP HTTP auto-registration failed");
         }
     }
 
@@ -65,7 +84,7 @@ public static class McpConfigService
         };
     }
 
-    private static void RegisterInFile(string configPath, JsonObject entry)
+    private static void RegisterInFile(string configPath, string serverName, JsonObject entry)
     {
         try
         {
@@ -97,17 +116,17 @@ public static class McpConfigService
                 root["mcpServers"] = servers;
             }
 
-            if (servers["gdd"] is not null)
+            if (servers[serverName] is not null)
             {
-                Logger.Debug("MCP server 'gdd' already registered in {Path}", configPath);
+                Logger.Debug("MCP server '{Name}' already registered in {Path}", serverName, configPath);
                 return;
             }
 
-            servers["gdd"] = entry.DeepClone();
+            servers[serverName] = entry.DeepClone();
 
             var options = new JsonSerializerOptions { WriteIndented = true };
             File.WriteAllText(configPath, root.ToJsonString(options));
-            Logger.Information("Registered MCP server 'gdd' in {Path}", configPath);
+            Logger.Information("Registered MCP server '{Name}' in {Path}", serverName, configPath);
         }
         catch (Exception ex)
         {

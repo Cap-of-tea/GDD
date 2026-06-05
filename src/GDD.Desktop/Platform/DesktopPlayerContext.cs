@@ -35,6 +35,13 @@ public sealed partial class DesktopPlayerContext : ObservableObject, IPlayerCont
     public string? OwnerSessionId { get; set; }
     public IBrowserEngine? Engine { get; set; }
 
+    // Telegram emulation state (set via settings dialog).
+    public bool TelegramEnabled { get; set; }
+    public long TelegramUserId { get; set; }
+    public string TelegramUsername { get; set; } = "";
+    public string TelegramFirstName { get; set; } = "";
+    public string TelegramLanguageCode { get; set; } = "en";
+
     public DesktopPlayerContext(int playerId, string defaultUrl)
     {
         PlayerId = playerId;

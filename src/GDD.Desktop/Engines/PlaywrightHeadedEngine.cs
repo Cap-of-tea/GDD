@@ -200,6 +200,14 @@ public sealed class PlaywrightHeadedEngine : IBrowserEngine
         await _page.AddInitScriptAsync(script);
     }
 
+    /// <summary>Raise/focus this player's Chromium window (CDP Page.bringToFront).</summary>
+    public async Task BringToFrontAsync()
+    {
+        if (_page is null) return;
+        try { await _page.BringToFrontAsync(); }
+        catch (Exception ex) { Logger.Debug("BringToFront failed for Player {Id}: {Message}", PlayerId, ex.Message); }
+    }
+
     // ── Screencast (live thumbnails) ──────────────────────────────────────
 
     public async Task StartScreencastAsync(int quality = 50, int everyNthFrame = 2, int maxWidth = 0, int maxHeight = 0)

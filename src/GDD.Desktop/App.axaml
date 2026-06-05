@@ -14,16 +14,18 @@
   <Application.Styles>
     <FluentTheme />
 
-    <!-- Toolbar button (Surface bg, accent on hover) -->
+    <!-- Toolbar button (Surface bg, accent on hover) — FluentTheme renders bg on PART_ContentPresenter -->
     <Style Selector="Button.toolbar">
-      <Setter Property="Background" Value="{DynamicResource SurfaceLightBrush}" />
       <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
-      <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
-      <Setter Property="BorderThickness" Value="1" />
-      <Setter Property="CornerRadius" Value="4" />
       <Setter Property="Padding" Value="12,6" />
       <Setter Property="Cursor" Value="Hand" />
       <Setter Property="FontSize" Value="13" />
+    </Style>
+    <Style Selector="Button.toolbar /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource SurfaceLightBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="4" />
     </Style>
     <Style Selector="Button.toolbar:pointerover /template/ ContentPresenter#PART_ContentPresenter">
       <Setter Property="Background" Value="{DynamicResource AccentBrush}" />
@@ -32,18 +34,18 @@
 
     <!-- Accent button -->
     <Style Selector="Button.accent">
-      <Setter Property="Background" Value="{DynamicResource AccentBrush}" />
       <Setter Property="Foreground" Value="White" />
-      <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
-      <Setter Property="BorderThickness" Value="1" />
-      <Setter Property="CornerRadius" Value="4" />
       <Setter Property="Padding" Value="12,6" />
       <Setter Property="Cursor" Value="Hand" />
       <Setter Property="FontSize" Value="13" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+    <Style Selector="Button.accent /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource AccentBrush}" />
+      <Setter Property="CornerRadius" Value="4" />
     </Style>
     <Style Selector="Button.accent:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-      <Setter Property="Background" Value="{DynamicResource AccentBrush}" />
-      <Setter Property="Opacity" Value="0.85" />
+      <Setter Property="Background" Value="{DynamicResource SuccessBrush}" />
     </Style>
   </Application.Styles>
 </Application>

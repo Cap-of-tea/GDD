@@ -1,0 +1,77 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="GDD.Desktop.Views.CellSettingsWindow"
+        Title="Settings"
+        Width="360" Height="560"
+        CanResize="False"
+        WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource BackgroundBrush}">
+
+  <Grid Margin="16" RowDefinitions="Auto,*,Auto">
+
+    <TextBlock Grid.Row="0" x:Name="TitleText" FontSize="15" FontWeight="Bold"
+               Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,8"
+               Text="Player Settings" />
+
+    <ScrollViewer Grid.Row="1" Margin="0,4,0,8">
+      <StackPanel Spacing="2">
+
+        <TextBlock Text="URL" Foreground="{DynamicResource AccentBrush}" FontWeight="SemiBold" Margin="0,8,0,4" />
+        <TextBox x:Name="UrlBox" Background="{DynamicResource SurfaceBrush}"
+                 Foreground="{DynamicResource TextPrimaryBrush}" />
+
+        <TextBlock Text="DEVICE" Foreground="{DynamicResource AccentBrush}" FontWeight="SemiBold" Margin="0,12,0,4" />
+        <ComboBox x:Name="DeviceCombo" HorizontalAlignment="Stretch">
+          <ComboBox.ItemTemplate>
+            <DataTemplate><TextBlock Text="{Binding Name}" /></DataTemplate>
+          </ComboBox.ItemTemplate>
+        </ComboBox>
+
+        <TextBlock Text="LOCATION" Foreground="{DynamicResource AccentBrush}" FontWeight="SemiBold" Margin="0,12,0,4" />
+        <ComboBox x:Name="LocationCombo" HorizontalAlignment="Stretch">
+          <ComboBox.ItemTemplate>
+            <DataTemplate><TextBlock Text="{Binding CityName}" /></DataTemplate>
+          </ComboBox.ItemTemplate>
+        </ComboBox>
+
+        <TextBlock Text="NETWORK" Foreground="{DynamicResource AccentBrush}" FontWeight="SemiBold" Margin="0,12,0,4" />
+        <ComboBox x:Name="NetworkCombo" HorizontalAlignment="Stretch">
+          <ComboBox.ItemTemplate>
+            <DataTemplate><TextBlock Text="{Binding Name}" /></DataTemplate>
+          </ComboBox.ItemTemplate>
+        </ComboBox>
+
+        <TextBlock Text="TELEGRAM" Foreground="{DynamicResource AccentBrush}" FontWeight="SemiBold" Margin="0,12,0,4" />
+        <CheckBox x:Name="TelegramEnabledCheck" Content="Enable Telegram Mode"
+                  Foreground="{DynamicResource TextPrimaryBrush}" />
+
+        <StackPanel x:Name="TelegramFields" Spacing="2" Margin="0,6,0,0"
+                    IsVisible="{Binding #TelegramEnabledCheck.IsChecked}">
+          <TextBlock Text="TG User ID" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12" />
+          <TextBox x:Name="TgUserIdBox" Background="{DynamicResource SurfaceBrush}"
+                   Foreground="{DynamicResource TextPrimaryBrush}" />
+          <TextBlock Text="TG Username" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12" Margin="0,6,0,0" />
+          <TextBox x:Name="TgUsernameBox" Background="{DynamicResource SurfaceBrush}"
+                   Foreground="{DynamicResource TextPrimaryBrush}" />
+          <TextBlock Text="First Name" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12" Margin="0,6,0,0" />
+          <TextBox x:Name="TgFirstNameBox" Background="{DynamicResource SurfaceBrush}"
+                   Foreground="{DynamicResource TextPrimaryBrush}" />
+          <TextBlock Text="Language" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12" Margin="0,6,0,0" />
+          <ComboBox x:Name="TgLanguageCombo" HorizontalAlignment="Stretch">
+            <ComboBoxItem Content="en" />
+            <ComboBoxItem Content="ru" />
+            <ComboBoxItem Content="ja" />
+            <ComboBoxItem Content="de" />
+            <ComboBoxItem Content="fr" />
+          </ComboBox>
+        </StackPanel>
+
+      </StackPanel>
+    </ScrollViewer>
+
+    <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+      <Button Classes="toolbar" Content="Cancel" Width="80" Click="OnCancel" />
+      <Button Classes="accent" Content="Apply" Width="80" Click="OnApply" />
+    </StackPanel>
+  </Grid>
+</Window>

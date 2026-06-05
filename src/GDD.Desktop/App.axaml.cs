@@ -162,6 +162,9 @@ public partial class App : Application
         _mcpServer.SetUpdateService(updateService);
         _mcpServer.Start();
 
+        // Register a distinct HTTP MCP entry so Desktop (GUI) and Headless (stdio "gdd") coexist.
+        McpConfigService.EnsureRegisteredHttp("gdd-desktop", _mcpServer.ActualPort);
+
         var mode = appConfig.Headed ? "headed" : "headless";
         Log.Information("GDD.Desktop v{Version} {Mode} MCP server at http://localhost:{Port}/mcp",
             GddVersion.Current, mode, _mcpServer.ActualPort);

@@ -28,6 +28,10 @@ public partial class MainViewModel : ObservableObject
     private readonly IMainThreadDispatcher _dispatcher;
     private readonly QuickAuthService _authService;
     private readonly TokenInjectionService _tokenService;
+    private readonly DeviceEmulationService _deviceService;
+    private readonly LocationEmulationService _locationService;
+    private readonly NetworkEmulationService _networkService;
+    private readonly TelegramInjectionService _telegramService;
 
     [ObservableProperty] private string _statusText = "Ready";
     [ObservableProperty] private string _defaultUrl;
@@ -47,13 +51,21 @@ public partial class MainViewModel : ObservableObject
         AppConfig config,
         IMainThreadDispatcher dispatcher,
         QuickAuthService authService,
-        TokenInjectionService tokenService)
+        TokenInjectionService tokenService,
+        DeviceEmulationService deviceService,
+        LocationEmulationService locationService,
+        NetworkEmulationService networkService,
+        TelegramInjectionService telegramService)
     {
         _manager = manager;
         _config = config;
         _dispatcher = dispatcher;
         _authService = authService;
         _tokenService = tokenService;
+        _deviceService = deviceService;
+        _locationService = locationService;
+        _networkService = networkService;
+        _telegramService = telegramService;
         _defaultUrl = config.FrontendUrl;
 
         Players.CollectionChanged += OnPlayersChanged;
@@ -162,18 +174,63 @@ public partial class MainViewModel : ObservableObject
         else help.Show();
     }
 
-    // Stubs wired in Этап 4.
     [RelayCommand]
-    private void OpenSettings(DesktopPlayerContext? player)
+    private async Task OpenSettingsAsync(DesktopPlayerContext? player)
     {
-        if (player is null) return;
-        StatusText = $"Settings for {player.PlayerName} (coming in Этап 4)";
+        if (player is null || MainWindow is null) return;
+
+        var dialog = new CellSettingsWindow(player, _config.FrontendUrl);
+        var ok = await dialog.ShowDialog<bool>(MainWindow);
+        if (!ok || player.Engine is not { } engine) return;
+
+        try
+        {
+            player.SelectedDevice = dialog.SelectedDevice;
+            await _deviceService.ApplyAsync(engine, dialog.SelectedDevice);
+
+            player.SelectedLocation = dialog.SelectedLocation;
+            if (dialog.SelectedLocation is not null)
+                await _locationService.ApplyAsync(engine, dialog.SelectedLocation);
+            else
+                await _locationService.ClearAsync(engine);
+
+            player.SelectedNetwork = dialog.SelectedNetwork;
+            await _networkService.ApplyAsync(engine, dialog.SelectedNetwork);
+            player.NetworkStatus = dialog.SelectedNetwork.Name;
+
+            if (!string.IsNullOrEmpty(dialog.NavigateUrl))
+            {
+                var url = dialog.NavigateUrl;
+                if (!url.Contains("://")) url = "https://" + url;
+                await engine.NavigateAsync(url);
+                player.CurrentUrl = url;
+            }
+
+            player.TelegramEnabled = dialog.TelegramEnabled;
+            if (dialog.TelegramEnabled && dialog.TelegramConfig is { } tg)
+            {
+                player.TelegramUserId = tg.TelegramUserId;
+                player.TelegramUsername = tg.Username;
+                player.TelegramFirstName = tg.FirstName;
+                player.TelegramLanguageCode = tg.LanguageCode;
+                await _telegramService.InjectAsync(engine, tg, _config.BotToken);
+            }
+
+            StatusText = $"Settings applied: {player.PlayerName}";
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Failed to apply settings for {Player}", player.PlayerName);
+            StatusText = $"Settings error: {ex.Message}";
+        }
     }
 
     [RelayCommand]
     private void BringToFront(DesktopPlayerContext? player)
     {
         if (player is null) return;
+        if (player.Engine is Engines.PlaywrightHeadedEngine engine)
+            _ = engine.BringToFrontAsync();
         StatusText = $"Focus {player.PlayerName}";
     }
 
