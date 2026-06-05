@@ -39,10 +39,10 @@ public partial class App : Application
             // Verify/install Chromium in the background; browser launches lazily on first AddPlayers.
             _ = Task.Run(PlaywrightSetup.EnsureBrowserAsync);
 
-            desktop.MainWindow = new MainWindow
-            {
-                DataContext = provider.GetRequiredService<MainViewModel>()
-            };
+            var vm = provider.GetRequiredService<MainViewModel>();
+            if (_mcpServer is not null)
+                vm.ApiEndpoint = $"http://localhost:{_mcpServer.ActualPort}/mcp";
+            desktop.MainWindow = new MainWindow { DataContext = vm };
 
             desktop.ShutdownRequested += (_, _) =>
             {

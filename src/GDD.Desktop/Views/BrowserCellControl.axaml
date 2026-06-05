@@ -1,0 +1,68 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:conv="using:GDD.Desktop.Converters"
+             xmlns:vm="using:GDD.Desktop.ViewModels"
+             x:Class="GDD.Desktop.Views.BrowserCellControl">
+
+  <Border Background="{DynamicResource BackgroundBrush}"
+          BorderBrush="{DynamicResource BorderBrush}"
+          BorderThickness="1"
+          Cursor="Hand"
+          PointerPressed="OnCellPressed">
+
+    <Border.ContextMenu>
+      <ContextMenu>
+        <MenuItem Header="Settings…"
+                  Command="{Binding $parent[Window].DataContext.OpenSettingsCommand}"
+                  CommandParameter="{Binding}" />
+        <MenuItem Header="Remove"
+                  Command="{Binding $parent[Window].DataContext.RemovePlayerCommand}"
+                  CommandParameter="{Binding}" />
+      </ContextMenu>
+    </Border.ContextMenu>
+
+    <Grid>
+      <!-- Live screencast thumbnail -->
+      <Image Source="{Binding Thumbnail}"
+             Stretch="Uniform"
+             IsVisible="{Binding Thumbnail, Converter={x:Static ObjectConverters.IsNotNull}}" />
+
+      <!-- Placeholder while no frame yet -->
+      <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center"
+                  IsVisible="{Binding Thumbnail, Converter={x:Static ObjectConverters.IsNull}}">
+        <TextBlock Text="{Binding PlayerName}"
+                   Foreground="{DynamicResource TextSecondaryBrush}"
+                   FontSize="14" FontWeight="SemiBold"
+                   HorizontalAlignment="Center" />
+        <TextBlock Text="{Binding StatusText}"
+                   Foreground="{DynamicResource TextSecondaryBrush}"
+                   FontSize="11" HorizontalAlignment="Center" Margin="0,4,0,0" />
+      </StackPanel>
+
+      <!-- Top overlay: name + badges -->
+      <Border VerticalAlignment="Top" Background="#99000000" Padding="6,3">
+        <DockPanel>
+          <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="4">
+            <Border Background="{DynamicResource DangerBrush}" CornerRadius="3" Padding="4,1"
+                    IsVisible="{Binding ConsoleErrorCount, Converter={x:Static conv:Converters.PositiveToVisible}}">
+              <TextBlock Foreground="White" FontSize="10"
+                         Text="{Binding ConsoleErrorCount, StringFormat='x{0}'}" />
+            </Border>
+            <Border Background="{DynamicResource WarningBrush}" CornerRadius="3" Padding="4,1"
+                    IsVisible="{Binding NetworkErrorCount, Converter={x:Static conv:Converters.PositiveToVisible}}">
+              <TextBlock Foreground="White" FontSize="10"
+                         Text="{Binding NetworkErrorCount, StringFormat='!{0}'}" />
+            </Border>
+            <Border Background="{DynamicResource AccentBrush}" CornerRadius="3" Padding="4,1"
+                    IsVisible="{Binding NotificationCount, Converter={x:Static conv:Converters.PositiveToVisible}}">
+              <TextBlock Foreground="White" FontSize="10"
+                         Text="{Binding NotificationCount, StringFormat='@{0}'}" />
+            </Border>
+          </StackPanel>
+          <TextBlock Text="{Binding PlayerName}" Foreground="White" FontSize="11"
+                     FontWeight="SemiBold" VerticalAlignment="Center" />
+        </DockPanel>
+      </Border>
+    </Grid>
+  </Border>
+</UserControl>
