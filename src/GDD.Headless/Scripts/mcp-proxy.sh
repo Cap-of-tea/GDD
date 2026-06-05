@@ -47,8 +47,6 @@ ensure_running() {
     exit 1
 }
 
-ensure_running
-
 while IFS= read -r line; do
     [ -z "$line" ] && continue
 

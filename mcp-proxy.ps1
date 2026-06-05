@@ -43,8 +43,6 @@ function Ensure-GddRunning {
     [Console]::Error.WriteLine("GDD MCP server did not respond after 15s")
 }
 
-Ensure-GddRunning
-
 function Send-McpRequest($json) {
     for ($attempt = 0; $attempt -lt 2; $attempt++) {
         try {
