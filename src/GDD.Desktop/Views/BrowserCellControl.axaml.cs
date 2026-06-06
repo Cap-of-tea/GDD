@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
@@ -9,9 +10,26 @@ namespace GDD.Desktop.Views;
 
 public partial class BrowserCellControl : UserControl
 {
+    private DesktopPlayerContext? _ctx;
+
     public BrowserCellControl()
     {
         InitializeComponent();
+    }
+
+    protected override void OnDataContextChanged(EventArgs e)
+    {
+        base.OnDataContextChanged(e);
+        if (_ctx is not null) _ctx.PropertyChanged -= OnCtxPropertyChanged;
+        _ctx = DataContext as DesktopPlayerContext;
+        if (_ctx is not null) _ctx.PropertyChanged += OnCtxPropertyChanged;
+    }
+
+    private void OnCtxPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        // Device change alters the cell's aspect ratio — re-run the wall layout.
+        if (e.PropertyName == nameof(DesktopPlayerContext.SelectedDevice))
+            this.FindAncestorOfType<VideoWallPanel>()?.InvalidateArrange();
     }
 
     private (MainViewModel vm, DesktopPlayerContext player)? Resolve()

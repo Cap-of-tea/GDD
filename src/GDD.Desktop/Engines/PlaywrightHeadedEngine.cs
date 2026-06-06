@@ -164,6 +164,24 @@ public sealed class PlaywrightHeadedEngine : IBrowserEngine
     {
         if (_cdpSession is null) return;
         await _cdpSession.SendAsync(methodName, DeserializeCdpParams(parametersJson));
+
+        // Playwright tracks its own viewport; page.ScreenshotAsync (used for thumbnails and
+        // the overlay) clips to it, ignoring a raw CDP setDeviceMetricsOverride. Mirror device
+        // metric changes into Playwright's native viewport so device switches actually apply.
+        if (methodName == "Emulation.setDeviceMetricsOverride" && _page is not null)
+        {
+            try
+            {
+                using var doc = JsonDocument.Parse(parametersJson);
+                var r = doc.RootElement;
+                if (r.TryGetProperty("width", out var w) && r.TryGetProperty("height", out var h)
+                    && w.GetInt32() > 0 && h.GetInt32() > 0)
+                {
+                    await _page.SetViewportSizeAsync(w.GetInt32(), h.GetInt32());
+                }
+            }
+            catch (Exception ex) { Logger.Debug("viewport mirror failed P{Id}: {M}", PlayerId, ex.Message); }
+        }
     }
 
     public async Task<string> CallCdpMethodWithResultAsync(string methodName, string parametersJson)
