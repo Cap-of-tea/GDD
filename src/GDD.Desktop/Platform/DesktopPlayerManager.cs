@@ -14,7 +14,9 @@ namespace GDD.Desktop.Platform;
 /// <summary>
 /// IPlayerManager for GDD.Desktop. Mirrors HeadlessPlayerManager (shared IBrowser,
 /// one context per player, service wiring) but exposes an ObservableCollection for
-/// the Avalonia UI and starts live screencast thumbnails per player.
+/// the Avalonia UI. Browsers run headed with their windows parked off-screen (no desktop
+/// clutter); the grid shows polled screenshots and clicking a cell brings the real
+/// Chromium window on-screen for native interaction.
 /// </summary>
 public sealed class DesktopPlayerManager : IPlayerManager, IAsyncDisposable
 {
@@ -169,6 +171,10 @@ public sealed class DesktopPlayerManager : IPlayerManager, IAsyncDisposable
                 if (entry.PlayerId == ctx.PlayerId)
                     ctx.NetworkErrorCount++;
             };
+
+            // Headed window moved off-screen (still renders, unlike minimized) so it doesn't
+            // clutter the desktop; restored on click for full native interaction.
+            await engine.HideOffscreenAsync();
 
             _thumbnailService.Start(ctx.PlayerId, engine, OnThumbnailFrame);
 

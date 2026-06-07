@@ -213,6 +213,90 @@ public sealed class PlaywrightHeadedEngine : IBrowserEngine
         await _page.AddInitScriptAsync(script);
     }
 
+    // ── Real-window control (headed mode) ────────────────────────────────
+
+    private long? _windowId;
+
+    /// <summary>True when the real Chromium window is parked off-screen.</summary>
+    public bool IsWindowHidden { get; private set; } = true;
+
+    private async Task<long?> EnsureWindowIdAsync()
+    {
+        if (_windowId is not null) return _windowId;
+        if (_cdpSession is null) return null;
+        try
+        {
+            var res = await _cdpSession.SendAsync("Browser.getWindowForTarget");
+            if (res.HasValue && res.Value.TryGetProperty("windowId", out var wid))
+                _windowId = wid.GetInt64();
+        }
+        catch (Exception ex) { Logger.Debug("getWindowForTarget failed P{Id}: {M}", PlayerId, ex.Message); }
+        return _windowId;
+    }
+
+    private async Task SetWindowStateAsync(string state)
+    {
+        var id = await EnsureWindowIdAsync();
+        if (id is null || _cdpSession is null) return;
+        try
+        {
+            await _cdpSession.SendAsync("Browser.setWindowBounds", new Dictionary<string, object>
+            {
+                ["windowId"] = id.Value,
+                ["bounds"] = new Dictionary<string, object> { ["windowState"] = state }
+            });
+        }
+        catch (Exception ex) { Logger.Debug("setWindowBounds({S}) failed P{Id}: {M}", state, PlayerId, ex.Message); }
+    }
+
+    public Task MinimizeWindowAsync() => SetWindowStateAsync("minimized");
+
+    /// <summary>Move the window far off-screen (still rendering, unlike minimized).</summary>
+    public async Task HideOffscreenAsync()
+    {
+        IsWindowHidden = true;
+        var id = await EnsureWindowIdAsync();
+        if (id is null || _cdpSession is null) return;
+        try
+        {
+            await _cdpSession.SendAsync("Browser.setWindowBounds", new Dictionary<string, object>
+            {
+                ["windowId"] = id.Value,
+                ["bounds"] = new Dictionary<string, object> { ["left"] = -32000, ["top"] = -32000 }
+            });
+        }
+        catch (Exception ex) { Logger.Debug("HideOffscreen failed P{Id}: {M}", PlayerId, ex.Message); }
+    }
+
+    /// <summary>Bring the real Chromium window on-screen and focus it for native interaction.</summary>
+    public async Task RestoreWindowAsync()
+    {
+        IsWindowHidden = false;
+        var id = await EnsureWindowIdAsync();
+        if (id is not null && _cdpSession is not null)
+        {
+            try
+            {
+                // Window is already in "normal" state (just parked off-screen) — set position
+                // only. Combining bounds with windowState makes CDP ignore the bounds.
+                await _cdpSession.SendAsync("Browser.setWindowBounds", new Dictionary<string, object>
+                {
+                    ["windowId"] = id.Value,
+                    ["bounds"] = new Dictionary<string, object>
+                    {
+                        ["left"] = 120, ["top"] = 80,
+                        ["width"] = _initialDevice.Width + 20, ["height"] = _initialDevice.Height + 140
+                    }
+                });
+            }
+            catch (Exception ex) { Logger.Debug("Restore failed P{Id}: {M}", PlayerId, ex.Message); }
+        }
+        if (_page is not null)
+        {
+            try { await _page.BringToFrontAsync(); } catch { }
+        }
+    }
+
     // ── Input dispatch (for the in-app interactive overlay) ───────────────
 
     public async Task DispatchMouseAsync(string type, double x, double y, string? button = null, int clickCount = 0)

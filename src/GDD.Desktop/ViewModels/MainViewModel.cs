@@ -33,7 +33,6 @@ public partial class MainViewModel : ObservableObject
     private readonly NetworkEmulationService _networkService;
     private readonly TelegramInjectionService _telegramService;
     private readonly Services.IThumbnailService _thumbnails;
-    private readonly Dictionary<int, Views.PlayerOverlayWindow> _overlays = new();
 
     [ObservableProperty] private string _statusText = "Ready";
     [ObservableProperty] private string _defaultUrl;
@@ -232,19 +231,19 @@ public partial class MainViewModel : ObservableObject
     [RelayCommand]
     private void BringToFront(DesktopPlayerContext? player)
     {
-        if (player is null) return;
+        if (player?.Engine is not Engines.PlaywrightHeadedEngine engine) return;
 
-        if (_overlays.TryGetValue(player.PlayerId, out var existing))
+        // Toggle the real Chromium window: off-screen ↔ on-screen for native interaction.
+        if (engine.IsWindowHidden)
         {
-            existing.Activate();
-            return;
+            _ = engine.RestoreWindowAsync();
+            StatusText = $"Opened {player.PlayerName} (real browser window)";
         }
-
-        var overlay = new Views.PlayerOverlayWindow(player, _thumbnails);
-        _overlays[player.PlayerId] = overlay;
-        overlay.Closed += (_, _) => _overlays.Remove(player.PlayerId);
-        overlay.Show();
-        StatusText = $"Opened {player.PlayerName}";
+        else
+        {
+            _ = engine.HideOffscreenAsync();
+            StatusText = $"Hid {player.PlayerName}";
+        }
     }
 
     private static Avalonia.Controls.Window? MainWindow
