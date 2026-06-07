@@ -6,34 +6,26 @@ namespace GDD.Desktop.Services;
 
 /// <summary>
 /// Live thumbnails via periodic page.ScreenshotAsync polling. Unlike CDP screencast
-/// (which is change-driven and produces nothing for static pages), polling reliably
-/// reflects the current page state for any page, in headless mode, on every platform.
-/// A focused player (overlay open) is polled faster for a responsive interactive view.
+/// (which is change-driven and produces nothing for static pages), polling actively
+/// forces a render, so it reliably reflects the current page for any page — including
+/// off-screen windows and static pages — on every platform.
 /// </summary>
 public sealed class PollingThumbnailService : IThumbnailService
 {
     private static readonly ILogger Logger = Log.ForContext<PollingThumbnailService>();
 
-    private sealed class Loop
-    {
-        public required IBrowserEngine Engine;
-        public required CancellationTokenSource Cts;
-        public volatile int IntervalMs;
-    }
+    private readonly ConcurrentDictionary<int, CancellationTokenSource> _loops = new();
 
-    private readonly ConcurrentDictionary<int, Loop> _loops = new();
-
-    private const int GridIntervalMs = 1000;   // ~1 fps per player in the grid
-    private const int FocusIntervalMs = 120;   // ~8 fps for the focused/overlay player
+    private const int IntervalMs = 1000; // ~1 fps per player
 
     public void Start(int playerId, IBrowserEngine engine, Action<int, byte[]> onFrame)
     {
-        var loop = new Loop { Engine = engine, Cts = new CancellationTokenSource(), IntervalMs = GridIntervalMs };
-        if (!_loops.TryAdd(playerId, loop)) return;
+        var cts = new CancellationTokenSource();
+        if (!_loops.TryAdd(playerId, cts)) return;
+        var token = cts.Token;
 
         _ = Task.Run(async () =>
         {
-            var token = loop.Cts.Token;
             while (!token.IsCancellationRequested)
             {
                 try
@@ -43,22 +35,15 @@ public sealed class PollingThumbnailService : IThumbnailService
                 }
                 catch (Exception ex) { Logger.Debug("Thumbnail poll failed for Player {Id}: {M}", playerId, ex.Message); }
 
-                try { await Task.Delay(loop.IntervalMs, token); }
+                try { await Task.Delay(IntervalMs, token); }
                 catch (OperationCanceledException) { break; }
             }
-        }, loop.Cts.Token);
-    }
-
-    /// <summary>Raise the poll rate for a player whose interactive overlay is open.</summary>
-    public void SetFocused(int playerId, bool focused)
-    {
-        if (_loops.TryGetValue(playerId, out var loop))
-            loop.IntervalMs = focused ? FocusIntervalMs : GridIntervalMs;
+        }, token);
     }
 
     public void Stop(int playerId)
     {
-        if (_loops.TryRemove(playerId, out var loop))
-            loop.Cts.Cancel();
+        if (_loops.TryRemove(playerId, out var cts))
+            cts.Cancel();
     }
 }

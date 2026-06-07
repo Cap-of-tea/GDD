@@ -33,6 +33,9 @@ public sealed class PlaywrightHeadedEngine : IBrowserEngine
     public event EventHandler<string>? NavigationCompleted;
     public event EventHandler<string>? TitleChanged;
 
+    /// <summary>Fires when the page/window is closed (e.g. user clicks the window's X).</summary>
+    public event EventHandler? PageClosed;
+
     public PlaywrightHeadedEngine(int playerId, IBrowser browser, AppConfig config, DevicePreset? device = null)
     {
         PlayerId = playerId;
@@ -56,6 +59,8 @@ public sealed class PlaywrightHeadedEngine : IBrowserEngine
 
         _page = await _context.NewPageAsync();
         _cdpSession = await _context.NewCDPSessionAsync(_page);
+
+        _page.Close += (_, _) => PageClosed?.Invoke(this, EventArgs.Empty);
 
         await _page.ExposeFunctionAsync<string, int>("__gddNotify", json =>
         {
@@ -234,23 +239,6 @@ public sealed class PlaywrightHeadedEngine : IBrowserEngine
         return _windowId;
     }
 
-    private async Task SetWindowStateAsync(string state)
-    {
-        var id = await EnsureWindowIdAsync();
-        if (id is null || _cdpSession is null) return;
-        try
-        {
-            await _cdpSession.SendAsync("Browser.setWindowBounds", new Dictionary<string, object>
-            {
-                ["windowId"] = id.Value,
-                ["bounds"] = new Dictionary<string, object> { ["windowState"] = state }
-            });
-        }
-        catch (Exception ex) { Logger.Debug("setWindowBounds({S}) failed P{Id}: {M}", state, PlayerId, ex.Message); }
-    }
-
-    public Task MinimizeWindowAsync() => SetWindowStateAsync("minimized");
-
     /// <summary>Move the window far off-screen (still rendering, unlike minimized).</summary>
     public async Task HideOffscreenAsync()
     {
@@ -295,52 +283,6 @@ public sealed class PlaywrightHeadedEngine : IBrowserEngine
         {
             try { await _page.BringToFrontAsync(); } catch { }
         }
-    }
-
-    // ── Input dispatch (for the in-app interactive overlay) ───────────────
-
-    public async Task DispatchMouseAsync(string type, double x, double y, string? button = null, int clickCount = 0)
-    {
-        if (_cdpSession is null) return;
-        var p = new Dictionary<string, object> { ["type"] = type, ["x"] = x, ["y"] = y };
-        if (!string.IsNullOrEmpty(button))
-        {
-            p["button"] = button;
-            p["buttons"] = button == "left" ? 1 : button == "right" ? 2 : button == "middle" ? 4 : 0;
-        }
-        if (clickCount > 0) p["clickCount"] = clickCount;
-        try { await _cdpSession.SendAsync("Input.dispatchMouseEvent", p); }
-        catch (Exception ex) { Logger.Debug("dispatchMouse failed P{Id}: {M}", PlayerId, ex.Message); }
-    }
-
-    public async Task DispatchWheelAsync(double x, double y, double deltaX, double deltaY)
-    {
-        if (_cdpSession is null) return;
-        try
-        {
-            await _cdpSession.SendAsync("Input.dispatchMouseEvent", new Dictionary<string, object>
-            {
-                ["type"] = "mouseWheel", ["x"] = x, ["y"] = y, ["deltaX"] = deltaX, ["deltaY"] = deltaY
-            });
-        }
-        catch (Exception ex) { Logger.Debug("dispatchWheel failed P{Id}: {M}", PlayerId, ex.Message); }
-    }
-
-    public async Task DispatchKeyAsync(string type, string key, int virtualKeyCode, string? text = null)
-    {
-        if (_cdpSession is null) return;
-        var p = new Dictionary<string, object> { ["type"] = type, ["key"] = key };
-        if (!string.IsNullOrEmpty(text)) { p["text"] = text; }
-        if (virtualKeyCode > 0) { p["windowsVirtualKeyCode"] = virtualKeyCode; p["nativeVirtualKeyCode"] = virtualKeyCode; }
-        try { await _cdpSession.SendAsync("Input.dispatchKeyEvent", p); }
-        catch (Exception ex) { Logger.Debug("dispatchKey failed P{Id}: {M}", PlayerId, ex.Message); }
-    }
-
-    public async Task InsertTextAsync(string text)
-    {
-        if (_cdpSession is null || string.IsNullOrEmpty(text)) return;
-        try { await _cdpSession.SendAsync("Input.insertText", new Dictionary<string, object> { ["text"] = text }); }
-        catch (Exception ex) { Logger.Debug("insertText failed P{Id}: {M}", PlayerId, ex.Message); }
     }
 
     public ICdpEventSubscription SubscribeToCdpEvent(string eventName)

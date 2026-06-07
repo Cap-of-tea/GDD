@@ -32,7 +32,6 @@ public partial class MainViewModel : ObservableObject
     private readonly LocationEmulationService _locationService;
     private readonly NetworkEmulationService _networkService;
     private readonly TelegramInjectionService _telegramService;
-    private readonly Services.IThumbnailService _thumbnails;
 
     [ObservableProperty] private string _statusText = "Ready";
     [ObservableProperty] private string _defaultUrl;
@@ -56,8 +55,7 @@ public partial class MainViewModel : ObservableObject
         DeviceEmulationService deviceService,
         LocationEmulationService locationService,
         NetworkEmulationService networkService,
-        TelegramInjectionService telegramService,
-        Services.IThumbnailService thumbnails)
+        TelegramInjectionService telegramService)
     {
         _manager = manager;
         _config = config;
@@ -68,7 +66,6 @@ public partial class MainViewModel : ObservableObject
         _locationService = locationService;
         _networkService = networkService;
         _telegramService = telegramService;
-        _thumbnails = thumbnails;
         _defaultUrl = config.FrontendUrl;
 
         Players.CollectionChanged += OnPlayersChanged;
@@ -166,6 +163,13 @@ public partial class MainViewModel : ObservableObject
         }
 
         StatusText = $"Quick Auth: {authenticated}/{targets.Count} authenticated";
+    }
+
+    public void SetUpdateAvailable(string version)
+    {
+        UpdateAvailable = true;
+        UpdateVersion = version;
+        StatusText = $"⚠ Update available: v{GddVersion.Current} → v{version}";
     }
 
     [RelayCommand]

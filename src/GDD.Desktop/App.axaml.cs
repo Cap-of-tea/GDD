@@ -44,6 +44,24 @@ public partial class App : Application
                 vm.ApiEndpoint = $"http://localhost:{_mcpServer.ActualPort}/mcp";
             desktop.MainWindow = new MainWindow { DataContext = vm };
 
+            // Background update check → surface a banner in the status bar (like the WPF GUI).
+            var appConfig = provider.GetRequiredService<AppConfig>();
+            if (appConfig.CheckForUpdates)
+            {
+                var updateService = provider.GetRequiredService<UpdateService>();
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        var update = await updateService.CheckForUpdateAsync();
+                        if (update is not null)
+                            await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(
+                                () => vm.SetUpdateAvailable(update.Version));
+                    }
+                    catch { /* non-critical */ }
+                });
+            }
+
             desktop.ShutdownRequested += (_, _) =>
             {
                 try { _mcpServer?.Dispose(); } catch { }

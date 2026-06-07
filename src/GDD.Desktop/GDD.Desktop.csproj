@@ -38,6 +38,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <AvaloniaResource Include="..\..\Design\giggly-dazzling-duckling.png" Link="Assets/mascot.png" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Content Include="appsettings.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>

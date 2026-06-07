@@ -1,28 +1,15 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         x:Class="GDD.Desktop.Views.HelpWindow"
-        Title="GDD — Help"
-        Width="560" Height="520"
+        Title="GDD — Manual"
+        Width="760" Height="640"
         WindowStartupLocation="CenterOwner"
         Background="{DynamicResource BackgroundBrush}">
-  <ScrollViewer Padding="20">
-    <StackPanel Spacing="10">
-      <TextBlock Text="GDD — Giggly-Dazzling-Duckling" FontSize="18" FontWeight="Bold"
-                 Foreground="{DynamicResource AccentBrush}" />
-      <TextBlock Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap"
-                 Text="AI-controlled browser farm. Each player is an isolated Chromium browser with its own profile, device emulation, geolocation and network conditions." />
-
-      <TextBlock Text="Toolbar" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,8,0,0" />
-      <TextBlock Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap"
-                 Text="• Add Player — add one browser (iPhone 15 Pro by default)&#10;• + Preset — add a set of devices at once&#10;• URL + Go — navigate all players&#10;• Close All — remove every player" />
-
-      <TextBlock Text="Player cell" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,8,0,0" />
-      <TextBlock Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap"
-                 Text="• Live thumbnail streams the page via CDP screencast&#10;• Click — focus the real Chromium window&#10;• Right-click — Settings / Remove&#10;• Badges show console errors, network errors and notifications" />
-
-      <TextBlock Text="MCP" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,8,0,0" />
-      <TextBlock Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap"
-                 Text="36 MCP tools are served at http://localhost:9800/mcp for Claude Code, Cursor, or any MCP client." />
-    </StackPanel>
+  <ScrollViewer Padding="16">
+    <SelectableTextBlock x:Name="ManualText"
+                         FontFamily="Cascadia Code,Consolas,monospace"
+                         FontSize="12"
+                         Foreground="{DynamicResource TextPrimaryBrush}"
+                         TextWrapping="Wrap" />
   </ScrollViewer>
 </Window>

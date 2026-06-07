@@ -52,18 +52,32 @@
     </Border>
 
     <!-- Video Wall -->
-    <ItemsControl Grid.Row="1" ItemsSource="{Binding Players}">
-      <ItemsControl.ItemsPanel>
-        <ItemsPanelTemplate>
-          <views:VideoWallPanel />
-        </ItemsPanelTemplate>
-      </ItemsControl.ItemsPanel>
-      <ItemsControl.ItemTemplate>
-        <DataTemplate>
-          <views:BrowserCellControl Margin="1" />
-        </DataTemplate>
-      </ItemsControl.ItemTemplate>
-    </ItemsControl>
+    <Panel Grid.Row="1">
+      <ItemsControl ItemsSource="{Binding Players}">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate>
+            <views:VideoWallPanel />
+          </ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate>
+            <views:BrowserCellControl Margin="1" />
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+
+      <!-- Mascot easter egg: click to make the duckling peek out -->
+      <Image x:Name="Mascot" Source="avares://GDD.Desktop/Assets/mascot.png"
+             Width="180" Opacity="0.08"
+             HorizontalAlignment="Left" VerticalAlignment="Center" Margin="24,0,0,0"
+             PointerPressed="OnMascotClicked">
+        <Image.Transitions>
+          <Transitions>
+            <DoubleTransition Property="Opacity" Duration="0:0:0.8" />
+          </Transitions>
+        </Image.Transitions>
+      </Image>
+    </Panel>
 
     <!-- Status Bar -->
     <Border Grid.Row="2" Background="{DynamicResource SurfaceBrush}"
