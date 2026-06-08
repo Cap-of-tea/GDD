@@ -194,6 +194,99 @@ public static class InteractionTools
         registry.Register(
             new McpToolDefinition
             {
+                Name = "gdd_drag",
+                Description = "Drag an element (CSS selector) and drop it at (x, y) CSS-pixel coordinates, or onto a target_selector. Uses a real press → move → release mouse sequence, which Chromium delivers as trusted pointerdown/pointermove/pointerup — so it drives pointer-based drag libraries (e.g. dnd-kit) and HTML5 drag-and-drop, unlike gdd_swipe (touch). For sensors with a delay activation constraint, raise hold_ms.",
+                InputSchema = new
+                {
+                    type = "object",
+                    properties = new
+                    {
+                        player_id = new { type = "integer", description = "Player ID" },
+                        selector = new { type = "string", description = "CSS selector of the element to drag (its center is the grab point)" },
+                        x = new { type = "number", description = "Drop target X in CSS pixels (optional if target_selector given)" },
+                        y = new { type = "number", description = "Drop target Y in CSS pixels (optional if target_selector given)" },
+                        target_selector = new { type = "string", description = "Optional CSS selector to drop onto (its center); overrides x,y" },
+                        steps = new { type = "integer", description = "Intermediate move events (default 20)" },
+                        hold_ms = new { type = "integer", description = "Pause after press before moving, ms (default 120; raise for delay-based sensors)" }
+                    },
+                    required = new[] { "player_id", "selector" }
+                },
+                Annotations = new { readOnlyHint = false, destructiveHint = false, idempotentHint = false, openWorldHint = false }
+            },
+            async args =>
+            {
+                var playerId = args?.GetProperty("player_id").GetInt32() ?? 0;
+                var player = playerManager.GetPlayer(playerId);
+                if (player?.Engine is null)
+                    return McpResult.Error($"Player {playerId} not found or not initialized");
+
+                var engine = player.Engine;
+
+                if (args?.TryGetProperty("selector", out var srcEl) != true || srcEl.GetString() is not { } selector)
+                    return McpResult.Error("selector is required");
+
+                async Task<(double X, double Y)?> CenterOf(string sel)
+                {
+                    var esc = sel.Replace("'", "\\'");
+                    var rectJson = await engine.ExecuteJavaScriptAsync(
+                        $@"(function() {{ var el = document.querySelector('{esc}'); if (!el) return null; var r = el.getBoundingClientRect(); return {{x: r.x + r.width/2, y: r.y + r.height/2}}; }})()");
+                    if (rectJson == "null" || rectJson == "\"null\"") return null;
+                    var j = rectJson;
+                    if (j.StartsWith("\"")) j = JsonSerializer.Deserialize<string>(j) ?? j;
+                    using var doc = JsonDocument.Parse(j);
+                    return (doc.RootElement.GetProperty("x").GetDouble(), doc.RootElement.GetProperty("y").GetDouble());
+                }
+
+                var src = await CenterOf(selector);
+                if (src is null)
+                    return await McpResult.ElementNotFound(player, selector);
+                var (sx, sy) = (src.Value.X, src.Value.Y);
+
+                double tx, ty;
+                if (args?.TryGetProperty("target_selector", out var tgtEl) == true && tgtEl.ValueKind == JsonValueKind.String)
+                {
+                    var tsel = tgtEl.GetString()!;
+                    var tgt = await CenterOf(tsel);
+                    if (tgt is null) return await McpResult.ElementNotFound(player, tsel);
+                    (tx, ty) = (tgt.Value.X, tgt.Value.Y);
+                }
+                else
+                {
+                    tx = args?.TryGetProperty("x", out var xEl) == true ? xEl.GetDouble() : sx;
+                    ty = args?.TryGetProperty("y", out var yEl) == true ? yEl.GetDouble() : sy;
+                }
+
+                var steps = args?.TryGetProperty("steps", out var stEl) == true ? Math.Clamp(stEl.GetInt32(), 5, 100) : 20;
+                var holdMs = args?.TryGetProperty("hold_ms", out var hmEl) == true ? Math.Clamp(hmEl.GetInt32(), 0, 5000) : 120;
+
+                // Position over the source, press (→ pointerdown), hold for delay-based activation
+                // constraints, glide to target with the button held (→ pointermove), then release.
+                await engine.CallCdpMethodAsync("Input.dispatchMouseEvent",
+                    JsonSerializer.Serialize(new { type = "mouseMoved", x = sx, y = sy, button = "none", buttons = 0 }));
+                await engine.CallCdpMethodAsync("Input.dispatchMouseEvent",
+                    JsonSerializer.Serialize(new { type = "mousePressed", x = sx, y = sy, button = "left", buttons = 1, clickCount = 1 }));
+                await Task.Delay(holdMs);
+
+                for (var i = 1; i <= steps; i++)
+                {
+                    var r = (double)i / steps;
+                    var cx = sx + (tx - sx) * r;
+                    var cy = sy + (ty - sy) * r;
+                    await engine.CallCdpMethodAsync("Input.dispatchMouseEvent",
+                        JsonSerializer.Serialize(new { type = "mouseMoved", x = cx, y = cy, button = "left", buttons = 1 }));
+                    await Task.Delay(16);
+                }
+
+                await Task.Delay(60);
+                await engine.CallCdpMethodAsync("Input.dispatchMouseEvent",
+                    JsonSerializer.Serialize(new { type = "mouseReleased", x = tx, y = ty, button = "left", buttons = 0, clickCount = 1 }));
+
+                return McpResult.Text($"Dragged '{selector}' to ({tx:F0}, {ty:F0}) on player {playerId}");
+            });
+
+        registry.Register(
+            new McpToolDefinition
+            {
                 Name = "gdd_scroll",
                 Description = "Scroll within a browser player. Provide a CSS selector to scroll that element into view (centered, smooth), or use direction and amount for pixel-based scrolling. Use to reveal off-screen content before reading or tapping.",
                 InputSchema = new
@@ -275,13 +368,13 @@ public static class InteractionTools
                         var el = document.querySelector('{escapedSelector}');
                         if (!el) return 'not_found';
                         el.focus();
-                        {(clear ? "el.value = '';" : "")}
-                        var nativeInputValueSetter = Object.getOwnPropertyDescriptor(
-                            window.HTMLInputElement.prototype, 'value')?.set
-                            || Object.getOwnPropertyDescriptor(
-                            window.HTMLTextAreaElement.prototype, 'value')?.set;
-                        if (nativeInputValueSetter) nativeInputValueSetter.call(el, {(clear ? "" : "el.value + ")} {escapedText});
-                        else el.value = {(clear ? "" : "el.value + ")} {escapedText};
+                        var proto = el instanceof HTMLTextAreaElement ? window.HTMLTextAreaElement.prototype
+                                  : el instanceof HTMLInputElement ? window.HTMLInputElement.prototype
+                                  : null;
+                        var setter = proto ? Object.getOwnPropertyDescriptor(proto, 'value').set : null;
+                        var newValue = {(clear ? "" : "el.value + ")}{escapedText};
+                        if (setter) setter.call(el, newValue);
+                        else el.value = newValue;
                         el.dispatchEvent(new Event('input', {{ bubbles: true }}));
                         el.dispatchEvent(new Event('change', {{ bubbles: true }}));
                         return 'ok';
