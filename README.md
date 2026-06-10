@@ -38,7 +38,7 @@ gdd_screenshot(1)                             → captures the result
 gdd_get_console(1, level="error")             → checks for JS errors
 ```
 
-GDD runs N isolated Chromium instances, each with its own profile, cookies, device emulation, geolocation, and network conditions. It exposes **36 MCP tools** via HTTP on `localhost:9700`.
+GDD runs N isolated Chromium instances, each with its own profile, cookies, device emulation, geolocation, and network conditions. It exposes **37 MCP tools** via HTTP on `localhost:9700`.
 
 <p align="center">
   <img src="Design/gdd-video-wall.png" alt="GDD Video Wall — 3 devices testing simultaneously" width="900" />
@@ -183,7 +183,7 @@ By default, Claude Code asks for confirmation on every MCP tool call. To allow G
 }
 ```
 
-This single wildcard covers all 36 GDD tools. Restart Claude Code after editing.
+This single wildcard covers all 37 GDD tools. Restart Claude Code after editing.
 
 </details>
 
@@ -274,7 +274,7 @@ GDD uses standard JSON-RPC 2.0 — works with `curl`, Python, Node.js, or any HT
 ## Features
 
 - **Multi-device** — Run N isolated Chromium instances with 22 device presets (phones, tablets, desktops)
-- **AI-native** — 36 MCP tools for Claude Code, Cursor, or any MCP-compatible client
+- **AI-native** — 37 MCP tools for Claude Code, Cursor, or any MCP-compatible client
 - **Cross-platform** — Windows GUI with live video wall + headed/headless on Linux & macOS
 - **Full interaction** — Navigate, tap, type, swipe, scroll, hover, handle dialogs, take screenshots
 - **Human-like input** — `humanize=true` moves the mouse along a cubic Bézier curve with natural easing and micro-jitter before clicking
@@ -287,7 +287,7 @@ GDD uses standard JSON-RPC 2.0 — works with `curl`, Python, Node.js, or any HT
 
 ---
 
-## MCP Tools (36)
+## MCP Tools (37)
 
 ### Player Management
 
@@ -313,6 +313,7 @@ GDD uses standard JSON-RPC 2.0 — works with `curl`, Python, Node.js, or any HT
 |------|-------------|
 | `gdd_tap` | Tap element by CSS selector or coordinates; dispatches touch + mouse/click events. `humanize=true` moves mouse along a Bézier curve |
 | `gdd_swipe` | Swipe gesture (up/down/left/right) |
+| `gdd_drag` | Drag an element to (x, y) or onto another element via real pointer events (drives dnd-kit & HTML5 drag-and-drop) |
 | `gdd_scroll` | Scroll page or element |
 | `gdd_type` | Type text into input fields |
 | `gdd_hover` | Hover over element. `humanize=true` moves mouse along a Bézier curve |
@@ -426,7 +427,7 @@ Client (AI agent / curl / script)
     Streamable HTTP + SSE
          │
          ▼
-    McpToolRegistry (36 tools)
+    McpToolRegistry (37 tools)
     Player · Navigation · Interaction · Read
     Emulation · Auth · State · Diagnostics
          │

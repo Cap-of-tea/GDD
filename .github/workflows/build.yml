@@ -107,8 +107,8 @@ jobs:
           TOOLS=$(echo "$RESPONSE" | python3 -c "import sys,json; print(len(json.loads(sys.stdin.read())['result']['tools']))")
           echo "Tools found: $TOOLS"
           kill $PID 2>/dev/null || true
-          if [ "$TOOLS" -ne 36 ]; then
-            echo "Expected 36 tools, got $TOOLS"
+          if [ "$TOOLS" -ne 37 ]; then
+            echo "Expected 37 tools, got $TOOLS"
             exit 1
           fi
 
