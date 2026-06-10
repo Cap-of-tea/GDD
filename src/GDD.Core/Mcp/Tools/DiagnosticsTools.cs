@@ -34,7 +34,7 @@ public static class DiagnosticsTools
             async args =>
             {
                 var playerId = args?.GetProperty("player_id").GetInt32() ?? 0;
-                var player = playerManager.GetPlayer(playerId);
+                var player = await playerManager.GetReadyPlayerAsync(playerId);
                 if (player is null)
                     return McpResult.Error($"Player {playerId} not found");
 
@@ -89,7 +89,7 @@ public static class DiagnosticsTools
             async args =>
             {
                 var playerId = args?.GetProperty("player_id").GetInt32() ?? 0;
-                var player = playerManager.GetPlayer(playerId);
+                var player = await playerManager.GetReadyPlayerAsync(playerId);
                 if (player is null)
                     return McpResult.Error($"Player {playerId} not found");
 
@@ -145,7 +145,7 @@ public static class DiagnosticsTools
             async args =>
             {
                 var playerId = args?.GetProperty("player_id").GetInt32() ?? 0;
-                var player = playerManager.GetPlayer(playerId);
+                var player = await playerManager.GetReadyPlayerAsync(playerId);
                 if (player?.Engine is null)
                     return McpResult.Error($"Player {playerId} not found or not initialized");
 
@@ -192,7 +192,7 @@ public static class DiagnosticsTools
             async args =>
             {
                 var playerId = args?.GetProperty("player_id").GetInt32() ?? 0;
-                var player = playerManager.GetPlayer(playerId);
+                var player = await playerManager.GetReadyPlayerAsync(playerId);
                 if (player is null)
                     return McpResult.Error($"Player {playerId} not found");
 
@@ -253,7 +253,7 @@ public static class DiagnosticsTools
                 var action = args?.GetProperty("action").GetString() ?? "keys";
                 var storageType = args?.TryGetProperty("storage", out var stEl) == true
                     ? stEl.GetString() ?? "local" : "local";
-                var player = playerManager.GetPlayer(playerId);
+                var player = await playerManager.GetReadyPlayerAsync(playerId);
                 if (player?.Engine is null)
                     return McpResult.Error($"Player {playerId} not found or not initialized");
 
@@ -331,7 +331,7 @@ public static class DiagnosticsTools
             {
                 var playerId = args?.GetProperty("player_id").GetInt32() ?? 0;
                 var action = args?.GetProperty("action").GetString() ?? "get";
-                var player = playerManager.GetPlayer(playerId);
+                var player = await playerManager.GetReadyPlayerAsync(playerId);
                 if (player?.Engine is null)
                     return McpResult.Error($"Player {playerId} not found or not initialized");
 

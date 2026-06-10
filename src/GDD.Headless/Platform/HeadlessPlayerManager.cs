@@ -16,6 +16,7 @@ public sealed class HeadlessPlayerManager : IPlayerManager, IAsyncDisposable
     private readonly NotificationInterceptionService _notificationService;
     private readonly ConsoleInterceptionService _consoleService;
     private readonly NetworkMonitoringService _networkMonitorService;
+    private readonly object _sync = new();
     private readonly List<HeadlessPlayerContext> _players = new();
     private readonly SemaphoreSlim _browserLock = new(1, 1);
     private IPlaywright? _playwright;
@@ -37,14 +38,21 @@ public sealed class HeadlessPlayerManager : IPlayerManager, IAsyncDisposable
     public IReadOnlyList<IPlayerContext> GetPlayers()
     {
         var sessionId = McpSessionContext.CurrentSessionId;
-        if (sessionId is null)
-            return _players;
-        return _players.Where(p => p.OwnerSessionId is null || p.OwnerSessionId == sessionId).ToList();
+        lock (_sync)
+        {
+            if (sessionId is null)
+                return _players.ToList<IPlayerContext>();
+            return _players
+                .Where(p => p.OwnerSessionId is null || p.OwnerSessionId == sessionId)
+                .ToList<IPlayerContext>();
+        }
     }
 
     public IPlayerContext? GetPlayer(int playerId)
     {
-        var player = _players.FirstOrDefault(p => p.PlayerId == playerId);
+        HeadlessPlayerContext? player;
+        lock (_sync)
+            player = _players.FirstOrDefault(p => p.PlayerId == playerId);
         if (player is null) return null;
 
         var sessionId = McpSessionContext.CurrentSessionId;
@@ -68,14 +76,18 @@ public sealed class HeadlessPlayerManager : IPlayerManager, IAsyncDisposable
         var ids = new List<int>();
         for (var i = 0; i < count; i++)
         {
-            var playerId = _nextPlayerId++;
-            var ctx = new HeadlessPlayerContext(playerId, _config.FrontendUrl)
+            HeadlessPlayerContext ctx;
+            lock (_sync)
             {
-                SelectedDevice = device,
-                OwnerSessionId = sessionId
-            };
-            _players.Add(ctx);
-            ids.Add(playerId);
+                var playerId = _nextPlayerId++;
+                ctx = new HeadlessPlayerContext(playerId, _config.FrontendUrl)
+                {
+                    SelectedDevice = device,
+                    OwnerSessionId = sessionId
+                };
+                _players.Add(ctx);
+                ids.Add(playerId);
+            }
             _ = InitializePlayerAsync(ctx);
         }
         return ids;
@@ -83,10 +95,15 @@ public sealed class HeadlessPlayerManager : IPlayerManager, IAsyncDisposable
 
     public void RemovePlayer(int playerId)
     {
-        var player = _players.FirstOrDefault(p => p.PlayerId == playerId);
+        HeadlessPlayerContext? player;
+        lock (_sync)
+        {
+            player = _players.FirstOrDefault(p => p.PlayerId == playerId);
+            if (player is not null)
+                _players.Remove(player);
+        }
         if (player is null) return;
 
-        _players.Remove(player);
         _consoleService.Remove(playerId);
         _networkMonitorService.Remove(playerId);
 
@@ -131,11 +148,13 @@ public sealed class HeadlessPlayerManager : IPlayerManager, IAsyncDisposable
                     ctx.NetworkErrorCount++;
             };
 
+            ctx.SetEngineReady();
             ctx.StatusText = "Ready";
             Logger.Information("Player {Id} initialized", ctx.PlayerId);
         }
         catch (Exception ex)
         {
+            ctx.SetEngineFailed();
             ctx.StatusText = $"Init failed: {ex.Message}";
             Logger.Error(ex, "Failed to initialize Player {Id}", ctx.PlayerId);
         }
@@ -164,12 +183,18 @@ public sealed class HeadlessPlayerManager : IPlayerManager, IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
-        foreach (var player in _players.ToList())
+        List<HeadlessPlayerContext> snapshot;
+        lock (_sync)
+        {
+            snapshot = _players.ToList();
+            _players.Clear();
+        }
+
+        foreach (var player in snapshot)
         {
             if (player.Engine is not null)
                 await player.Engine.DisposeAsync();
         }
-        _players.Clear();
 
         if (_browser is not null)
         {

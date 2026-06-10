@@ -20,4 +20,5 @@ public interface IPlayerContext
     string Language { get; set; }
     string? OwnerSessionId { get; set; }
     IBrowserEngine? Engine { get; }
+    Task EngineReady { get; }
 }

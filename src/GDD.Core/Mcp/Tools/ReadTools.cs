@@ -28,7 +28,7 @@ public static class ReadTools
             {
                 var playerId = args?.GetProperty("player_id").GetInt32() ?? 0;
                 var selector = args?.GetProperty("selector").GetString() ?? "";
-                var player = playerManager.GetPlayer(playerId);
+                var player = await playerManager.GetReadyPlayerAsync(playerId);
                 if (player?.Engine is null)
                     return McpResult.Error($"Player {playerId} not found or not initialized");
 
@@ -64,7 +64,7 @@ public static class ReadTools
             {
                 var playerId = args?.GetProperty("player_id").GetInt32() ?? 0;
                 var selector = args?.GetProperty("selector").GetString() ?? "";
-                var player = playerManager.GetPlayer(playerId);
+                var player = await playerManager.GetReadyPlayerAsync(playerId);
                 if (player?.Engine is null)
                     return McpResult.Error($"Player {playerId} not found or not initialized");
 
@@ -99,7 +99,7 @@ public static class ReadTools
                 var quality = 80;
                 if (args?.TryGetProperty("quality", out var qEl) == true)
                     quality = Math.Clamp(qEl.GetInt32(), 1, 100);
-                var player = playerManager.GetPlayer(playerId);
+                var player = await playerManager.GetReadyPlayerAsync(playerId);
                 if (player?.Engine is null)
                     return McpResult.Error($"Player {playerId} not found or not initialized");
 

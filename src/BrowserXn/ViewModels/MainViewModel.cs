@@ -389,6 +389,8 @@ public partial class MainViewModel : ObservableObject, IPlayerManager
         {
             Logger.Error(ex, "Failed to attach diagnostics for Player {Id}", vm.PlayerId);
         }
+
+        vm.SetEngineReady();
     }
 
     public void SetUpdateAvailable(UpdateService.UpdateInfo info)

@@ -11,6 +11,8 @@ namespace GDD.Desktop.Platform;
 /// </summary>
 public sealed partial class DesktopPlayerContext : ObservableObject, IPlayerContext
 {
+    private readonly TaskCompletionSource _engineTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
     public int PlayerId { get; }
     public string PlayerName { get; }
 
@@ -34,6 +36,10 @@ public sealed partial class DesktopPlayerContext : ObservableObject, IPlayerCont
     public bool IsOverlayOpen => false;
     public string? OwnerSessionId { get; set; }
     public IBrowserEngine? Engine { get; set; }
+    public Task EngineReady => _engineTcs.Task;
+
+    public void SetEngineReady() => _engineTcs.TrySetResult();
+    public void SetEngineFailed() => _engineTcs.TrySetResult();
 
     // Telegram emulation state (set via settings dialog).
     public bool TelegramEnabled { get; set; }

@@ -57,15 +57,14 @@ public static class PlayerTools
                 },
                 Annotations = new { readOnlyHint = false, destructiveHint = true, idempotentHint = false, openWorldHint = false }
             },
-            async args =>
+            args =>
             {
                 var playerId = args?.GetProperty("player_id").GetInt32() ?? 0;
                 var player = playerManager.GetPlayer(playerId);
                 if (player is null)
-                    return McpResult.Error($"Player {playerId} not found");
+                    return Task.FromResult(McpResult.Error($"Player {playerId} not found"));
                 playerManager.RemovePlayer(playerId);
-                await Task.CompletedTask;
-                return McpResult.Text($"Removed player {playerId}");
+                return Task.FromResult(McpResult.Text($"Removed player {playerId}"));
             });
 
         registry.Register(

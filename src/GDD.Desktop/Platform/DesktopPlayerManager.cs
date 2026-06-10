@@ -180,11 +180,13 @@ public sealed class DesktopPlayerManager : IPlayerManager, IAsyncDisposable
 
             _thumbnailService.Start(ctx.PlayerId, engine, OnThumbnailFrame);
 
+            ctx.SetEngineReady();
             ctx.StatusText = "Ready";
             Logger.Information("Player {Id} initialized", ctx.PlayerId);
         }
         catch (Exception ex)
         {
+            ctx.SetEngineFailed();
             ctx.StatusText = $"Init failed: {ex.Message}";
             Logger.Error(ex, "Failed to initialize Player {Id}", ctx.PlayerId);
         }

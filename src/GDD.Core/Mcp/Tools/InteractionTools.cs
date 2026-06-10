@@ -31,7 +31,7 @@ public static class InteractionTools
             async args =>
             {
                 var playerId = args?.GetProperty("player_id").GetInt32() ?? 0;
-                var player = playerManager.GetPlayer(playerId);
+                var player = await playerManager.GetReadyPlayerAsync(playerId);
                 if (player?.Engine is null)
                     return McpResult.Error($"Player {playerId} not found or not initialized");
 
@@ -137,7 +137,7 @@ public static class InteractionTools
                 if (args?.TryGetProperty("distance", out var distEl) == true)
                     distance = distEl.GetInt32();
 
-                var player = playerManager.GetPlayer(playerId);
+                var player = await playerManager.GetReadyPlayerAsync(playerId);
                 if (player?.Engine is null)
                     return McpResult.Error($"Player {playerId} not found or not initialized");
 
@@ -216,7 +216,7 @@ public static class InteractionTools
             async args =>
             {
                 var playerId = args?.GetProperty("player_id").GetInt32() ?? 0;
-                var player = playerManager.GetPlayer(playerId);
+                var player = await playerManager.GetReadyPlayerAsync(playerId);
                 if (player?.Engine is null)
                     return McpResult.Error($"Player {playerId} not found or not initialized");
 
@@ -306,7 +306,7 @@ public static class InteractionTools
             async args =>
             {
                 var playerId = args?.GetProperty("player_id").GetInt32() ?? 0;
-                var player = playerManager.GetPlayer(playerId);
+                var player = await playerManager.GetReadyPlayerAsync(playerId);
                 if (player?.Engine is null)
                     return McpResult.Error($"Player {playerId} not found or not initialized");
 
@@ -356,7 +356,7 @@ public static class InteractionTools
                 if (args?.TryGetProperty("clear", out var clearEl) == true)
                     clear = clearEl.GetBoolean();
 
-                var player = playerManager.GetPlayer(playerId);
+                var player = await playerManager.GetReadyPlayerAsync(playerId);
                 if (player?.Engine is null)
                     return McpResult.Error($"Player {playerId} not found or not initialized");
 
@@ -409,7 +409,7 @@ public static class InteractionTools
             {
                 var playerId = args?.GetProperty("player_id").GetInt32() ?? 0;
                 var selector = args?.GetProperty("selector").GetString() ?? "";
-                var player = playerManager.GetPlayer(playerId);
+                var player = await playerManager.GetReadyPlayerAsync(playerId);
                 if (player?.Engine is null)
                     return McpResult.Error($"Player {playerId} not found or not initialized");
 
@@ -472,7 +472,7 @@ public static class InteractionTools
             {
                 var playerId = args?.GetProperty("player_id").GetInt32() ?? 0;
                 var selector = args?.GetProperty("selector").GetString() ?? "";
-                var player = playerManager.GetPlayer(playerId);
+                var player = await playerManager.GetReadyPlayerAsync(playerId);
                 if (player?.Engine is null)
                     return McpResult.Error($"Player {playerId} not found or not initialized");
 
@@ -541,7 +541,7 @@ public static class InteractionTools
                 var playerId = args?.GetProperty("player_id").GetInt32() ?? 0;
                 var accept = !(args?.TryGetProperty("accept", out var aEl) == true && !aEl.GetBoolean());
                 var promptText = args?.TryGetProperty("text", out var tEl) == true ? tEl.GetString() ?? "" : "";
-                var player = playerManager.GetPlayer(playerId);
+                var player = await playerManager.GetReadyPlayerAsync(playerId);
                 if (player?.Engine is null)
                     return McpResult.Error($"Player {playerId} not found or not initialized");
 

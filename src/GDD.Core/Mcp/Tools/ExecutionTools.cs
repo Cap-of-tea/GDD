@@ -28,7 +28,7 @@ public static class ExecutionTools
             {
                 var playerId = args?.GetProperty("player_id").GetInt32() ?? 0;
                 var script = args?.GetProperty("script").GetString() ?? "";
-                var player = playerManager.GetPlayer(playerId);
+                var player = await playerManager.GetReadyPlayerAsync(playerId);
                 if (player?.Engine is null)
                     return McpResult.Error($"Player {playerId} not found or not initialized");
 

@@ -30,7 +30,7 @@ public static class StateTools
             async args =>
             {
                 var playerId = args?.GetProperty("player_id").GetInt32() ?? 0;
-                var player = playerManager.GetPlayer(playerId);
+                var player = await playerManager.GetReadyPlayerAsync(playerId);
                 if (player is null)
                     return McpResult.Error($"Player {playerId} not found");
 
