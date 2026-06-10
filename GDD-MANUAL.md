@@ -2,7 +2,7 @@
 
 ## 1. What is GDD
 
-GDD (Giggly-Dazzling-Duckling) — a cross-platform multi-browser testing tool. Manages N isolated Chromium instances and exposes 36 MCP tools. Works as an HTTP API server — controlled via AI agents (Claude Code, etc.), scripts, curl, or any HTTP client.
+GDD (Giggly-Dazzling-Duckling) — a cross-platform multi-browser testing tool. Manages N isolated Chromium instances and exposes 37 MCP tools. Works as an HTTP API server — controlled via AI agents (Claude Code, etc.), scripts, curl, or any HTTP client.
 
 Three modes: **Windows GUI** (WPF + WebView2, with visual preview), **Headed** (Playwright, visible Chromium windows, default on Windows/Linux/macOS), and **Headless** (`--headless` — no UI). All modes provide an identical set of MCP tools.
 
@@ -127,7 +127,7 @@ For headless mode, add `"--headless"` to the `args` array.
 
 Open a **new chat** in Claude Code (or Reload Window). The MCP client reads `.mcp.json` only at session start.
 
-36 tools should appear with the `mcp__gdd__` prefix.
+37 tools should appear with the `mcp__gdd__` prefix.
 
 ### Troubleshooting
 
@@ -233,6 +233,21 @@ Swipe gesture. 10-step animation over 160ms.
 | ----- | ------ | ------- |
 | `direction` | "up", "down", "left", "right" | — |
 | `distance` | pixels | 300 |
+
+#### `gdd_drag(player_id, selector, x?, y?, target_selector?, steps?, hold_ms?)`
+
+Drag an element and drop it at coordinates or onto another element. Uses a real
+press → move → release **mouse** sequence, which Chromium delivers as trusted
+`pointerdown`/`pointermove`/`pointerup` — so it drives pointer-based drag libraries
+(e.g. dnd-kit) and HTML5 drag-and-drop. `gdd_swipe` uses touch and cannot do this.
+
+| Param | Type | Default |
+| ----- | ---- | ------- |
+| `selector` | CSS selector of the drag source | — |
+| `x`, `y` | drop target in CSS pixels (optional if `target_selector`) | — |
+| `target_selector` | CSS selector to drop onto (its center); overrides `x,y` | — |
+| `steps` | intermediate move steps | 20 |
+| `hold_ms` | pause after press before moving (raise for delay-based sensors) | 120 |
 
 #### `gdd_scroll(player_id, selector?, direction?, amount?)`
 
@@ -720,7 +735,7 @@ Report: "All 3 players have isolated sessions. Each sees their own profile name.
 ```text
 Client (AI agent / curl / script) ──HTTP POST──→ GDD (port 9700/mcp)
                                                       │
-                                            McpToolRegistry (36 tools)
+                                            McpToolRegistry (37 tools)
                                                       │
                                               IPlayerManager
                                             ┌────┬────┬────┐

@@ -2,7 +2,7 @@
 
 ## 1. What is GDD
 
-GDD (Giggly-Dazzling-Duckling) — a cross-platform application for multi-browser testing of web applications. Manages N isolated Chromium instances ("players") via Chrome DevTools Protocol and provides 36 MCP tools for automation through Claude Code or any MCP client.
+GDD (Giggly-Dazzling-Duckling) — a cross-platform application for multi-browser testing of web applications. Manages N isolated Chromium instances ("players") via Chrome DevTools Protocol and provides 37 MCP tools for automation through Claude Code or any MCP client.
 
 Three modes: **Windows GUI** (WPF + WebView2), **Headed** (Playwright, visible Chromium windows, default on Windows/Linux/macOS), and **Headless** (`--headless` — no UI, for CI/CD). The shared GDD.Core library contains all services and MCP tools, operating through `IBrowserEngine` and `IPlayerManager` abstractions.
 
@@ -43,7 +43,7 @@ Three modes: **Windows GUI** (WPF + WebView2), **Headed** (Playwright, visible C
 └─────────────────────┬────────────────────────────────┘
                       │
 ┌─────────────────────▼────────────────────────────────┐
-│              McpToolRegistry (36 tools)               │
+│              McpToolRegistry (37 tools)               │
 │  PlayerTools · NavigationTools · InteractionTools     │
 │  ReadTools · ExecutionTools · EmulationTools          │
 │  AuthTools · StateTools · DiagnosticsTools · HelpTools│
@@ -79,7 +79,7 @@ App.OnStartup()
   → LoadConfig("appsettings.json") → AppConfig
   → ConfigureSerilog()
   → RegisterServices(DI container)
-  → RegisterMcpTools() — 36 tools → McpToolRegistry
+  → RegisterMcpTools() — 37 tools → McpToolRegistry
   → StartMcpServer() — HttpListener on :9700
   → new MainWindow { DataContext = MainViewModel }
 ```
@@ -440,7 +440,7 @@ GitHub Actions builds 5 targets on every push to master:
 | `GDD-Server-macOS-ARM` | macos-14 | Apple Silicon (M1/M2/M3/M4) |
 | `GDD-Server-macOS-Intel` | macos-14 | Intel Mac (cross-compiled on ARM, Chromium from CDN) |
 
-Each build runs a smoke test: starts GDD.Headless, queries `tools/list` via HTTP, verifies 36 tools are registered. The osx-x64 target is cross-compiled on an ARM runner (macos-14) and skips the smoke test since ARM `pwsh` cannot load x64 .NET assemblies.
+Each build runs a smoke test: starts GDD.Headless, queries `tools/list` via HTTP, verifies 37 tools are registered. The osx-x64 target is cross-compiled on an ARM runner (macos-14) and skips the smoke test since ARM `pwsh` cannot load x64 .NET assemblies.
 
 Tags matching `v*` trigger GitHub Releases with `.zip` (Windows) and `.tar.gz` (Linux/macOS) archives for all targets.
 
@@ -450,7 +450,7 @@ Tags matching `v*` trigger GitHub Releases with `.zip` (Windows) and `.tar.gz` (
 
 **Current state:** GDD.Core contains all platform-independent logic (~75% of the codebase). BrowserXn (Windows GUI) and GDD.Headless (cross-platform) implement platform-specific abstractions.
 
-**Headless mode** via Playwright .NET works on Windows, Linux, and macOS with an identical set of 36 MCP tools.
+**Headless mode** via Playwright .NET works on Windows, Linux, and macOS with an identical set of 37 MCP tools.
 
 **Windows GUI** provides visual preview with DWM thumbnails and live WebView2 windows.
 
