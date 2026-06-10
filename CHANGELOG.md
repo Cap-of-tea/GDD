@@ -2,6 +2,16 @@
 
 All notable changes to GDD are documented here.
 
+## [1.7.2] - 2026-06-10
+
+### Fixed
+
+- **Engine init race condition** — MCP tools called during player startup saw `Engine==null` and failed. All tool calls now await engine readiness (up to 10s) via `TaskCompletionSource` before executing
+- **Thread-unsafe player list (Headless)** — `HeadlessPlayerManager._players` accessed from MCP thread pool without synchronization, causing intermittent crashes. Added `lock` on all access points
+- **Disposed WebView2 crashes (WPF)** — `WebView2ControlAdapter` methods crashed when called after disposal. Added `_disposed` guards to Navigate, ExecuteJS, CallCdp, Screenshot, InjectScript
+- **Screenshot handler leak** — `Page.loadEventFired` CDP handler was never unsubscribed on timeout in both WebView2ControlAdapter and WebView2Engine
+- **Silent JS exceptions (Headless)** — `PlaywrightEngine.ExecuteJavaScriptAsync` swallowed all exceptions without logging, masking root causes. Now logs warnings
+
 ## [1.7.1] - 2026-06-05
 
 ### Fixed
