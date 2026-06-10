@@ -12,10 +12,16 @@
     <Copyright>imVS©, freeware for private use.</Copyright>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
+    <RuntimeIdentifiers>linux-x64;osx-arm64;osx-x64;win-x64</RuntimeIdentifiers>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(SelfContained)' == 'true'">
     <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+
+  <!-- Single-file publish must self-extract Avalonia/Skia/HarfBuzz native libs. -->
+  <PropertyGroup Condition="'$(PublishSingleFile)' == 'true'">
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
   </PropertyGroup>
 
   <ItemGroup>
@@ -46,6 +52,21 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="..\..\GDD-MANUAL.md" Link="GDD-MANUAL.md">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Scripts\mcp-proxy.sh">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Scripts\mcp-proxy.ps1">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Scripts\install-deps.sh">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Scripts\setup-macos.sh">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Scripts\gdd.desktop">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>

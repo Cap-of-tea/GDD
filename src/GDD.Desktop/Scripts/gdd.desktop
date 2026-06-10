@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=GDD Desktop
+GenericName=Multi-Browser Testing
+Comment=AI-controlled browser farm — multi-device web testing
+Exec=GDD.Desktop
+Icon=gdd
+Terminal=false
+Categories=Development;WebDevelopment;Network;
+StartupNotify=true
