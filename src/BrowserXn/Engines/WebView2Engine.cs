@@ -109,7 +109,8 @@ public sealed class WebView2Engine : IBrowserEngine
                 tcs.TrySetResult();
             }
 
-            await Task.WhenAny(tcs.Task, Task.Delay(5000));
+            if (await Task.WhenAny(tcs.Task, Task.Delay(5000)) != tcs.Task)
+                receiver.DevToolsProtocolEventReceived -= handler;
         }
 
         var viewportJson = await _webView!.ExecuteScriptAsync(

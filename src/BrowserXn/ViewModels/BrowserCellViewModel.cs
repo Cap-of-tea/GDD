@@ -13,6 +13,7 @@ namespace GDD.ViewModels;
 public partial class BrowserCellViewModel : ObservableObject, IPlayerContext, IDisposable
 {
     private readonly AppConfig _config;
+    private readonly TaskCompletionSource _engineTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
     public int PlayerId { get; }
 
@@ -87,6 +88,10 @@ public partial class BrowserCellViewModel : ObservableObject, IPlayerContext, ID
     public Window? OverlayWindow { get; set; }
 
     public IBrowserEngine? Engine { get; set; }
+    public Task EngineReady => _engineTcs.Task;
+
+    public void SetEngineReady() => _engineTcs.TrySetResult();
+    public void SetEngineFailed() => _engineTcs.TrySetResult();
 
     public Action<BrowserCellViewModel>? OnSettingsRequested { get; set; }
     public Action<BrowserCellViewModel>? OnOverlayRequested { get; set; }

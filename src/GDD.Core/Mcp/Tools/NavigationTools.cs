@@ -28,7 +28,7 @@ public static class NavigationTools
             {
                 var playerId = args?.GetProperty("player_id").GetInt32() ?? 0;
                 var url = args?.GetProperty("url").GetString() ?? "";
-                var player = playerManager.GetPlayer(playerId);
+                var player = await playerManager.GetReadyPlayerAsync(playerId);
                 if (player?.Engine is null)
                     return McpResult.Error($"Player {playerId} not found or not initialized");
                 await player.Engine.NavigateAsync(url);
@@ -62,7 +62,7 @@ public static class NavigationTools
                 if (args?.TryGetProperty("timeout", out var timeoutEl) == true)
                     timeout = timeoutEl.GetInt32();
 
-                var player = playerManager.GetPlayer(playerId);
+                var player = await playerManager.GetReadyPlayerAsync(playerId);
                 if (player?.Engine is null)
                     return McpResult.Error($"Player {playerId} not found or not initialized");
 
@@ -103,7 +103,7 @@ public static class NavigationTools
             {
                 var playerId = args?.GetProperty("player_id").GetInt32() ?? 0;
                 var hard = args?.TryGetProperty("hard", out var hEl) == true && hEl.GetBoolean();
-                var player = playerManager.GetPlayer(playerId);
+                var player = await playerManager.GetReadyPlayerAsync(playerId);
                 if (player?.Engine is null)
                     return McpResult.Error($"Player {playerId} not found or not initialized");
 
@@ -133,7 +133,7 @@ public static class NavigationTools
             async args =>
             {
                 var playerId = args?.GetProperty("player_id").GetInt32() ?? 0;
-                var player = playerManager.GetPlayer(playerId);
+                var player = await playerManager.GetReadyPlayerAsync(playerId);
                 if (player?.Engine is null)
                     return McpResult.Error($"Player {playerId} not found or not initialized");
 
@@ -171,7 +171,7 @@ public static class NavigationTools
             async args =>
             {
                 var playerId = args?.GetProperty("player_id").GetInt32() ?? 0;
-                var player = playerManager.GetPlayer(playerId);
+                var player = await playerManager.GetReadyPlayerAsync(playerId);
                 if (player?.Engine is null)
                     return McpResult.Error($"Player {playerId} not found or not initialized");
 

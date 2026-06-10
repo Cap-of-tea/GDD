@@ -56,21 +56,35 @@ public sealed class WebView2ControlAdapter : IBrowserEngine
         => Task.CompletedTask;
 
     public Task NavigateAsync(string url)
-        => _dispatcher.InvokeAsync(() => _webView.Navigate(url)).Task;
+    {
+        if (_disposed) return Task.CompletedTask;
+        return _dispatcher.InvokeAsync(() => _webView.Navigate(url)).Task;
+    }
 
     public Task<string> ExecuteJavaScriptAsync(string script)
-        => _dispatcher.InvokeAsync(() => _webView.ExecuteScriptAsync(script)).Task.Unwrap();
+    {
+        if (_disposed) return Task.FromResult("null");
+        return _dispatcher.InvokeAsync(() => _webView.ExecuteScriptAsync(script)).Task.Unwrap();
+    }
 
     public Task CallCdpMethodAsync(string methodName, string parametersJson)
-        => _dispatcher.InvokeAsync(() =>
+    {
+        if (_disposed) return Task.CompletedTask;
+        return _dispatcher.InvokeAsync(() =>
             _webView.CallDevToolsProtocolMethodAsync(methodName, parametersJson)).Task.Unwrap();
+    }
 
     public Task<string> CallCdpMethodWithResultAsync(string methodName, string parametersJson)
-        => _dispatcher.InvokeAsync(() =>
+    {
+        if (_disposed) return Task.FromResult("{}");
+        return _dispatcher.InvokeAsync(() =>
             _webView.CallDevToolsProtocolMethodAsync(methodName, parametersJson)).Task.Unwrap();
+    }
 
     public Task<byte[]> CaptureScreenshotAsync(int quality = 80)
-        => _dispatcher.InvokeAsync(async () =>
+    {
+        if (_disposed) return Task.FromResult(Array.Empty<byte>());
+        return _dispatcher.InvokeAsync(async () =>
         {
             var state = await _webView.ExecuteScriptAsync("document.readyState");
             if (!state.Contains("complete"))
@@ -92,7 +106,8 @@ public sealed class WebView2ControlAdapter : IBrowserEngine
                     tcs.TrySetResult();
                 }
 
-                await Task.WhenAny(tcs.Task, Task.Delay(5000));
+                if (await Task.WhenAny(tcs.Task, Task.Delay(5000)) != tcs.Task)
+                    receiver.DevToolsProtocolEventReceived -= handler;
             }
 
             var viewportJson = await _webView.ExecuteScriptAsync(
@@ -113,10 +128,14 @@ public sealed class WebView2ControlAdapter : IBrowserEngine
             var base64 = doc.RootElement.GetProperty("data").GetString()!;
             return Convert.FromBase64String(base64);
         }).Task.Unwrap();
+    }
 
     public Task InjectScriptOnDocumentCreatedAsync(string script)
-        => _dispatcher.InvokeAsync(() =>
+    {
+        if (_disposed) return Task.CompletedTask;
+        return _dispatcher.InvokeAsync(() =>
             _webView.AddScriptToExecuteOnDocumentCreatedAsync(script)).Task.Unwrap();
+    }
 
     public ICdpEventSubscription SubscribeToCdpEvent(string eventName)
         => new WebView2CdpSubscription(_webView, eventName);

@@ -149,8 +149,9 @@ public sealed class PlaywrightEngine : IBrowserEngine
             var result = await _page.EvaluateAsync<JsonElement>(script);
             return result.GetRawText();
         }
-        catch
+        catch (Exception ex)
         {
+            Logger.Warning(ex, "JS eval failed for Player {Id}", PlayerId);
             return "null";
         }
     }

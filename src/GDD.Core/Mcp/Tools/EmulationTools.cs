@@ -41,7 +41,7 @@ public static class EmulationTools
             {
                 var playerId = args?.GetProperty("player_id").GetInt32() ?? 0;
                 var presetName = args?.GetProperty("preset").GetString() ?? "";
-                var player = playerManager.GetPlayer(playerId);
+                var player = await playerManager.GetReadyPlayerAsync(playerId);
                 if (player?.Engine is null)
                     return McpResult.Error($"Player {playerId} not found or not initialized");
 
@@ -86,7 +86,7 @@ public static class EmulationTools
             {
                 var playerId = args?.GetProperty("player_id").GetInt32() ?? 0;
                 var presetName = args?.GetProperty("preset").GetString() ?? "";
-                var player = playerManager.GetPlayer(playerId);
+                var player = await playerManager.GetReadyPlayerAsync(playerId);
                 if (player?.Engine is null)
                     return McpResult.Error($"Player {playerId} not found or not initialized");
 
@@ -138,7 +138,7 @@ public static class EmulationTools
             {
                 var playerId = args?.GetProperty("player_id").GetInt32() ?? 0;
                 var presetName = args?.GetProperty("preset").GetString() ?? "";
-                var player = playerManager.GetPlayer(playerId);
+                var player = await playerManager.GetReadyPlayerAsync(playerId);
                 if (player?.Engine is null)
                     return McpResult.Error($"Player {playerId} not found or not initialized");
 
@@ -181,7 +181,7 @@ public static class EmulationTools
                 var mobile = args?.TryGetProperty("mobile", out var mEl) == true && mEl.GetBoolean();
                 var ua = args?.TryGetProperty("user_agent", out var uaEl) == true ? uaEl.GetString() ?? "" : "";
 
-                var player = playerManager.GetPlayer(playerId);
+                var player = await playerManager.GetReadyPlayerAsync(playerId);
                 if (player?.Engine is null)
                     return McpResult.Error($"Player {playerId} not found or not initialized");
 
@@ -218,7 +218,7 @@ public static class EmulationTools
                 var playerId = args?.GetProperty("player_id").GetInt32() ?? 0;
                 var locale = args?.GetProperty("locale").GetString() ?? "en-US";
 
-                var player = playerManager.GetPlayer(playerId);
+                var player = await playerManager.GetReadyPlayerAsync(playerId);
                 if (player?.Engine is null)
                     return McpResult.Error($"Player {playerId} not found or not initialized");
 
