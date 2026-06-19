@@ -21,22 +21,7 @@
 
         <Button Content="+ Add Player" Classes="accent" Command="{Binding AddPlayerCommand}" />
 
-        <Button Classes="toolbar" Content="+ Preset ▾">
-          <Button.Flyout>
-            <Flyout>
-              <ItemsControl ItemsSource="{Binding Presets}" Width="200">
-                <ItemsControl.ItemTemplate>
-                  <DataTemplate>
-                    <Button Classes="toolbar" HorizontalAlignment="Stretch" Margin="0,2"
-                            Content="{Binding Name}"
-                            Command="{Binding $parent[ItemsControl].DataContext.AddPresetCommand}"
-                            CommandParameter="{Binding}" />
-                  </DataTemplate>
-                </ItemsControl.ItemTemplate>
-              </ItemsControl>
-            </Flyout>
-          </Button.Flyout>
-        </Button>
+        <Button Classes="toolbar" Content="+ Add ▾" Click="OnOpenAddMenu" />
 
         <Button Classes="toolbar" Content="Quick Auth" Command="{Binding QuickAuthAllCommand}" />
         <Button Classes="toolbar" Content="Close All" Command="{Binding CloseAllCommand}" />

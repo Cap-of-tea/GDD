@@ -91,6 +91,14 @@ public partial class MainViewModel : ObservableObject
     }
 
     [RelayCommand]
+    private void AddDevice(DevicePreset? device)
+    {
+        if (device is null) return;
+        _manager.AddPlayers(1, device.Name);
+        StatusText = $"Added 1 player ({device.Name} — {device.Width}×{device.Height})";
+    }
+
+    [RelayCommand]
     private void RemovePlayer(DesktopPlayerContext? player)
     {
         if (player is null) return;

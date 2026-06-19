@@ -95,8 +95,13 @@ public sealed record DeviceTestPreset(string Name, DevicePreset[] Devices)
         DevicePresets.Laptop, DevicePresets.Desktop1080, DevicePresets.Desktop4K
     });
 
+    public static readonly DeviceTestPreset DesktopScreens = new("Desktops (Laptop + 1080p + 4K)", new[]
+    {
+        DevicePresets.Laptop, DevicePresets.Desktop1080, DevicePresets.Desktop4K
+    });
+
     public static IReadOnlyList<DeviceTestPreset> All { get; } = new[]
     {
-        PhoneBasic, PhoneFull, Responsive, CrossPlatform, AllScreens
+        PhoneBasic, PhoneFull, Responsive, CrossPlatform, AllScreens, DesktopScreens
     };
 }
