@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using GDD.Abstractions;
+using GDD.Desktop.Engines;
 using Serilog;
 
 namespace GDD.Desktop.Services;
@@ -30,8 +31,15 @@ public sealed class PollingThumbnailService : IThumbnailService
             {
                 try
                 {
-                    var bytes = await engine.CaptureScreenshotAsync(45);
-                    if (bytes.Length > 0) onFrame(playerId, bytes);
+                    // While the real Chromium window is restored for interaction, calling
+                    // ScreenshotAsync on the visible window forces a repaint and makes it
+                    // blink ~1/s. The user is looking at the real window (not the thumbnail),
+                    // so pause capture until the window is parked off-screen again.
+                    if (engine is not PlaywrightHeadedEngine { IsWindowHidden: false })
+                    {
+                        var bytes = await engine.CaptureScreenshotAsync(45);
+                        if (bytes.Length > 0) onFrame(playerId, bytes);
+                    }
                 }
                 catch (Exception ex) { Logger.Debug("Thumbnail poll failed for Player {Id}: {M}", playerId, ex.Message); }
 
