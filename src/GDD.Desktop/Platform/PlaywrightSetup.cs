@@ -194,13 +194,12 @@ internal static class PlaywrightSetup
             Logger.Warning(ex, "Playwright.Program.Main failed, trying fallback");
         }
 
-        if (InstallViaProcess())
-            return true;
-
+        // On macOS/Linux, pwsh is rarely present — go straight to the bundled
+        // Node.js + Playwright CLI. powershell.exe always exists on Windows.
         if (!OperatingSystem.IsWindows())
             return InstallViaBundledNode();
 
-        return false;
+        return InstallViaProcess();
     }
 
     private static bool InstallViaProcess()

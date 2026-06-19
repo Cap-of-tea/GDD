@@ -116,17 +116,20 @@ public static class McpConfigService
                 root["mcpServers"] = servers;
             }
 
-            if (servers[serverName] is not null)
+            var existing = servers[serverName];
+            if (existing is not null && existing.ToJsonString() == entry.ToJsonString())
             {
-                Logger.Debug("MCP server '{Name}' already registered in {Path}", serverName, configPath);
+                Logger.Debug("MCP server '{Name}' already registered (unchanged) in {Path}", serverName, configPath);
                 return;
             }
 
+            var updating = existing is not null;
             servers[serverName] = entry.DeepClone();
 
             var options = new JsonSerializerOptions { WriteIndented = true };
             File.WriteAllText(configPath, root.ToJsonString(options));
-            Logger.Information("Registered MCP server '{Name}' in {Path}", serverName, configPath);
+            Logger.Information("{Action} MCP server '{Name}' in {Path}",
+                updating ? "Updated" : "Registered", serverName, configPath);
         }
         catch (Exception ex)
         {

@@ -8,6 +8,7 @@ public sealed class McpToolRegistry
 {
     private readonly Dictionary<string, McpToolDefinition> _definitions = new();
     private readonly Dictionary<string, Func<JsonElement?, Task<McpToolResult>>> _handlers = new();
+    private readonly Dictionary<string, string[]> _required = new();
     private IPlayerManager? _playerManager;
     private UpdateService? _updateService;
 
@@ -21,22 +22,56 @@ public sealed class McpToolRegistry
     {
         _definitions[definition.Name] = definition;
         _handlers[definition.Name] = handler;
+        _required[definition.Name] = ExtractRequired(definition.InputSchema);
     }
 
     public IReadOnlyCollection<McpToolDefinition> GetDefinitions() => _definitions.Values;
 
+    private static string[] ExtractRequired(object schema)
+    {
+        try
+        {
+            var el = JsonSerializer.SerializeToElement(schema);
+            if (el.ValueKind == JsonValueKind.Object &&
+                el.TryGetProperty("required", out var req) &&
+                req.ValueKind == JsonValueKind.Array)
+            {
+                return req.EnumerateArray()
+                    .Where(x => x.ValueKind == JsonValueKind.String)
+                    .Select(x => x.GetString()!)
+                    .ToArray();
+            }
+        }
+        catch
+        {
+            // schema not introspectable — skip validation for this tool
+        }
+        return Array.Empty<string>();
+    }
+
+    private static McpToolResult ErrorResult(string text) => new()
+    {
+        IsError = true,
+        Content = new List<McpContent> { new() { Type = "text", Text = text } }
+    };
+
     public async Task<McpToolResult> InvokeAsync(string toolName, JsonElement? arguments)
     {
         if (!_handlers.TryGetValue(toolName, out var handler))
+            return ErrorResult($"Unknown tool: {toolName}");
+
+        if (_required.TryGetValue(toolName, out var required) && required.Length > 0)
         {
-            return new McpToolResult
+            var missing = required
+                .Where(key => arguments is not { ValueKind: JsonValueKind.Object } obj
+                              || !obj.TryGetProperty(key, out _))
+                .ToList();
+            if (missing.Count > 0)
             {
-                IsError = true,
-                Content = new List<McpContent>
-                {
-                    new() { Type = "text", Text = $"Unknown tool: {toolName}" }
-                }
-            };
+                return ErrorResult(
+                    $"Missing required parameter{(missing.Count > 1 ? "s" : "")} for '{toolName}': " +
+                    $"{string.Join(", ", missing)}. Parameter names are snake_case (e.g. player_id, not playerId).");
+            }
         }
 
         try
