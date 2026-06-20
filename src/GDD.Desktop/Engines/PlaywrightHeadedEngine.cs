@@ -23,6 +23,12 @@ public sealed class PlaywrightHeadedEngine : IBrowserEngine
     private IPage? _page;
     private ICDPSession? _cdpSession;
     private readonly ConcurrentDictionary<IRequest, string> _requestIds = new();
+    // Live CDP-event subscriptions (console/network) created by services. Kept so they
+    // can be re-bound to a fresh page when the window is reopened after the user closes it.
+    private readonly Dictionary<string, PlaywrightCdpSubscription> _subs = new();
+    private string _lastUrl = "about:blank";
+    private bool _disposing;
+    private bool _reopening;
 
     public int PlayerId { get; }
     public string UserDataFolder { get; }
@@ -57,10 +63,24 @@ public sealed class PlaywrightHeadedEngine : IBrowserEngine
             Permissions = ["notifications"]
         });
 
-        _page = await _context.NewPageAsync();
-        _cdpSession = await _context.NewCDPSessionAsync(_page);
+        await ConfigureNewPageAsync(startUrl);
+        Logger.Information("Playwright engine initialized for Player {Id}", PlayerId);
+    }
 
-        _page.Close += (_, _) => PageClosed?.Invoke(this, EventArgs.Empty);
+    /// <summary>
+    /// Creates the page in the (already-created) context and wires every per-page hook:
+    /// CDP session, the notification bridge, navigation tracking and re-binding of any
+    /// CDP-event subscriptions. Used for the initial page and to reopen the page after the
+    /// user closes the real window — so the player returns to the grid instead of being
+    /// destroyed. Cookies/storage persist because the context is reused.
+    /// </summary>
+    private async Task ConfigureNewPageAsync(string startUrl)
+    {
+        _page = await _context!.NewPageAsync();
+        _cdpSession = await _context.NewCDPSessionAsync(_page);
+        _windowId = null; // a fresh page means a fresh OS window
+
+        _page.Close += OnPageClose;
 
         await _page.ExposeFunctionAsync<string, int>("__gddNotify", json =>
         {
@@ -105,6 +125,7 @@ public sealed class PlaywrightHeadedEngine : IBrowserEngine
 
         _page.Load += async (_, _) =>
         {
+            _lastUrl = _page?.Url ?? _lastUrl;
             NavigationCompleted?.Invoke(this, _page?.Url ?? "");
             try
             {
@@ -115,8 +136,14 @@ public sealed class PlaywrightHeadedEngine : IBrowserEngine
             catch { }
         };
 
+        // Re-bind console/network subscriptions (created by services before a reopen)
+        // to this fresh page so diagnostics keep flowing.
+        foreach (var (eventName, sub) in _subs)
+            WireCdpEvent(eventName, sub);
+
         if (!string.IsNullOrEmpty(startUrl))
         {
+            _lastUrl = startUrl;
             try
             {
                 await _page.GotoAsync(startUrl, new PageGotoOptions
@@ -130,8 +157,32 @@ public sealed class PlaywrightHeadedEngine : IBrowserEngine
                 Logger.Warning(ex, "Initial navigation failed for Player {Id}: {Url}", PlayerId, startUrl);
             }
         }
+    }
 
-        Logger.Information("Playwright engine initialized for Player {Id}", PlayerId);
+    private async void OnPageClose(object? sender, IPage page)
+    {
+        // Intentional teardown (DisposeAsync): let the player be removed.
+        if (_disposing)
+        {
+            PageClosed?.Invoke(this, EventArgs.Empty);
+            return;
+        }
+        // The user clicked the window's X. Don't destroy the player — reopen the page in
+        // the same context and park it back off-screen, so the grid thumbnail returns.
+        if (_reopening || _context is null) return;
+        _reopening = true;
+        try
+        {
+            await ConfigureNewPageAsync(_lastUrl);
+            await HideOffscreenAsync();
+            Logger.Information("Player {Id}: window closed by user — reopened in grid", PlayerId);
+        }
+        catch (Exception ex)
+        {
+            Logger.Warning(ex, "Reopen after window close failed for Player {Id}", PlayerId);
+            PageClosed?.Invoke(this, EventArgs.Empty); // could not recover — let it be removed
+        }
+        finally { _reopening = false; }
     }
 
     public async Task NavigateAsync(string url)
@@ -287,8 +338,20 @@ public sealed class PlaywrightHeadedEngine : IBrowserEngine
 
     public ICdpEventSubscription SubscribeToCdpEvent(string eventName)
     {
+        if (_subs.TryGetValue(eventName, out var existing))
+            return existing;
+
         var sub = new PlaywrightCdpSubscription();
-        if (_page is null) return sub;
+        _subs[eventName] = sub;
+        WireCdpEvent(eventName, sub);
+        return sub;
+    }
+
+    /// <summary>Binds the current page's Playwright events to a CDP subscription. Re-run
+    /// for each subscription whenever the page is (re)created.</summary>
+    private void WireCdpEvent(string eventName, PlaywrightCdpSubscription sub)
+    {
+        if (_page is null) return;
 
         switch (eventName)
         {
@@ -355,12 +418,11 @@ public sealed class PlaywrightHeadedEngine : IBrowserEngine
                 Logger.Debug("CDP event {Event} not mapped for Playwright", eventName);
                 break;
         }
-
-        return sub;
     }
 
     public async ValueTask DisposeAsync()
     {
+        _disposing = true;
         if (_cdpSession is not null)
         {
             try { await _cdpSession.DetachAsync(); } catch { }

@@ -146,7 +146,9 @@ public sealed class DesktopPlayerManager : IPlayerManager, IAsyncDisposable
 
             engine.NavigationCompleted += (_, url) => ctx.CurrentUrl = url;
             engine.TitleChanged += (_, title) => ctx.StatusText = title;
-            // If the user closes the real Chromium window (X), drop the player cleanly.
+            // Closing the real window (X) no longer drops the player — the engine reopens
+            // the page off-screen so the tile stays. PageClosed now fires only on teardown
+            // or an unrecoverable reopen failure, where removing the player is correct.
             engine.PageClosed += (_, _) => RemovePlayer(ctx.PlayerId);
 
             _notificationService.Attach(engine, ctx.PlayerId);
