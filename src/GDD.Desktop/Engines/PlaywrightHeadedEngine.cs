@@ -239,7 +239,17 @@ public sealed class PlaywrightHeadedEngine : IBrowserEngine
         return _windowId;
     }
 
-    /// <summary>Move the window far off-screen (still rendering, unlike minimized).</summary>
+    private async Task SetWindowBoundsAsync(long id, Dictionary<string, object> bounds)
+    {
+        if (_cdpSession is null) return;
+        await _cdpSession.SendAsync("Browser.setWindowBounds", new Dictionary<string, object>
+        {
+            ["windowId"] = id,
+            ["bounds"] = bounds
+        });
+    }
+
+    /// <summary>Leave fullscreen and move the window far off-screen (still rendering).</summary>
     public async Task HideOffscreenAsync()
     {
         IsWindowHidden = true;
@@ -247,16 +257,19 @@ public sealed class PlaywrightHeadedEngine : IBrowserEngine
         if (id is null || _cdpSession is null) return;
         try
         {
-            await _cdpSession.SendAsync("Browser.setWindowBounds", new Dictionary<string, object>
-            {
-                ["windowId"] = id.Value,
-                ["bounds"] = new Dictionary<string, object> { ["left"] = -32000, ["top"] = -32000 }
-            });
+            // A fullscreen/maximized window can't be repositioned — return to normal first,
+            // then park it off-screen. Two calls: CDP ignores bounds when combined with state.
+            await SetWindowBoundsAsync(id.Value, new() { ["windowState"] = "normal" });
+            await SetWindowBoundsAsync(id.Value, new() { ["left"] = -32000, ["top"] = -32000 });
         }
         catch (Exception ex) { Logger.Debug("HideOffscreen failed P{Id}: {M}", PlayerId, ex.Message); }
     }
 
-    /// <summary>Bring the real Chromium window on-screen and focus it for native interaction.</summary>
+    /// <summary>
+    /// Bring the real Chromium window on-screen, fullscreen, for native interaction.
+    /// Fullscreen is the only way to get a chrome-less Chromium surface (no tab strip / toolbar);
+    /// Playwright cannot produce a windowed chrome-less window.
+    /// </summary>
     public async Task RestoreWindowAsync()
     {
         IsWindowHidden = false;
@@ -265,17 +278,10 @@ public sealed class PlaywrightHeadedEngine : IBrowserEngine
         {
             try
             {
-                // Window is already in "normal" state (just parked off-screen) — set position
-                // only. Combining bounds with windowState makes CDP ignore the bounds.
-                await _cdpSession.SendAsync("Browser.setWindowBounds", new Dictionary<string, object>
-                {
-                    ["windowId"] = id.Value,
-                    ["bounds"] = new Dictionary<string, object>
-                    {
-                        ["left"] = 120, ["top"] = 80,
-                        ["width"] = _initialDevice.Width + 20, ["height"] = _initialDevice.Height + 140
-                    }
-                });
+                // Park it on the primary monitor first (normal state), so the subsequent
+                // fullscreen lands there rather than on whatever monitor -32000 maps to.
+                await SetWindowBoundsAsync(id.Value, new() { ["left"] = 120, ["top"] = 80 });
+                await SetWindowBoundsAsync(id.Value, new() { ["windowState"] = "fullscreen" });
             }
             catch (Exception ex) { Logger.Debug("Restore failed P{Id}: {M}", PlayerId, ex.Message); }
         }
