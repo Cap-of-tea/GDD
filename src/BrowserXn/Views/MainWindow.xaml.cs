@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -77,8 +78,30 @@ public partial class MainWindow : Window
             menu.Items.Add(item);
         }
 
+        // Single-device picker: add one player with a specific device, grouped by category.
+        menu.Items.Add(new Separator());
+        AddDeviceSubmenu(menu, vm, "Phone", DevicePresets.Phones);
+        AddDeviceSubmenu(menu, vm, "Tablet", DevicePresets.Tablets);
+        AddDeviceSubmenu(menu, vm, "Desktop", DevicePresets.Desktops);
+
         menu.PlacementTarget = (Button)sender;
         menu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
         menu.IsOpen = true;
+    }
+
+    private static void AddDeviceSubmenu(
+        ContextMenu menu, MainViewModel vm, string title, IReadOnlyList<DevicePreset> devices)
+    {
+        var parent = new MenuItem { Header = title };
+        foreach (var d in devices)
+        {
+            parent.Items.Add(new MenuItem
+            {
+                Header = $"{d.Name}  ({d.Width}×{d.Height})",
+                Command = vm.AddDeviceCommand,
+                CommandParameter = d
+            });
+        }
+        menu.Items.Add(parent);
     }
 }

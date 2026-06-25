@@ -146,6 +146,14 @@ public partial class MainViewModel : ObservableObject, IPlayerManager
         StatusText = $"Added {preset.Devices.Length} players ({preset.Name})";
     }
 
+    [RelayCommand]
+    private void AddDevice(DevicePreset? device)
+    {
+        if (device is null) return;
+        AddPlayerWithDevice(device);
+        StatusText = $"Added 1 player ({device.Name} — {device.Width}×{device.Height})";
+    }
+
     private void AddPlayerWithDevice(DevicePreset device, string? sessionId = null)
     {
         var playerId = _nextPlayerId++;
