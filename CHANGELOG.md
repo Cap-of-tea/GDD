@@ -2,6 +2,23 @@
 
 All notable changes to GDD are documented here.
 
+## [1.7.3] - 2026-06-25
+
+### Added
+
+- **GDD.Desktop — cross-platform GUI for Linux & macOS** — an Avalonia desktop app at WPF parity: live ~1 fps thumbnail grid, on-demand real browser window (parked off-screen, restored on click), per-cell settings (device/location/network/Telegram), Quick Auth, diagnostics badges, Help from the manual, update banner, and an MCP server on port **9800** (server key `gdd-desktop`) so it coexists with GDD Server (9700)
+- **Native CI bundles for GDD.Desktop** — `GDD-Desktop-Linux`, `GDD-Desktop-macOS-ARM`, `GDD-Desktop-macOS-Intel` built on native runners, so each ships the correct Playwright Node driver (Windows cross-compiles omitted the darwin driver). A CI guard fails the build if the driver is missing
+- **Desktop screens in the "+ Add" menu** — desktop presets (Laptop HD/HiDPI, Desktop 1080p/1440p/4K) and a per-category single-device picker are now reachable from the GUI
+
+### Fixed
+
+- **Cryptic missing-argument errors** — MCP tools threw "The given key was not present in the dictionary" on a missing/misnamed parameter. The registry now validates required args and returns a clear message (e.g. "Missing required parameter for 'gdd_get_state': player_id … snake_case")
+- **Stale MCP port registration** — a changed `McpPort` never updated the registered server URL; the config writer now updates an existing entry instead of skipping it (other servers left untouched)
+- **macOS/Linux Chromium install** — auto-install tried `pwsh` (rarely present) first; non-Windows now goes straight to the bundled Node + Playwright CLI
+- **Closing the real window destroyed the player** — clicking the window's X removed the grid tile. The window now reopens in the same context (cookies/storage preserved) and returns to the grid; a crash-loop guard stops endless reopens
+- **Restored window blinked every second** — thumbnail capture is paused while the real window is on-screen
+- **Released Unix bundles lacked exec bits** — the release packaging now restores `+x` on the app binary, the Playwright Node driver and shell scripts (GitHub artifact upload strips them)
+
 ## [1.7.2] - 2026-06-10
 
 ### Fixed
