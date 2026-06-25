@@ -6,6 +6,7 @@ on:
     tags: ['v*']
   pull_request:
     branches: [master]
+  workflow_dispatch:
 
 jobs:
   build-windows-gui:
@@ -136,9 +137,91 @@ jobs:
           name: ${{ matrix.artifact }}-update
           path: publish/${{ matrix.rid }}-update/
 
+  build-desktop:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-22.04
+            rid: linux-x64
+            artifact: GDD-Desktop-Linux
+            node: linux-x64
+          - os: macos-14
+            rid: osx-arm64
+            artifact: GDD-Desktop-macOS-ARM
+            node: darwin-arm64
+          - os: macos-14
+            rid: osx-x64
+            artifact: GDD-Desktop-macOS-Intel
+            node: darwin-x64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - run: dotnet restore src/GDD.Desktop/GDD.Desktop.csproj
+      - name: Publish
+        run: >
+          dotnet publish src/GDD.Desktop/GDD.Desktop.csproj
+          -c Release
+          -r ${{ matrix.rid }}
+          --self-contained
+          -o publish/${{ matrix.rid }}
+
+      - name: Verify Playwright node driver present (P0 packaging guard)
+        shell: bash
+        run: |
+          NODE="publish/${{ matrix.rid }}/.playwright/node/${{ matrix.node }}/node"
+          if [ ! -s "$NODE" ]; then
+            echo "::error::Playwright node driver missing at $NODE (cross-compile would ship an empty driver)"
+            ls -laR "publish/${{ matrix.rid }}/.playwright/node" || true
+            exit 1
+          fi
+          echo "node driver OK: $(ls -l "$NODE")"
+
+      - name: Install Playwright browsers
+        if: matrix.rid != 'osx-x64' || runner.arch != 'ARM64'
+        run: pwsh publish/${{ matrix.rid }}/playwright.ps1 install chromium
+        env:
+          PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/publish/${{ matrix.rid }}/.browsers
+
+      - name: Install Playwright browsers (osx-x64 cross from ARM)
+        if: matrix.rid == 'osx-x64' && runner.arch == 'ARM64'
+        shell: bash
+        run: |
+          BROWSERS_DIR="${{ github.workspace }}/publish/osx-x64/.browsers"
+          BROWSERS_JSON="${{ github.workspace }}/publish/osx-x64/.playwright/package/browsers.json"
+          CR=$(python3 -c "import json; d=json.load(open('$BROWSERS_JSON')); print(next(b['revision'] for b in d['browsers'] if b['name']=='chromium'))")
+          FR=$(python3 -c "import json; d=json.load(open('$BROWSERS_JSON')); print(next(b['revision'] for b in d['browsers'] if b['name']=='ffmpeg'))")
+          echo "Chromium revision: $CR, FFMPEG revision: $FR"
+          mkdir -p "$BROWSERS_DIR/chromium-$CR" "$BROWSERS_DIR/ffmpeg-$FR"
+          curl -sL "https://playwright.azureedge.net/builds/chromium/$CR/chromium-mac.zip" -o /tmp/chromium.zip
+          unzip -q /tmp/chromium.zip -d "$BROWSERS_DIR/chromium-$CR"
+          curl -sL "https://playwright.azureedge.net/builds/ffmpeg/$FR/ffmpeg-mac.zip" -o /tmp/ffmpeg.zip
+          unzip -q /tmp/ffmpeg.zip -d "$BROWSERS_DIR/ffmpeg-$FR"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: publish/${{ matrix.rid }}/
+          include-hidden-files: true
+
+      - name: Create update artifact (without browsers)
+        shell: bash
+        run: |
+          cp -r publish/${{ matrix.rid }} publish/${{ matrix.rid }}-update
+          rm -rf publish/${{ matrix.rid }}-update/.browsers
+          rm -rf publish/${{ matrix.rid }}-update/.playwright
+          rm -rf publish/${{ matrix.rid }}-update/logs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}-update
+          path: publish/${{ matrix.rid }}-update/
+
   release:
     if: startsWith(github.ref, 'refs/tags/v')
-    needs: [build-windows-gui, build-headless]
+    needs: [build-windows-gui, build-headless, build-desktop]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -163,6 +246,12 @@ jobs:
                 (cd "$dir" && zip -qr "../${dir}.zip" .)
                 ;;
               *)
+                # upload-artifact strips Unix exec bits — restore them so the released
+                # tarball runs out of the box (the app binary, the Playwright node driver
+                # and the shell scripts must be executable). P0 packaging fix.
+                chmod +x "$dir"/GDD.Desktop "$dir"/GDD.Headless 2>/dev/null || true
+                find "$dir/.playwright/node" -name node -exec chmod +x {} + 2>/dev/null || true
+                chmod +x "$dir"/Scripts/*.sh "$dir"/*.sh 2>/dev/null || true
                 tar -czf "${dir}.tar.gz" -C "$dir" .
                 ;;
             esac
