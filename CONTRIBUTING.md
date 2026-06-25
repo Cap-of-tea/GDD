@@ -15,8 +15,8 @@ Thanks for your interest in contributing to GDD!
 3. Install prerequisites:
 
    - [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
-   - Windows GUI only: [WebView2 Runtime](https://developer.microsoft.com/en-us/microsoft-edge/webview2/)
-   - Linux headless: `sudo apt install -y libnss3 libatk-bridge2.0-0 libdrm2 libxkbcommon0 libgbm1`
+   - Windows GUI (BrowserXn) only: [WebView2 Runtime](https://developer.microsoft.com/en-us/microsoft-edge/webview2/)
+   - Linux (Server or GDD.Desktop GUI): `sudo apt install -y libnss3 libatk-bridge2.0-0 libdrm2 libxkbcommon0 libgbm1` (or run `Scripts/install-deps.sh` from a bundle)
    - macOS: unblock Gatekeeper after build: `xattr -dr com.apple.quarantine . 2>/dev/null || true`
 
 4. Build:
@@ -68,7 +68,14 @@ BrowserXn.sln
 │   │   ├── Themes/              ← WPF theme resources
 │   │   ├── ViewModels/          ← MainViewModel : IPlayerManager
 │   │   └── Views/               ← WPF XAML views
-│   └── GDD.Headless/            ← CLI runner (net8.0, headless/headed)
+│   ├── GDD.Desktop/             ← Linux/macOS GUI (net8.0, Avalonia + Playwright)
+│   │   ├── Engines/             ← PlaywrightHeadedEngine : IBrowserEngine (headed, off-screen)
+│   │   ├── Platform/            ← AvaloniaDispatcher, DesktopPlayerManager,
+│   │   │                          DesktopPlayerContext, PlaywrightSetup
+│   │   ├── ViewModels/          ← MainViewModel over DesktopPlayerManager
+│   │   ├── Views/               ← Avalonia AXAML + VideoWallPanel
+│   │   └── Scripts/             ← mcp-proxy.sh/.ps1, setup-macos.sh, install-deps.sh
+│   └── GDD.Headless/            ← Server (net8.0, headless/headed)
 │       ├── Engines/             ← PlaywrightEngine : IBrowserEngine
 │       ├── Platform/            ← ConsoleDispatcher, HeadlessPlayerManager,
 │       │                          HeadlessPlayerContext, PlaywrightSetup
@@ -134,7 +141,7 @@ dotnet publish src/GDD.Headless/GDD.Headless.csproj -c Release -r win-x64 --self
 
 1. Commit and push all changes to `master`
 2. Create a version tag: `git tag v1.x.0 && git push origin v1.x.0`
-3. GitHub Actions builds all 5 targets (Windows GUI, win-x64, linux-x64, macOS ARM64, macOS x64)
+3. GitHub Actions builds all 8 targets — the Windows GUI, the GDD.Desktop GUI for Linux / macOS ARM / macOS Intel, and the headless Server for Windows / Linux / macOS ARM / macOS Intel
 4. Each build runs a smoke test (verifies 37 tools via HTTP)
 5. On success, `tar.gz` archives are uploaded to GitHub Releases
 

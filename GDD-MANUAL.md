@@ -4,7 +4,7 @@
 
 GDD (Giggly-Dazzling-Duckling) — a cross-platform multi-browser testing tool. Manages N isolated Chromium instances and exposes 37 MCP tools. Works as an HTTP API server — controlled via AI agents (Claude Code, etc.), scripts, curl, or any HTTP client.
 
-Three modes: **Windows GUI** (WPF + WebView2, with visual preview), **Headed** (Playwright, visible Chromium windows, default on Windows/Linux/macOS), and **Headless** (`--headless` — no UI). All modes provide an identical set of MCP tools.
+GDD ships as three apps over one shared core: the **Windows GUI** (BrowserXn — WPF + WebView2, with a live thumbnail grid), the **Linux/macOS GUI** (GDD.Desktop — Avalonia, also with a live thumbnail grid), and the **Server** (GDD.Headless — headless or headed, all platforms, for AI/CI use). All three expose an identical set of MCP tools; the two GUIs differ only in the desktop toolkit.
 
 Claude sees and controls browsers like a human: opens pages, taps buttons, reads text, takes screenshots, emulates devices/networks/geolocations, monitors console and network requests.
 
@@ -21,7 +21,12 @@ Claude sees and controls browsers like a human: opens pages, taps buttons, reads
 - Windows 10/11
 - WebView2 Runtime (usually pre-installed with Edge, verified at startup)
 
-**Headless (Windows/Linux/macOS):**
+**Linux/macOS GUI (GDD.Desktop):**
+
+- A desktop session (X11/Wayland on Linux, Aqua on macOS). On a headless box, use the Server instead.
+- First run: `Scripts/install-deps.sh` (Linux — installs Chromium's system libraries) or `Scripts/setup-macos.sh` (macOS — clears Gatekeeper quarantine and sets exec bits)
+
+**Server / Headless (Windows/Linux/macOS):**
 
 - Chromium is installed automatically on first launch via Playwright
 
@@ -34,7 +39,19 @@ Claude sees and controls browsers like a human: opens pages, taps buttons, reads
 .\GDD.exe
 ```
 
-**Cross-platform (Windows/Linux/macOS):**
+**Linux / macOS GUI (GDD.Desktop):**
+
+```bash
+# macOS — clear quarantine + set exec bits, then launch:
+bash Scripts/setup-macos.sh && ./GDD.Desktop
+
+# Linux — install Chromium's system libraries, then launch:
+bash Scripts/install-deps.sh && ./GDD.Desktop
+```
+
+GDD.Desktop opens a grid of live browser thumbnails and runs its own MCP server on **port 9800** (so it sits next to the Server on 9700). Click a thumbnail to bring that browser on-screen and drive it by hand; close its window to send it back to the grid.
+
+**Server — cross-platform (Windows/Linux/macOS):**
 
 ```bash
 ./GDD.Headless
@@ -78,6 +95,8 @@ GDD must be running beforehand (manually, via launchd/systemd, or nohup).
 ```
 
 Instant connection, no intermediate proxy, no timeouts.
+
+> **Connecting to the GDD.Desktop GUI (Linux/macOS):** it serves MCP on **port 9800**, so point the URL at `http://localhost:9800/mcp` and give it a distinct server key (e.g. `gdd-desktop`). You can register both at once — the Server on 9700 and the Desktop app on 9800 — and they stay independent. (The stdio-proxy below also ships with GDD.Desktop and targets 9800 automatically.)
 
 #### Option B: stdio-proxy (auto-start GDD)
 

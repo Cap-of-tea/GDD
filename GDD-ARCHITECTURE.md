@@ -4,7 +4,7 @@
 
 GDD (Giggly-Dazzling-Duckling) — a cross-platform application for multi-browser testing of web applications. Manages N isolated Chromium instances ("players") via Chrome DevTools Protocol and provides 37 MCP tools for automation through Claude Code or any MCP client.
 
-Three modes: **Windows GUI** (WPF + WebView2), **Headed** (Playwright, visible Chromium windows, default on Windows/Linux/macOS), and **Headless** (`--headless` — no UI, for CI/CD). The shared GDD.Core library contains all services and MCP tools, operating through `IBrowserEngine` and `IPlayerManager` abstractions.
+GDD ships as three apps over one shared core: the **Windows GUI** (BrowserXn — WPF + WebView2), the **Linux/macOS GUI** (GDD.Desktop — Avalonia + Playwright), and the **Server** (GDD.Headless — Playwright on all platforms; headed by default, `--headless` for CI/CD). The shared GDD.Core library contains all services and MCP tools, operating through `IBrowserEngine` and `IPlayerManager` abstractions, so the 37 tools behave identically everywhere.
 
 **Key idea:** a single AI agent (Claude) sees and controls multiple browsers simultaneously — navigation, clicks, screenshots, device/network/geolocation emulation, console and network request monitoring.
 
@@ -14,10 +14,10 @@ Three modes: **Windows GUI** (WPF + WebView2), **Headed** (Playwright, visible C
 
 | Layer | Technology | Version |
 | ----- | ---------- | ------- |
-| Runtime | .NET 8.0 (GDD.Core, GDD.Headless), .NET 8.0-windows (BrowserXn) | net8.0 / net8.0-windows TFM |
-| UI Framework | WPF (Windows GUI only) | built-in |
+| Runtime | .NET 8.0 (GDD.Core, GDD.Desktop, GDD.Headless), .NET 8.0-windows (BrowserXn) | net8.0 / net8.0-windows TFM |
+| UI Framework | WPF (Windows GUI) · Avalonia (Linux/macOS GUI) | built-in / 11.2.1 |
 | Browser (Windows GUI) | Microsoft WebView2 | 1.0.2739.15 |
-| Browser (Headless/Headed) | Microsoft Playwright (Chromium) | 1.49.0 |
+| Browser (Desktop GUI + Server) | Microsoft Playwright (Chromium) | 1.49.0 |
 | MVVM | CommunityToolkit.Mvvm | 8.3.2 |
 | DI / Hosting | Microsoft.Extensions.Hosting | 8.0.1 |
 | HTTP Client | Microsoft.Extensions.Http | 8.0.1 |
@@ -125,7 +125,7 @@ BrowserXn.sln
 │   │   │   └── Tools/
 │   │   │       ├── PlayerTools.cs             add_players, remove_player, list_windows
 │   │   │       ├── NavigationTools.cs         navigate, wait, reload, back, forward
-│   │   │       ├── InteractionTools.cs        tap, swipe, scroll, type, hover, select, dialog
+│   │   │       ├── InteractionTools.cs        tap, drag, swipe, scroll, type, hover, select, dialog
 │   │   │       ├── ReadTools.cs               read, read_all, screenshot
 │   │   │       ├── ExecutionTools.cs          execute_js
 │   │   │       ├── AuthTools.cs               quick_auth
@@ -170,7 +170,14 @@ BrowserXn.sln
 │   │   ├── ViewModels/                        MVVM (MainViewModel : IPlayerManager)
 │   │   └── Views/                             WPF XAML (5 views) + VideoWallPanel
 │   │
-│   └── GDD.Headless/                     ← CLI runner (headless/headed, net8.0, cross-platform)
+│   ├── GDD.Desktop/                      ← Linux/macOS GUI (net8.0, Avalonia + Playwright)
+│   │   ├── Engines/                           PlaywrightHeadedEngine (headed, parked off-screen)
+│   │   ├── Platform/                          AvaloniaDispatcher, DesktopPlayerManager, PlaywrightSetup
+│   │   ├── ViewModels/                        MVVM (MainViewModel over DesktopPlayerManager)
+│   │   ├── Views/                             Avalonia AXAML + VideoWallPanel
+│   │   └── Scripts/                           mcp-proxy.sh/.ps1, setup-macos.sh, install-deps.sh
+│   │
+│   └── GDD.Headless/                     ← Server (headless/headed, net8.0, cross-platform)
 │       ├── Engines/                           PlaywrightEngine
 │       ├── Platform/                          ConsoleDispatcher, HeadlessPlayerManager
 │       └── Scripts/                           mcp-proxy.sh, mcp-proxy.ps1
@@ -353,16 +360,17 @@ All operate via CDP (Chrome DevTools Protocol):
 │  Abstractions · Collections                       │
 └──────────────────────┬───────────────────────────┘
                        │
-        ┌──────────────┴──────────────┐
-        ▼                             ▼
-┌──────────────┐              ┌────────────────┐
-│ BrowserXn    │              │ GDD.Headless   │
-│ (WPF+WV2)   │              │ (Playwright)   │
-│ Windows GUI  │              │ Win/Linux/macOS│
-└──────────────┘              └────────────────┘
+        ┌──────────────┬──────────────┴┬──────────────┐
+        ▼              ▼               ▼
+┌──────────────┐ ┌──────────────┐ ┌────────────────┐
+│ BrowserXn    │ │ GDD.Desktop  │ │ GDD.Headless   │
+│ (WPF+WV2)   │ │ (Avalonia)   │ │ (Playwright)   │
+│ Windows GUI  │ │ Linux/macOS  │ │ server, all OS │
+└──────────────┘ │ GUI          │ └────────────────┘
+                 └──────────────┘
 ```
 
-GDD.Core is the shared library containing all platform-independent code. Both BrowserXn (Windows GUI) and GDD.Headless (cross-platform) reference it and provide platform-specific implementations of `IBrowserEngine`, `IPlayerManager`, and `IMainThreadDispatcher`.
+GDD.Core is the shared library containing all platform-independent code. The three apps — BrowserXn (Windows GUI), GDD.Desktop (Linux/macOS GUI) and GDD.Headless (cross-platform server) — reference it and provide platform-specific implementations of `IBrowserEngine`, `IPlayerManager`, and `IMainThreadDispatcher`.
 
 ### 7.2 Key Abstractions
 
@@ -405,42 +413,48 @@ interface IMainThreadDispatcher
 
 ### 7.3 Platform Implementations
 
-| Abstraction | BrowserXn (Windows GUI) | GDD.Headless (Cross-platform) |
-| ----------- | ----------------------- | ----------------------------- |
-| `IBrowserEngine` | `WebView2ControlAdapter` — WebView2 + HWND | `PlaywrightEngine` — Playwright Chromium |
-| `IPlayerManager` | `MainViewModel` — WPF MVVM | `HeadlessPlayerManager` — console |
-| `IMainThreadDispatcher` | `WpfDispatcher` — WPF UI thread | `ConsoleDispatcher` — direct execution |
-| `ICdpEventSubscription` | `WebView2CdpSubscription` — WebView2 events | `PlaywrightCdpSubscription` — CDP session |
+| Abstraction | BrowserXn (Windows GUI) | GDD.Desktop (Linux/macOS GUI) | GDD.Headless (Server) |
+| ----------- | ----------------------- | ----------------------------- | --------------------- |
+| `IBrowserEngine` | `WebView2ControlAdapter` — WebView2 + HWND | `PlaywrightHeadedEngine` — headed Chromium, off-screen | `PlaywrightEngine` — Playwright Chromium |
+| `IPlayerManager` | `MainViewModel` — WPF MVVM | `DesktopPlayerManager` — Avalonia MVVM | `HeadlessPlayerManager` — console |
+| `IMainThreadDispatcher` | `WpfDispatcher` — WPF UI thread | `AvaloniaDispatcher` — Avalonia UI thread | `ConsoleDispatcher` — direct execution |
+| `ICdpEventSubscription` | `WebView2CdpSubscription` — WebView2 events | `PlaywrightCdpSubscription` — CDP session | `PlaywrightCdpSubscription` — CDP session |
 
-### 7.4 Headed Mode (GUI on Linux/macOS)
+### 7.4 GUI on Linux & macOS
 
-`GDD.Headless` launches Playwright with `Headless = false` by default, opening visible Chromium windows. Use `--headless` to run without UI. MCP tools work identically in both modes. This provides GUI-like visual testing on Linux/macOS without WPF or CefGlue.
+There are two ways to get a visible browser on Linux/macOS:
 
-Configuration: `AppConfig.Headed` property (default `true`) or `--headless`/`--headed` CLI flags. Proxy scripts also support these flags.
+- **GDD.Desktop** — the full management GUI (the Linux/macOS counterpart of BrowserXn). It runs Playwright **headed** with each Chromium window parked off-screen; the window grid shows ~1 fps thumbnails (polled `page.ScreenshotAsync`), and clicking a cell brings the real window on-screen for native interaction (clicking it closed returns to the grid). Its MCP server listens on port **9800** with server key `gdd-desktop`, so it can run alongside the Server on 9700.
+- **GDD.Headless --headed** — no management UI, but `Headless = false` (the default) opens raw visible Chromium windows. Use `--headless` for CI/CD.
 
-**Future — Full Management UI on All Platforms:**
+Configuration: `AppConfig.Headed` (default `true`) or `--headless`/`--headed` CLI flags. Proxy scripts also support these flags.
 
-| Approach | Quality | Performance | Complexity |
-| -------- | ------- | ----------- | ---------- |
-| Periodic screenshot polling (500ms) | Medium | Low CPU | Simple |
-| CDP `Page.screencastFrame` stream | High | Medium CPU | Medium |
-| Avalonia UI + CefGlue | Full GUI | Medium | High |
+GDD.Desktop's live thumbnails use periodic `ScreenshotAsync` polling. The alternatives were evaluated and rejected:
+
+| Approach | Verdict |
+| -------- | ------- |
+| Periodic screenshot polling (~1 fps) | **Shipped** — renders reliably for off-screen windows *and* static pages, low CPU |
+| CDP `Page.screencastFrame` stream | Rejected — change-driven, so static pages stay blank |
+| Avalonia UI + CefGlue (embedded browser) | Rejected — worked but not truly interactive; lost native page control |
 
 ---
 
 ## 8. Build & CI/CD
 
-GitHub Actions builds 5 targets on every push to master:
+GitHub Actions builds 8 targets on every push to master (jobs `build-windows-gui`, `build-desktop`, `build-headless`):
 
 | Target | Runner | Output |
 | ------ | ------ | ------ |
-| `GDD-Desktop-Windows` | windows-latest | WPF + WebView2 single-file EXE |
-| `GDD-Server-Windows` | windows-latest | Playwright (headless/headed) |
-| `GDD-Server-Linux` | ubuntu-22.04 | Playwright (headless/headed) |
-| `GDD-Server-macOS-ARM` | macos-14 | Apple Silicon (M1/M2/M3/M4) |
-| `GDD-Server-macOS-Intel` | macos-14 | Intel Mac (cross-compiled on ARM, Chromium from CDN) |
+| `GDD-Desktop-Windows` | windows-latest | Windows GUI — WPF + WebView2 single-file EXE |
+| `GDD-Desktop-Linux` | ubuntu-22.04 | Linux GUI — Avalonia + Playwright (headed) |
+| `GDD-Desktop-macOS-ARM` | macos-14 | macOS GUI, Apple Silicon (M1/M2/M3/M4) |
+| `GDD-Desktop-macOS-Intel` | macos-14 | macOS GUI, Intel (x64 Chromium from CDN) |
+| `GDD-Server-Windows` | windows-latest | Server — Playwright (headless/headed) |
+| `GDD-Server-Linux` | ubuntu-22.04 | Server — Playwright (headless/headed) |
+| `GDD-Server-macOS-ARM` | macos-14 | Server, Apple Silicon (M1/M2/M3/M4) |
+| `GDD-Server-macOS-Intel` | macos-14 | Server, Intel Mac (cross-compiled on ARM, Chromium from CDN) |
 
-Each build runs a smoke test: starts GDD.Headless, queries `tools/list` via HTTP, verifies 37 tools are registered. The osx-x64 target is cross-compiled on an ARM runner (macos-14) and skips the smoke test since ARM `pwsh` cannot load x64 .NET assemblies.
+Each headless build runs a smoke test: starts GDD.Headless, queries `tools/list` via HTTP, verifies 37 tools are registered. Each desktop build verifies the bundled Playwright Node driver is present for its platform (building on native runners is what guarantees the correct driver — cross-compiling on Windows omitted the macOS one). The osx-x64 targets are cross-compiled on an ARM runner (macos-14) and fetch the x64 Chromium from the CDN.
 
 Tags matching `v*` trigger GitHub Releases with `.zip` (Windows) and `.tar.gz` (Linux/macOS) archives for all targets.
 
@@ -448,7 +462,7 @@ Tags matching `v*` trigger GitHub Releases with `.zip` (Windows) and `.tar.gz` (
 
 ## 9. Summary
 
-**Current state:** GDD.Core contains all platform-independent logic (~75% of the codebase). BrowserXn (Windows GUI) and GDD.Headless (cross-platform) implement platform-specific abstractions.
+**Current state:** GDD.Core contains all platform-independent logic (~75% of the codebase). BrowserXn (Windows GUI), GDD.Desktop (Linux/macOS GUI) and GDD.Headless (cross-platform server) implement the platform-specific abstractions.
 
 **Headless mode** via Playwright .NET works on Windows, Linux, and macOS with an identical set of 37 MCP tools.
 

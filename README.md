@@ -48,17 +48,29 @@ GDD runs N isolated Chromium instances, each with its own profile, cookies, devi
 
 ## Install
 
+GDD comes in two flavours. The **Server** is headless — it's just the MCP backend, runs anywhere (including boxes with no display), and is all you need for pure AI automation. The **Desktop app** adds a GUI: a live grid of browser thumbnails you can click into to take over a session by hand. The Server runs on port `9700`, the Desktop app on `9800` — so you can run both side by side.
+
+**Server (headless)** — the MCP backend:
+
 | Platform | Download | Run |
 |----------|----------|-----|
 | **Linux** | [GDD-Server-Linux.tar.gz](https://github.com/Cap-of-tea/GDD/releases/latest/download/GDD-Server-Linux.tar.gz) | `chmod +x GDD.Headless && ./GDD.Headless` |
 | **macOS ARM** | [GDD-Server-macOS-ARM.tar.gz](https://github.com/Cap-of-tea/GDD/releases/latest/download/GDD-Server-macOS-ARM.tar.gz) | `bash Scripts/setup-macos.sh && ./GDD.Headless` |
 | **macOS Intel** | [GDD-Server-macOS-Intel.tar.gz](https://github.com/Cap-of-tea/GDD/releases/latest/download/GDD-Server-macOS-Intel.tar.gz) | `bash Scripts/setup-macos.sh && ./GDD.Headless` |
 | **Windows** | [GDD-Server-Windows.zip](https://github.com/Cap-of-tea/GDD/releases/latest/download/GDD-Server-Windows.zip) | `.\GDD.Headless.exe` |
-| **Windows GUI** | [GDD-Desktop-Windows.zip](https://github.com/Cap-of-tea/GDD/releases/latest/download/GDD-Desktop-Windows.zip) | Extract, run `GDD.exe` ([WebView2](https://developer.microsoft.com/en-us/microsoft-edge/webview2/) required) |
 | **Docker** | `ghcr.io/cap-of-tea/gdd` | `docker run -p 9700:9700 ghcr.io/cap-of-tea/gdd` |
 | **Claude Desktop** | [Win](https://github.com/Cap-of-tea/GDD/releases/latest/download/GDD-Server-Windows.mcpb) / [Mac ARM](https://github.com/Cap-of-tea/GDD/releases/latest/download/GDD-Server-macOS-ARM.mcpb) / [Mac Intel](https://github.com/Cap-of-tea/GDD/releases/latest/download/GDD-Server-macOS-Intel.mcpb) (.mcpb) | Open `.mcpb` file — installs as desktop extension |
 
-Self-contained binary, ~70 MB. No .NET installation needed. Chromium downloads automatically on first launch.
+**Desktop app (GUI)** — a live grid of browser thumbnails you can click into:
+
+| Platform | Download | Run |
+|----------|----------|-----|
+| **Windows** | [GDD-Desktop-Windows.zip](https://github.com/Cap-of-tea/GDD/releases/latest/download/GDD-Desktop-Windows.zip) | Extract, run `GDD.exe` ([WebView2](https://developer.microsoft.com/en-us/microsoft-edge/webview2/) required) |
+| **Linux** | [GDD-Desktop-Linux.tar.gz](https://github.com/Cap-of-tea/GDD/releases/latest/download/GDD-Desktop-Linux.tar.gz) | `bash Scripts/install-deps.sh && ./GDD.Desktop` |
+| **macOS ARM** | [GDD-Desktop-macOS-ARM.tar.gz](https://github.com/Cap-of-tea/GDD/releases/latest/download/GDD-Desktop-macOS-ARM.tar.gz) | `bash Scripts/setup-macos.sh && ./GDD.Desktop` |
+| **macOS Intel** | [GDD-Desktop-macOS-Intel.tar.gz](https://github.com/Cap-of-tea/GDD/releases/latest/download/GDD-Desktop-macOS-Intel.tar.gz) | `bash Scripts/setup-macos.sh && ./GDD.Desktop` |
+
+The Windows app uses WebView2; the Linux/macOS app (built with Avalonia) drives real Chromium windows parked off-screen. Self-contained binary, ~70 MB. No .NET installation needed. Chromium downloads automatically on first launch.
 
 **One-liner (Linux):**
 
@@ -275,8 +287,8 @@ GDD uses standard JSON-RPC 2.0 — works with `curl`, Python, Node.js, or any HT
 
 - **Multi-device** — Run N isolated Chromium instances with 22 device presets (phones, tablets, desktops)
 - **AI-native** — 37 MCP tools for Claude Code, Cursor, or any MCP-compatible client
-- **Cross-platform** — Windows GUI with live video wall + headed/headless on Linux & macOS
-- **Full interaction** — Navigate, tap, type, swipe, scroll, hover, handle dialogs, take screenshots
+- **Cross-platform** — Native GUI with a live video wall on Windows, Linux & macOS, plus a headless server for CI/CD
+- **Full interaction** — Navigate, tap, type, drag, swipe, scroll, hover, handle dialogs, take screenshots
 - **Human-like input** — `humanize=true` moves the mouse along a cubic Bézier curve with natural easing and micro-jitter before clicking
 - **Device emulation** — Screen size, DPR, touch, user agent, geolocation, timezone, language
 - **Network control** — Simulate 4G, Fast 3G, Slow 3G, or offline per browser
@@ -433,22 +445,25 @@ Client (AI agent / curl / script)
          │
          ▼
     IPlayerManager
-    MainViewModel (WPF) / HeadlessPlayerManager
+    MainViewModel (WPF) / DesktopPlayerManager (Avalonia) / HeadlessPlayerManager
          │
          ▼
     IBrowserEngine Instances
-    WebView2 (Win GUI)  |  Playwright (Headless/Headed)
+    WebView2 (Win GUI)  |  Playwright (Desktop GUI + headed/headless server)
     Each: own profile, CDP session, emulation
 ```
 
-### Three Modes
+### Editions
 
-| | Windows GUI | Headed (default) | Headless |
-|---|-------------|-------------------|----------|
-| Binary | `GDD.exe` | `GDD.Headless` | `GDD.Headless --headless` |
-| Engine | WebView2 | Playwright | Playwright |
-| UI | WPF video wall | Visible Chromium windows | HTTP API only |
-| Platforms | Windows | Windows, Linux, macOS | Windows, Linux, macOS |
+GDD ships as three apps over one shared core. The two GUIs differ only in the desktop toolkit (WebView2 on Windows, Avalonia on Linux/macOS); all three expose the same 37 MCP tools.
+
+| | Windows GUI | Desktop GUI | Server |
+|---|---|---|---|
+| Binary | `GDD.exe` | `GDD.Desktop` | `GDD.Headless` (add `--headless` for no windows) |
+| Engine | WebView2 | Playwright (headed) | Playwright (headed/headless) |
+| UI | WPF video wall | Avalonia video wall | none — HTTP API only |
+| MCP port | 9700 | 9800 | 9700 |
+| Platforms | Windows | Linux, macOS | Windows, Linux, macOS |
 
 ### Tech Stack
 
@@ -456,8 +471,9 @@ Client (AI agent / curl / script)
 |-------|-----------|
 | Runtime | .NET 8.0 (self-contained) |
 | UI (Windows) | WPF + CommunityToolkit.Mvvm |
-| Browser (GUI) | Microsoft WebView2 |
-| Browser (Headless) | Microsoft Playwright |
+| UI (Linux/macOS) | Avalonia + CommunityToolkit.Mvvm |
+| Browser (Windows GUI) | Microsoft WebView2 |
+| Browser (Desktop GUI + Server) | Microsoft Playwright |
 | Protocol | MCP (Model Context Protocol) |
 | Browser Control | Chrome DevTools Protocol (CDP) |
 | Logging | Serilog |
@@ -479,11 +495,16 @@ BrowserXn.sln
 │   │   ├── ViewModels/        ← MVVM (MainViewModel : IPlayerManager)
 │   │   ├── Views/             ← XAML + VideoWallPanel
 │   │   └── ...
-│   └── GDD.Headless/          ← Cross-platform CLI (Playwright)
+│   ├── GDD.Desktop/           ← Linux/macOS GUI (Avalonia + Playwright)
+│   │   ├── Engines/           ← PlaywrightHeadedEngine (headed, parked off-screen)
+│   │   ├── ViewModels/        ← MainViewModel (DesktopPlayerManager)
+│   │   ├── Views/             ← AXAML + VideoWallPanel
+│   │   └── Scripts/           ← mcp-proxy.sh, setup-macos.sh, install-deps.sh
+│   └── GDD.Headless/          ← Cross-platform server (Playwright)
 │       ├── Engines/           ← PlaywrightEngine
 │       ├── Platform/          ← HeadlessPlayerManager
 │       └── Scripts/           ← mcp-proxy.sh, mcp-proxy.ps1
-└── .github/workflows/         ← CI/CD (5 platform targets + auto-release)
+└── .github/workflows/         ← CI/CD (8 build targets + auto-release)
 ```
 
 </details>
