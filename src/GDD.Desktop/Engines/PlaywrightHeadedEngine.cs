@@ -29,6 +29,8 @@ public sealed class PlaywrightHeadedEngine : IBrowserEngine
     private string _lastUrl = "about:blank";
     private bool _disposing;
     private bool _reopening;
+    private int _reopenCount;
+    private DateTime _lastReopenAt;
 
     public int PlayerId { get; }
     public string UserDataFolder { get; }
@@ -170,12 +172,25 @@ public sealed class PlaywrightHeadedEngine : IBrowserEngine
         // The user clicked the window's X. Don't destroy the player — reopen the page in
         // the same context and park it back off-screen, so the grid thumbnail returns.
         if (_reopening || _context is null) return;
+
+        // Crash-loop guard: if the page keeps closing right after each reopen (e.g. a URL
+        // that crashes the renderer), stop reopening and drop the player instead of spinning.
+        var now = DateTime.UtcNow;
+        _reopenCount = (now - _lastReopenAt) < TimeSpan.FromSeconds(10) ? _reopenCount + 1 : 1;
+        _lastReopenAt = now;
+        if (_reopenCount > 3)
+        {
+            Logger.Warning("Player {Id}: page closed {N}x in quick succession — giving up (likely a crashing page)", PlayerId, _reopenCount);
+            PageClosed?.Invoke(this, EventArgs.Empty);
+            return;
+        }
+
         _reopening = true;
         try
         {
             await ConfigureNewPageAsync(_lastUrl);
             await HideOffscreenAsync();
-            Logger.Information("Player {Id}: window closed by user — reopened in grid", PlayerId);
+            Logger.Information("Player {Id}: window closed — reopened in grid", PlayerId);
         }
         catch (Exception ex)
         {
