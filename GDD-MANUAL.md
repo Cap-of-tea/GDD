@@ -340,8 +340,8 @@ Execute JavaScript, return result.
 - Returns raw result (string, number, or JSON for objects)
 - `null` results return the string `"null"`
 - Multi-line scripts must be wrapped in IIFE: `(function(){ ... })()`
-- **Windows GUI:** async/await does not work — promises don't resolve in WebView2 context
-- **Headless/Headed:** async/await works (Playwright resolves promises)
+- **Windows GUI (BrowserXn / WebView2):** async/await does not work — promises don't resolve in the WebView2 context
+- **GDD.Desktop & Server (Playwright):** async/await works — Playwright resolves promises
 - **Don't use for API calls** (`fetch`, `XMLHttpRequest`) — use for reading state only
 
 ---
