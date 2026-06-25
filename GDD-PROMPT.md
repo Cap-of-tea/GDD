@@ -2,7 +2,7 @@
 
 ## What is GDD
 
-GDD is a cross-platform application that manages multiple isolated Chromium browser instances ("players") and exposes 36 MCP tools for browser automation, device/network/location emulation, and diagnostics. It listens on `http://localhost:9700/mcp`.
+GDD is a cross-platform application that manages multiple isolated Chromium browser instances ("players") and exposes 37 MCP tools for browser automation, device/network/location emulation, and diagnostics. The server and Windows app listen on `http://localhost:9700/mcp`; the Linux/macOS desktop app uses `http://localhost:9800/mcp`.
 
 Three modes: **Windows GUI** (WebView2 with visual preview), **Headed** (Playwright, visible Chromium windows, default on Windows/Linux/macOS), and **Headless** (`--headless` flag — no UI, for CI/CD). All provide identical MCP tools.
 
@@ -12,7 +12,7 @@ You have access to GDD tools via the `gdd` MCP server. Use them to test web appl
 
 The `.mcp.json` in this project connects you to GDD. GDD auto-launches when you first call any tool. If tools return connection errors, wait 5-6 seconds and retry — GDD is starting up.
 
-## Available Tools (36)
+## Available Tools (37)
 
 ### Player Management
 
@@ -32,6 +32,7 @@ The `.mcp.json` in this project connects you to GDD. GDD auto-launches when you 
 
 - `gdd_tap(player_id, selector?, x?, y?)` — Tap an element by CSS selector or coordinates.
 - `gdd_swipe(player_id, direction, distance?)` — Swipe gesture (up/down/left/right, default 300px).
+- `gdd_drag(player_id, selector, x?, y?, target_selector?, hold_ms?)` — Drag an element and drop it at coordinates or onto another element. Uses a real press→move→release mouse sequence, so it drives pointer-based drag-and-drop libraries (e.g. dnd-kit) that `gdd_swipe`'s touch events can't. Raise `hold_ms` for handles with a press-and-hold delay.
 - `gdd_scroll(player_id, selector?, direction?, amount?)` — Scroll into view or by direction.
 - `gdd_type(player_id, selector, text, clear?)` — Type text into an input field.
 - `gdd_hover(player_id, selector)` — Hover over element (triggers mouseover/mouseenter, for tooltips/dropdowns).

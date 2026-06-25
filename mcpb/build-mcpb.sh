@@ -64,7 +64,7 @@ build_bundle() {
   "name": "gdd",
   "version": "$VERSION",
   "display_name": "GDD – Browser Automation",
-  "description": "Browser automation MCP server with 36 tools: mobile device emulation, multi-player sessions, screenshots, DOM reading, network monitoring, and human-like input.",
+  "description": "Browser automation MCP server with 37 tools: mobile device emulation, multi-player sessions, screenshots, DOM reading, network monitoring, and human-like input.",
   "author": {
     "name": "imVS",
     "url": "https://github.com/Cap-of-tea"
