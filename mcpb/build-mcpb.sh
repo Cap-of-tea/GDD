@@ -5,7 +5,7 @@ set -euo pipefail
 # Called by CI after artifacts are downloaded.
 #
 # Usage: mcpb/build-mcpb.sh <version> <artifacts-dir> <icon-path> <output-dir>
-# Example: mcpb/build-mcpb.sh 1.5.0 artifacts Design/gdd-logo-400.png dist
+# Example: mcpb/build-mcpb.sh 1.7.3 artifacts Design/gdd-logo-400.png dist
 
 VERSION="$1"
 ARTIFACTS_DIR="$(cd "$2" && pwd)"
