@@ -12,7 +12,7 @@ public static class InteractionTools
             new McpToolDefinition
             {
                 Name = "gdd_tap",
-                Description = "Tap on an element by CSS selector or at exact (x, y) coordinates in CSS pixels. Dispatches touch and mouse/click events. Provide either a selector (element center is tapped) or x,y coordinates from a gdd_screenshot. Set humanize=true for natural mouse movement (0.5-1.5s curve).",
+                Description = "Tap on an element by CSS selector or at exact (x, y) coordinates in CSS pixels. Sends a single, device-appropriate input — a touch tap on touch devices, a mouse click on desktop — never both, so it won't double-activate toggle UIs (menus, popovers, modals). Provide either a selector (element center is tapped) or x,y coordinates from a gdd_screenshot. Set humanize=true for human-like input — a natural mouse curve on desktop, or a small landing wobble with a varied hold on touch.",
                 InputSchema = new
                 {
                     type = "object",
@@ -22,7 +22,7 @@ public static class InteractionTools
                         selector = new { type = "string", description = "CSS selector to tap (optional if x,y provided)" },
                         x = new { type = "number", description = "X coordinate (optional if selector provided)" },
                         y = new { type = "number", description = "Y coordinate (optional if selector provided)" },
-                        humanize = new { type = "boolean", description = "Move mouse along a natural curve before clicking (0.5-1.5s). Default: false" }
+                        humanize = new { type = "boolean", description = "Human-like input: a natural mouse curve before clicking on desktop, or a small landing wobble + varied hold on touch. Default: false" }
                     },
                     required = new[] { "player_id" }
                 },
@@ -60,55 +60,87 @@ public static class InteractionTools
                 }
 
                 var engine = player.Engine;
-                var ts = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() / 1000.0;
-
-                await engine.CallCdpMethodAsync("Input.dispatchTouchEvent",
-                    JsonSerializer.Serialize(new
-                    {
-                        type = "touchStart",
-                        touchPoints = new[] { new { x, y } },
-                        modifiers = 0,
-                        timestamp = ts
-                    }));
-
-                await Task.Delay(50);
-
-                await engine.CallCdpMethodAsync("Input.dispatchTouchEvent",
-                    JsonSerializer.Serialize(new
-                    {
-                        type = "touchEnd",
-                        touchPoints = Array.Empty<object>(),
-                        modifiers = 0,
-                        timestamp = ts + 0.05
-                    }));
-
-                await Task.Delay(30);
-
                 var humanize = args?.TryGetProperty("humanize", out var hEl) == true && hEl.GetBoolean();
 
-                if (humanize)
+                // A real tap is EITHER touch OR mouse — never both. Chromium already synthesizes
+                // a compatibility click from a touch sequence, so ALSO dispatching a mouse click
+                // activates the element twice: toggle UIs (menus, popovers, modals) open on the
+                // first activation and close on the second. Pick the input that matches the
+                // emulated device.
+                if (player.SelectedDevice.HasTouch)
                 {
-                    var (startX, startY) = MouseMovementService.RandomStart(x, y);
-                    var path = MouseMovementService.GeneratePath(startX, startY, x, y);
-                    foreach (var pt in path)
+                    var ts = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() / 1000.0;
+                    await engine.CallCdpMethodAsync("Input.dispatchTouchEvent",
+                        JsonSerializer.Serialize(new
+                        {
+                            type = "touchStart",
+                            touchPoints = new[] { new { x, y } },
+                            modifiers = 0,
+                            timestamp = ts
+                        }));
+
+                    if (humanize)
                     {
-                        await engine.CallCdpMethodAsync("Input.dispatchMouseEvent",
-                            JsonSerializer.Serialize(new { type = "mouseMoved", x = pt.X, y = pt.Y, button = "none", buttons = 0 }));
-                        await Task.Delay(pt.DelayMs);
+                        // A finger doesn't travel across the screen like a cursor, so instead of
+                        // the mouse curve, humanize a tap with a small landing wobble (kept within
+                        // the ~8px tap slop so it stays a tap, not a drag) and a randomized hold.
+                        var rng = Random.Shared;
+                        var wobble = rng.Next(2, 4);
+                        for (var i = 1; i <= wobble; i++)
+                        {
+                            await Task.Delay(rng.Next(15, 35));
+                            await engine.CallCdpMethodAsync("Input.dispatchTouchEvent",
+                                JsonSerializer.Serialize(new
+                                {
+                                    type = "touchMove",
+                                    touchPoints = new[] { new { x = x + (rng.NextDouble() * 4 - 2), y = y + (rng.NextDouble() * 4 - 2) } },
+                                    modifiers = 0,
+                                    timestamp = ts + i * 0.02
+                                }));
+                        }
+                        await Task.Delay(rng.Next(40, 110));
                     }
+                    else
+                    {
+                        await Task.Delay(50);
+                    }
+
+                    await engine.CallCdpMethodAsync("Input.dispatchTouchEvent",
+                        JsonSerializer.Serialize(new
+                        {
+                            type = "touchEnd",
+                            touchPoints = Array.Empty<object>(),
+                            modifiers = 0,
+                            timestamp = ts + 0.05
+                        }));
                 }
                 else
                 {
+                    if (humanize)
+                    {
+                        var (startX, startY) = MouseMovementService.RandomStart(x, y);
+                        var path = MouseMovementService.GeneratePath(startX, startY, x, y);
+                        foreach (var pt in path)
+                        {
+                            await engine.CallCdpMethodAsync("Input.dispatchMouseEvent",
+                                JsonSerializer.Serialize(new { type = "mouseMoved", x = pt.X, y = pt.Y, button = "none", buttons = 0 }));
+                            await Task.Delay(pt.DelayMs);
+                        }
+                    }
+                    else
+                    {
+                        await engine.CallCdpMethodAsync("Input.dispatchMouseEvent",
+                            JsonSerializer.Serialize(new { type = "mouseMoved", x, y, button = "none", buttons = 0 }));
+                    }
+
                     await engine.CallCdpMethodAsync("Input.dispatchMouseEvent",
-                        JsonSerializer.Serialize(new { type = "mouseMoved", x, y, button = "none", buttons = 0 }));
+                        JsonSerializer.Serialize(new { type = "mousePressed", x, y, button = "left", buttons = 1, clickCount = 1 }));
+                    await engine.CallCdpMethodAsync("Input.dispatchMouseEvent",
+                        JsonSerializer.Serialize(new { type = "mouseReleased", x, y, button = "left", buttons = 0, clickCount = 1 }));
                 }
 
-                await engine.CallCdpMethodAsync("Input.dispatchMouseEvent",
-                    JsonSerializer.Serialize(new { type = "mousePressed", x, y, button = "left", buttons = 1, clickCount = 1 }));
-                await engine.CallCdpMethodAsync("Input.dispatchMouseEvent",
-                    JsonSerializer.Serialize(new { type = "mouseReleased", x, y, button = "left", buttons = 0, clickCount = 1 }));
-
-                return McpResult.Text($"Tapped at ({x:F0}, {y:F0}) on player {playerId}{(humanize ? " (humanized)" : "")}");
+                var inputKind = (player.SelectedDevice.HasTouch ? "touch" : "mouse") + (humanize ? ", humanized" : "");
+                return McpResult.Text($"Tapped at ({x:F0}, {y:F0}) on player {playerId} ({inputKind})");
             });
 
         registry.Register(
