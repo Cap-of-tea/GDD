@@ -233,7 +233,7 @@ Navigate forward in browser history.
 
 #### `gdd_tap(player_id, selector?, x?, y?, humanize?)`
 
-Tap element by CSS selector (preferred) or coordinates. Dispatches touch events followed by a full mouse event chain (`mouseMoved` → `mousePressed` → `mouseReleased`) via CDP, so both touch listeners and click/pointerdown handlers fire.
+Tap element by CSS selector (preferred) or coordinates. Sends a **single, device-appropriate** input via CDP — a touch tap on touch devices, a mouse click on desktop — never both. (Chromium already synthesizes the compatibility click from a touch sequence, so firing a separate mouse click would double-activate the element and close toggle UIs like menus, popovers and modals right after they open.)
 
 Either `selector` OR `x`+`y` required. Selector resolves to element center via `getBoundingClientRect()`.
 
@@ -242,7 +242,7 @@ Either `selector` OR `x`+`y` required. Selector resolves to element center via `
 | `selector` | string | — | CSS selector (resolves to element center) |
 | `x` | number | — | X coordinate (CSS pixels) |
 | `y` | number | — | Y coordinate (CSS pixels) |
-| `humanize` | boolean | false | Move mouse along a cubic Bézier curve with natural easing and micro-jitter before clicking (0.5–1.5s duration) |
+| `humanize` | boolean | false | Human-like input. On desktop, a cubic Bézier cursor path with easing and micro-jitter (0.5–1.5s) that **continues from the cursor's last position** (shared across `gdd_tap`/`gdd_hover`/`gdd_drag` — no teleport between clicks); on touch, a small landing wobble with a varied hold |
 
 #### `gdd_swipe(player_id, direction, distance?)`
 
@@ -292,7 +292,7 @@ Hover over an element (triggers `mouseover`/`mouseenter` events). Useful for too
 | Param | Type | Default | Description |
 | ----- | ---- | ------- | ----------- |
 | `selector` | string | — | CSS selector of the element to hover |
-| `humanize` | boolean | false | Move mouse along a cubic Bézier curve with natural easing and micro-jitter (0.5–1.5s duration) |
+| `humanize` | boolean | false | Cubic Bézier cursor path with easing and micro-jitter (0.5–1.5s), continuing from the cursor's last position (shared with `gdd_tap`/`gdd_drag`) |
 
 #### `gdd_select(player_id, selector, value?, text?)`
 
@@ -524,7 +524,7 @@ Download and install a GDD update. GDD will restart after applying the update. L
 
 **CLI alternative:** `./GDD.Headless --update` — checks, downloads, and applies update from the command line.
 
-**Startup check:** GDD checks for updates at startup (configurable via `CheckForUpdates` in appsettings.json). Console shows `⚠ Update available: v1.3.0 → v1.4.0`. MCP `initialize` response includes `updateAvailable` and `latestVersion` fields.
+**Automatic check:** the GUI apps check for updates at startup and then re-check periodically (hourly), so a window left open across a release still surfaces the banner. Configurable via `CheckForUpdates` in appsettings.json. The GitHub request itself is throttled to once per 24h. Console shows `⚠ Update available: v1.3.0 → v1.4.0`. The headless server surfaces updates through the MCP response beacon and `gdd_check_update`.
 
 ---
 
@@ -789,7 +789,8 @@ Client (AI agent / curl / script) ──HTTP POST──→ GDD (port 9700/mcp)
     "McpPort": 9700,
     "BindAddress": "localhost",
     "DataFolderRoot": "",
-    "CheckForUpdates": true
+    "CheckForUpdates": true,
+    "Stealth": false
   }
 }
 ```
@@ -803,7 +804,8 @@ Client (AI agent / curl / script) ──HTTP POST──→ GDD (port 9700/mcp)
 | `BindAddress` | Network interface to listen on (`"localhost"` = local only, `"*"` = all interfaces for LAN access) | `localhost` |
 | `DataFolderRoot` | Browser profile storage | `%LOCALAPPDATA%\GDD\Profiles` (Win), `~/.local/share/GDD/Profiles` (Linux/macOS) |
 | `Headed` | Launch visible browser windows (Headless binary only) | `true` (use `--headless` CLI flag to disable) |
-| `CheckForUpdates` | Check GitHub for new versions at startup | `true` |
+| `CheckForUpdates` | Check GitHub for new versions (GUIs check at startup + hourly; request throttled to 24h) | `true` |
+| `Stealth` | Opt-in anti-bot masking — launches Chromium with `AutomationControlled` disabled and injects a script that hides the usual automation tells (`navigator.webdriver`, `chrome.runtime`, `permissions`, `plugins`). Applies to the Playwright engines (GDD Server, GDD.Desktop); GDD already runs real headed Chromium with trusted input events | `false` |
 
 ### Logs
 

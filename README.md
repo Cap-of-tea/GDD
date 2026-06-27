@@ -289,7 +289,8 @@ GDD uses standard JSON-RPC 2.0 — works with `curl`, Python, Node.js, or any HT
 - **AI-native** — 37 MCP tools for Claude Code, Cursor, or any MCP-compatible client
 - **Cross-platform** — Native GUI with a live video wall on Windows, Linux & macOS, plus a headless server for CI/CD
 - **Full interaction** — Navigate, tap, type, drag, swipe, scroll, hover, handle dialogs, take screenshots
-- **Human-like input** — `humanize=true` moves the mouse along a cubic Bézier curve with natural easing and micro-jitter before clicking
+- **Human-like input** — `humanize=true` drives a continuous cursor path (cubic Bézier with easing and micro-jitter) that carries over between clicks, hovers and drags; taps fire a single device-appropriate input (touch *or* mouse), never both
+- **Anti-bot stealth** — opt-in `Stealth` mode masks the usual automation tells (`navigator.webdriver`, etc.) on top of real headed Chromium with trusted input events
 - **Device emulation** — Screen size, DPR, touch, user agent, geolocation, timezone, language
 - **Network control** — Simulate 4G, Fast 3G, Slow 3G, or offline per browser
 - **Diagnostics** — Console errors, network traffic, performance metrics, push notifications
@@ -323,12 +324,12 @@ GDD uses standard JSON-RPC 2.0 — works with `curl`, Python, Node.js, or any HT
 
 | Tool | Description |
 |------|-------------|
-| `gdd_tap` | Tap element by CSS selector or coordinates; dispatches touch + mouse/click events. `humanize=true` moves mouse along a Bézier curve |
+| `gdd_tap` | Tap element by CSS selector or coordinates; sends a single device-appropriate input (touch on touch devices, mouse on desktop), never both. `humanize=true` adds a continuous human-like cursor path |
 | `gdd_swipe` | Swipe gesture (up/down/left/right) |
 | `gdd_drag` | Drag an element to (x, y) or onto another element via real pointer events (drives dnd-kit & HTML5 drag-and-drop) |
 | `gdd_scroll` | Scroll page or element |
 | `gdd_type` | Type text into input fields |
-| `gdd_hover` | Hover over element. `humanize=true` moves mouse along a Bézier curve |
+| `gdd_hover` | Hover over element. `humanize=true` adds a continuous human-like cursor path |
 | `gdd_select` | Select option from `<select>` dropdown |
 | `gdd_dialog` | Handle JS alert/confirm/prompt dialogs |
 
@@ -523,7 +524,8 @@ BrowserXn.sln
     "BackendUrl": "http://localhost:8080/api/v1",
     "BotToken": "",
     "McpPort": 9700,
-    "DataFolderRoot": ""
+    "DataFolderRoot": "",
+    "Stealth": false
   }
 }
 ```
@@ -536,6 +538,7 @@ BrowserXn.sln
 | `McpPort` | MCP server port (auto-fallback +1..+9) | `9700` |
 | `DataFolderRoot` | Browser profile storage root | `%LOCALAPPDATA%\GDD\Profiles` (Win), `~/.local/share/GDD/Profiles` (Linux/macOS) |
 | `Headed` | Visible browser windows | `true` (override with `--headless`) |
+| `Stealth` | Opt-in anti-bot masking — launches Chromium with AutomationControlled disabled and hides the usual automation tells (`navigator.webdriver`, etc.). Playwright engines (GDD.Desktop, GDD Server) only | `false` |
 
 </details>
 

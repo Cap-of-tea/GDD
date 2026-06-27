@@ -2,6 +2,23 @@
 
 All notable changes to GDD are documented here.
 
+## [Unreleased]
+
+### Added
+
+- **Anti-bot stealth (opt-in)** — `"Stealth": true` in `appsettings.json` (default off). Launches the Playwright engines with `AutomationControlled` disabled and injects a script that masks the usual automation tells (`navigator.webdriver`, `chrome.runtime`, `permissions.query`, `plugins`). On top of GDD's real headed Chromium and CDP-trusted input, this clears the most common detections
+- **Single-device picker in the Windows GUI** — the "+ Preset" menu now also lists individual Phone / Tablet / Desktop devices so you can add one at a time (parity with GDD.Desktop)
+- **Docker image published on release** — a CI job pushes `ghcr.io/cap-of-tea/gdd:<version>` and `:latest` to GHCR on each version tag (previously the image was only ever pushed by hand)
+
+### Changed
+
+- **`gdd_tap` sends one device-appropriate input** — a touch tap on touch devices, a mouse click on desktop, never both. Chromium already synthesizes the click from a touch sequence, so the old touch-plus-mouse pair double-activated elements and closed toggle UIs (menus, popovers, modals) right after they opened
+- **`humanize` cursor is now continuous** — the Bézier path travels from the cursor's last position instead of teleporting to a random start each time, and that position is shared across `gdd_tap` / `gdd_hover` / `gdd_drag`; touch taps get a small landing wobble with a varied hold
+
+### Fixed
+
+- **GUI update banner on long-running instances** — both GUIs now re-check for updates hourly (not only at startup), so a window left open across a release finally shows the banner
+
 ## [1.7.3] - 2026-06-25
 
 ### Added
