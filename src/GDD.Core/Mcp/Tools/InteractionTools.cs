@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Text.Json;
 using GDD.Abstractions;
 using GDD.Core.Services;
@@ -6,6 +7,11 @@ namespace GDD.Mcp.Tools;
 
 public static class InteractionTools
 {
+    // Last cursor position per player, so a humanized tap can travel continuously from
+    // where the pointer was rather than teleporting to a fresh random start each time.
+    // Player IDs are monotonic (never reused), so no stale-entry cleanup is needed.
+    private static readonly ConcurrentDictionary<int, (double X, double Y)> _lastPointer = new();
+
     public static void Register(McpToolRegistry registry, IPlayerManager playerManager)
     {
         registry.Register(
@@ -118,8 +124,13 @@ public static class InteractionTools
                 {
                     if (humanize)
                     {
-                        var (startX, startY) = MouseMovementService.RandomStart(x, y);
-                        var path = MouseMovementService.GeneratePath(startX, startY, x, y);
+                        // Travel from where the cursor last was — a continuous human path
+                        // across clicks, not a fresh random teleport each time. Only the very
+                        // first move starts from a random point in the actual viewport.
+                        var start = _lastPointer.TryGetValue(playerId, out var lp)
+                            ? lp
+                            : MouseMovementService.RandomStart(x, y, player.SelectedDevice.Width, player.SelectedDevice.Height);
+                        var path = MouseMovementService.GeneratePath(start.X, start.Y, x, y);
                         foreach (var pt in path)
                         {
                             await engine.CallCdpMethodAsync("Input.dispatchMouseEvent",
@@ -137,6 +148,8 @@ public static class InteractionTools
                         JsonSerializer.Serialize(new { type = "mousePressed", x, y, button = "left", buttons = 1, clickCount = 1 }));
                     await engine.CallCdpMethodAsync("Input.dispatchMouseEvent",
                         JsonSerializer.Serialize(new { type = "mouseReleased", x, y, button = "left", buttons = 0, clickCount = 1 }));
+
+                    _lastPointer[playerId] = (x, y); // remember cursor for the next move's continuity
                 }
 
                 var inputKind = (player.SelectedDevice.HasTouch ? "touch" : "mouse") + (humanize ? ", humanized" : "");
