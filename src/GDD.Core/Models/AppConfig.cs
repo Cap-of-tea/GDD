@@ -13,6 +13,13 @@ public sealed class AppConfig
     public bool Headed { get; set; }
     public bool CheckForUpdates { get; set; } = true;
 
+    /// <summary>
+    /// Opt-in anti-bot stealth (default off). When true, browsers launch with
+    /// AutomationControlled disabled and pages get a stealth init script that masks the
+    /// usual automation tells (navigator.webdriver, chrome.runtime, permissions, plugins).
+    /// </summary>
+    public bool Stealth { get; set; }
+
     public string GetDataFolderRoot()
     {
         if (!string.IsNullOrEmpty(DataFolderRoot))

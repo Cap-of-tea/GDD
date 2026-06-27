@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using System.Text.Json;
 using GDD.Abstractions;
 using GDD.Models;
+using GDD.Services;
 using Microsoft.Playwright;
 using Serilog;
 
@@ -124,6 +125,9 @@ public sealed class PlaywrightHeadedEngine : IBrowserEngine
                 window.Notification.requestPermission = async () => 'granted';
             })();
         ");
+
+        if (_config.Stealth)
+            await _page.AddInitScriptAsync(StealthScript.Js);
 
         _page.Load += async (_, _) =>
         {

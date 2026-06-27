@@ -169,11 +169,12 @@ public sealed class HeadlessPlayerManager : IPlayerManager, IAsyncDisposable
         {
             if (_browser is not null) return;
             _playwright = await Playwright.CreateAsync();
-            _browser = await _playwright.Chromium.LaunchAsync(new BrowserTypeLaunchOptions
-            {
-                Headless = !_config.Headed
-            });
-            Logger.Information("Chromium launched ({Mode})", _config.Headed ? "headed" : "headless");
+            var launchOptions = new BrowserTypeLaunchOptions { Headless = !_config.Headed };
+            if (_config.Stealth)
+                launchOptions.Args = new[] { "--disable-blink-features=AutomationControlled" };
+            _browser = await _playwright.Chromium.LaunchAsync(launchOptions);
+            Logger.Information("Chromium launched ({Mode}{Stealth})",
+                _config.Headed ? "headed" : "headless", _config.Stealth ? ", stealth" : "");
         }
         finally
         {
