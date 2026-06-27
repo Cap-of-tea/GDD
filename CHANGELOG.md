@@ -2,7 +2,7 @@
 
 All notable changes to GDD are documented here.
 
-## [Unreleased]
+## [1.7.4] - 2026-06-27
 
 ### Added
 
