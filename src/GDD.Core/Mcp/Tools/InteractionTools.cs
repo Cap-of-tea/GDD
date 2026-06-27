@@ -326,6 +326,8 @@ public static class InteractionTools
                 await engine.CallCdpMethodAsync("Input.dispatchMouseEvent",
                     JsonSerializer.Serialize(new { type = "mouseReleased", x = tx, y = ty, button = "left", buttons = 0, clickCount = 1 }));
 
+                _lastPointer[playerId] = (tx, ty); // cursor ends at the drop point — keep continuity
+
                 return McpResult.Text($"Dragged '{selector}' to ({tx:F0}, {ty:F0}) on player {playerId}");
             });
 
@@ -476,8 +478,12 @@ public static class InteractionTools
 
                 if (humanize)
                 {
-                    var (startX, startY) = MouseMovementService.RandomStart(x, y);
-                    var path = MouseMovementService.GeneratePath(startX, startY, x, y);
+                    // Travel from the cursor's last position (continuous path), random start only
+                    // on the first move — spanning the real viewport, not the 393x852 default.
+                    var start = _lastPointer.TryGetValue(playerId, out var lp)
+                        ? lp
+                        : MouseMovementService.RandomStart(x, y, player.SelectedDevice.Width, player.SelectedDevice.Height);
+                    var path = MouseMovementService.GeneratePath(start.X, start.Y, x, y);
                     foreach (var pt in path)
                     {
                         await player.Engine.CallCdpMethodAsync("Input.dispatchMouseEvent",
@@ -490,6 +496,8 @@ public static class InteractionTools
                     await player.Engine.CallCdpMethodAsync("Input.dispatchMouseEvent",
                         JsonSerializer.Serialize(new { type = "mouseMoved", x, y, button = "none", buttons = 0 }));
                 }
+
+                _lastPointer[playerId] = (x, y); // cursor now rests here — keep continuity for the next move
 
                 return McpResult.Text($"Hovered over '{selector}' at ({x:F0}, {y:F0}) on player {playerId}{(humanize ? " (humanized)" : "")}");
             });
