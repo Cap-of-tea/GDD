@@ -235,6 +235,9 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           path: artifacts/
+          # Only the release bundles — not the docker-publish job's *.dockerbuild record,
+          # which download-artifact (download-all) can choke on and which we never package.
+          pattern: GDD-*
 
       - name: Package archives
         run: |
