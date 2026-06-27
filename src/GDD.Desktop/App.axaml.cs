@@ -51,14 +51,25 @@ public partial class App : Application
                 var updateService = provider.GetRequiredService<UpdateService>();
                 _ = Task.Run(async () =>
                 {
-                    try
+                    // Check at startup, then keep re-checking — otherwise a window left open
+                    // across a release never shows the banner. UpdateService throttles the real
+                    // GitHub request to once / 24h, so an hourly tick is cheap; stop once found.
+                    using var timer = new System.Threading.PeriodicTimer(TimeSpan.FromHours(1));
+                    do
                     {
-                        var update = await updateService.CheckForUpdateAsync();
-                        if (update is not null)
-                            await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(
-                                () => vm.SetUpdateAvailable(update.Version));
+                        try
+                        {
+                            var update = await updateService.CheckForUpdateAsync();
+                            if (update is not null)
+                            {
+                                await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(
+                                    () => vm.SetUpdateAvailable(update.Version));
+                                break;
+                            }
+                        }
+                        catch { /* non-critical */ }
                     }
-                    catch { /* non-critical */ }
+                    while (await timer.WaitForNextTickAsync());
                 });
             }
 

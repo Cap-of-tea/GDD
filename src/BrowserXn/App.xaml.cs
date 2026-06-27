@@ -72,14 +72,26 @@ public partial class App : Application
         {
             _ = Task.Run(async () =>
             {
-                try
+                // Check at startup, then keep re-checking — otherwise a window left open
+                // across a release never shows the banner (the check used to be one-shot).
+                // UpdateService throttles the real GitHub request to once / 24h, so an hourly
+                // tick is cheap; stop once an update is found.
+                using var timer = new System.Threading.PeriodicTimer(TimeSpan.FromHours(1));
+                do
                 {
-                    var updateService = _host.Services.GetRequiredService<UpdateService>();
-                    var update = await updateService.CheckForUpdateAsync();
-                    if (update is not null)
-                        Dispatcher.Invoke(() => mainViewModel.SetUpdateAvailable(update));
+                    try
+                    {
+                        var updateService = _host!.Services.GetRequiredService<UpdateService>();
+                        var update = await updateService.CheckForUpdateAsync();
+                        if (update is not null)
+                        {
+                            Dispatcher.Invoke(() => mainViewModel.SetUpdateAvailable(update));
+                            break;
+                        }
+                    }
+                    catch { /* non-critical */ }
                 }
-                catch { /* non-critical */ }
+                while (await timer.WaitForNextTickAsync());
             });
         }
     }
