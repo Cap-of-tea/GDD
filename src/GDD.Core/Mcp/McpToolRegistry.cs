@@ -11,12 +11,17 @@ public sealed class McpToolRegistry
     private readonly Dictionary<string, string[]> _required = new();
     private IPlayerManager? _playerManager;
     private UpdateService? _updateService;
+    private LicenseService? _licenseService;
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<string, byte> _licenseBeaconShownSessions = new();
 
     public void SetPlayerManager(IPlayerManager playerManager) =>
         _playerManager = playerManager;
 
     public void SetUpdateService(UpdateService updateService) =>
         _updateService = updateService;
+
+    public void SetLicenseService(LicenseService licenseService) =>
+        _licenseService = licenseService;
 
     public void Register(McpToolDefinition definition, Func<JsonElement?, Task<McpToolResult>> handler)
     {
@@ -77,6 +82,7 @@ public sealed class McpToolRegistry
         try
         {
             var result = await handler(arguments);
+            AppendLicenseBeacon(result, toolName);
             AppendErrorBeacon(result, toolName);
             AppendUpdateBeacon(result, toolName);
             return result;
@@ -113,6 +119,20 @@ public sealed class McpToolRegistry
             return;
 
         var beacon = $"⚠ {string.Join(". ", warnings)}. Use gdd_get_console(player_id) to inspect.\n";
+        var textContent = result.Content.FirstOrDefault(c => c.Type == "text");
+        if (textContent is not null)
+            textContent.Text = beacon + textContent.Text;
+    }
+
+    private void AppendLicenseBeacon(McpToolResult result, string toolName)
+    {
+        if (_licenseService is null || _licenseService.IsLicensed) return;
+        if (toolName is "gdd_get_manual" or "gdd_check_update" or "gdd_update") return;
+
+        var sessionId = McpSessionContext.CurrentSessionId ?? "";
+        if (!_licenseBeaconShownSessions.TryAdd(sessionId, 0)) return;
+
+        var beacon = "📋 GDD is licensed for non-commercial use. If this is a commercial project, a license is required — see LICENSE file or contact 2vsmirnov@gmail.com.\n";
         var textContent = result.Content.FirstOrDefault(c => c.Type == "text");
         if (textContent is not null)
             textContent.Text = beacon + textContent.Text;

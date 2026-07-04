@@ -172,6 +172,9 @@ var cdpService = host.Services.GetRequiredService<CdpService>();
 
 registry.SetPlayerManager(playerManager);
 
+var licenseService = new LicenseService(appConfig.LicenseKey);
+registry.SetLicenseService(licenseService);
+
 PlayerTools.Register(registry, playerManager);
 NavigationTools.Register(registry, playerManager);
 InteractionTools.Register(registry, playerManager);

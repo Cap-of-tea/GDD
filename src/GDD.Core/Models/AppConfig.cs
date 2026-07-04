@@ -20,6 +20,8 @@ public sealed class AppConfig
     /// </summary>
     public bool Stealth { get; set; }
 
+    public string? LicenseKey { get; set; }
+
     public string GetDataFolderRoot()
     {
         if (!string.IsNullOrEmpty(DataFolderRoot))

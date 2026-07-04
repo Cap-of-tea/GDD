@@ -114,6 +114,9 @@ public partial class App : Application
 
         registry.SetPlayerManager(playerManager);
 
+        var licenseService = new LicenseService(config.LicenseKey);
+        registry.SetLicenseService(licenseService);
+
         PlayerTools.Register(registry, playerManager);
         NavigationTools.Register(registry, playerManager);
         InteractionTools.Register(registry, playerManager);
