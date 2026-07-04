@@ -1,0 +1,25 @@
+# Caddy token-auth reverse proxy in front of GDD.Headless (Railway).
+# Requests must carry `Authorization: Bearer $GDD_TOKEN` or get 401.
+# /healthz is open (200) for Railway healthchecks.
+
+{
+	admin off
+	auto_https off
+	persist_config off
+}
+
+:{$PORT:8080} {
+	handle /healthz {
+		respond "ok" 200
+	}
+
+	handle {
+		@unauthorized not header Authorization "Bearer {$GDD_TOKEN}"
+		respond @unauthorized "Unauthorized" 401
+
+		# flush_interval -1 disables buffering so SSE / streaming responses pass through
+		reverse_proxy 127.0.0.1:9700 {
+			flush_interval -1
+		}
+	}
+}
