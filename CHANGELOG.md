@@ -2,6 +2,13 @@
 
 All notable changes to GDD are documented here.
 
+## [1.7.5] - 2026-07-04
+
+### Added
+
+- **License compliance beacon** — MCP tool responses include a one-time-per-session notice for unlicensed users, reminding that commercial use requires a license. Licensed clients provide an ECDSA-signed key in `appsettings.json` (`"LicenseKey": "..."`) to suppress the beacon. Offline verification — no server dependency
+- **License key generator** — `tools/LicenseKeyGen` CLI tool for issuing time-limited customer license keys (ECDSA P-256 + SHA-256 signatures)
+
 ## [1.7.4] - 2026-06-27
 
 ### Added
