@@ -568,6 +568,7 @@ Chromium installs automatically on first run.
 - [GDD-MANUAL.md](GDD-MANUAL.md) — Full usage manual with workflow examples
 - [GDD-ARCHITECTURE.md](GDD-ARCHITECTURE.md) — Architecture deep-dive
 - [GDD-PROMPT.md](GDD-PROMPT.md) — Claude agent instructions for MCP integration
+- [DEPLOY-RAILWAY.md](DEPLOY-RAILWAY.md) — Host GDD as a remote MCP server on Railway (behind a token-auth proxy)
 - [CONTRIBUTING.md](CONTRIBUTING.md) — Contribution guidelines
 
 ## Privacy
