@@ -179,6 +179,10 @@ public sealed class HeadlessPlayerManager : IPlayerManager, IAsyncDisposable
                     args.Add("--force-webrtc-ip-handling-policy=disable_non_proxied_udp");
                     // Drop the automation switch Playwright adds by default.
                     launchOptions.IgnoreDefaultArgs = new[] { "--enable-automation" };
+                    // Workers inherit the *launch* UA, not the per-context override — so a clean
+                    // desktop Chrome UA here removes the "HeadlessChrome" leak CreepJS reads from
+                    // the worker context (the per-context UserAgent still governs the main thread).
+                    args.Add("--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36");
                 }
                 launchOptions.Args = args;
             }
