@@ -47,9 +47,9 @@ public sealed class PlaywrightEngine : IBrowserEngine
             IsMobile = _initialDevice.IsMobile,
             HasTouch = _initialDevice.HasTouch,
             UserAgent = _initialDevice.UserAgent,
-            // A UTC timezone and unset locale are datacenter tells — give a coherent default
-            // under stealth-max (gdd_set_location still overrides these per player at runtime).
-            TimezoneId = _config.StealthMax ? "America/New_York" : null,
+            // Locale default under stealth-max (timezone is left to gdd_set_location so it can
+            // be matched to the proxy/exit — a context-level TimezoneId would lock the CDP
+            // override and make set_location fail with "already in effect").
             Locale = _config.StealthMax ? "en-US" : null,
             Permissions = ["notifications"]
         });
