@@ -190,6 +190,17 @@ public sealed class HeadlessPlayerManager : IPlayerManager, IAsyncDisposable
             var channel = Environment.GetEnvironmentVariable("GDD_CHROME_CHANNEL");
             if (!string.IsNullOrWhiteSpace(channel))
                 launchOptions.Channel = channel;
+            // Optional upstream proxy for all players. GDD_PROXY=scheme://host:port
+            // (+ GDD_PROXY_USER / GDD_PROXY_PASS for authenticated proxies).
+            var proxyServer = Environment.GetEnvironmentVariable("GDD_PROXY");
+            if (!string.IsNullOrWhiteSpace(proxyServer))
+            {
+                launchOptions.Proxy = new Proxy { Server = proxyServer };
+                var pUser = Environment.GetEnvironmentVariable("GDD_PROXY_USER");
+                var pPass = Environment.GetEnvironmentVariable("GDD_PROXY_PASS");
+                if (!string.IsNullOrWhiteSpace(pUser)) launchOptions.Proxy.Username = pUser;
+                if (!string.IsNullOrWhiteSpace(pPass)) launchOptions.Proxy.Password = pPass;
+            }
             _browser = await _playwright.Chromium.LaunchAsync(launchOptions);
             Logger.Information("Chromium launched ({Mode}{Stealth}{Channel})",
                 _config.Headed ? "headed" : "headless",
