@@ -41,6 +41,7 @@ if (args.Any(a => a is "--help" or "-h" or "-?" or "/?" or "--version" or "-v"))
     Console.WriteLine("Options:");
     Console.WriteLine("  --headed     Launch with visible Chromium windows (default)");
     Console.WriteLine("  --headless   Launch without UI (for CI/CD)");
+    Console.WriteLine("  --stealth    Enable anti-bot stealth (also via GDD_STEALTH=true)");
     Console.WriteLine("  --update     Check for updates, download and apply if available");
     Console.WriteLine("  --help       Show this help");
     return 0;
@@ -49,6 +50,12 @@ if (args.Any(a => a is "--help" or "-h" or "-?" or "/?" or "--version" or "-v"))
 var headed = args.Any(a => a.Equals("--headed", StringComparison.OrdinalIgnoreCase));
 var headless = args.Any(a => a.Equals("--headless", StringComparison.OrdinalIgnoreCase));
 var doUpdate = args.Any(a => a.Equals("--update", StringComparison.OrdinalIgnoreCase));
+// Stealth can be turned on via --stealth or GDD_STEALTH=true/1 (env is handy for
+// container deploys where appsettings.json isn't edited).
+var stealthEnv = Environment.GetEnvironmentVariable("GDD_STEALTH");
+var stealth = args.Any(a => a.Equals("--stealth", StringComparison.OrdinalIgnoreCase))
+    || (stealthEnv is not null
+        && (stealthEnv.Equals("1") || stealthEnv.Equals("true", StringComparison.OrdinalIgnoreCase)));
 
 var pidFile = Path.Combine(AppContext.BaseDirectory, ".gdd.pid");
 if (!doUpdate && File.Exists(pidFile))
@@ -95,6 +102,7 @@ var host = Host.CreateDefaultBuilder(args)
         context.Configuration.GetSection("GDD").Bind(config);
         if (headed) config.Headed = true;
         if (headless) config.Headed = false;
+        if (stealth) config.Stealth = true;
         services.AddSingleton(config);
 
         services.AddSingleton<IMainThreadDispatcher, ConsoleDispatcher>();
