@@ -171,10 +171,26 @@ public sealed class HeadlessPlayerManager : IPlayerManager, IAsyncDisposable
             _playwright = await Playwright.CreateAsync();
             var launchOptions = new BrowserTypeLaunchOptions { Headless = !_config.Headed };
             if (_config.Stealth)
-                launchOptions.Args = new[] { "--disable-blink-features=AutomationControlled" };
+            {
+                var args = new List<string> { "--disable-blink-features=AutomationControlled" };
+                if (_config.StealthMax)
+                {
+                    // Stop WebRTC from revealing the real/host IP outside the proxy path.
+                    args.Add("--force-webrtc-ip-handling-policy=disable_non_proxied_udp");
+                    // Drop the automation switch Playwright adds by default.
+                    launchOptions.IgnoreDefaultArgs = new[] { "--enable-automation" };
+                }
+                launchOptions.Args = args;
+            }
+            // Optional: use a real Chrome build (proprietary codecs/fonts) when available.
+            var channel = Environment.GetEnvironmentVariable("GDD_CHROME_CHANNEL");
+            if (!string.IsNullOrWhiteSpace(channel))
+                launchOptions.Channel = channel;
             _browser = await _playwright.Chromium.LaunchAsync(launchOptions);
-            Logger.Information("Chromium launched ({Mode}{Stealth})",
-                _config.Headed ? "headed" : "headless", _config.Stealth ? ", stealth" : "");
+            Logger.Information("Chromium launched ({Mode}{Stealth}{Channel})",
+                _config.Headed ? "headed" : "headless",
+                _config.StealthMax ? ", stealth-max" : _config.Stealth ? ", stealth" : "",
+                string.IsNullOrWhiteSpace(channel) ? "" : $", channel={channel}");
         }
         finally
         {

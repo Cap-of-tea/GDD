@@ -42,6 +42,7 @@ if (args.Any(a => a is "--help" or "-h" or "-?" or "/?" or "--version" or "-v"))
     Console.WriteLine("  --headed     Launch with visible Chromium windows (default)");
     Console.WriteLine("  --headless   Launch without UI (for CI/CD)");
     Console.WriteLine("  --stealth    Enable anti-bot stealth (also via GDD_STEALTH=true)");
+    Console.WriteLine("  --stealth-max Full stealth: UA-CH/WebGL/devices/timezone (also GDD_STEALTH_MAX=true)");
     Console.WriteLine("  --update     Check for updates, download and apply if available");
     Console.WriteLine("  --help       Show this help");
     return 0;
@@ -52,10 +53,17 @@ var headless = args.Any(a => a.Equals("--headless", StringComparison.OrdinalIgno
 var doUpdate = args.Any(a => a.Equals("--update", StringComparison.OrdinalIgnoreCase));
 // Stealth can be turned on via --stealth or GDD_STEALTH=true/1 (env is handy for
 // container deploys where appsettings.json isn't edited).
-var stealthEnv = Environment.GetEnvironmentVariable("GDD_STEALTH");
-var stealth = args.Any(a => a.Equals("--stealth", StringComparison.OrdinalIgnoreCase))
-    || (stealthEnv is not null
-        && (stealthEnv.Equals("1") || stealthEnv.Equals("true", StringComparison.OrdinalIgnoreCase)));
+static bool EnvOn(string name)
+{
+    var v = Environment.GetEnvironmentVariable(name);
+    return v is not null && (v.Equals("1") || v.Equals("true", StringComparison.OrdinalIgnoreCase));
+}
+var stealthMax = args.Any(a => a.Equals("--stealth-max", StringComparison.OrdinalIgnoreCase))
+    || EnvOn("GDD_STEALTH_MAX");
+// --stealth-max implies base stealth.
+var stealth = stealthMax
+    || args.Any(a => a.Equals("--stealth", StringComparison.OrdinalIgnoreCase))
+    || EnvOn("GDD_STEALTH");
 
 var pidFile = Path.Combine(AppContext.BaseDirectory, ".gdd.pid");
 if (!doUpdate && File.Exists(pidFile))
@@ -103,6 +111,7 @@ var host = Host.CreateDefaultBuilder(args)
         if (headed) config.Headed = true;
         if (headless) config.Headed = false;
         if (stealth) config.Stealth = true;
+        if (stealthMax) config.StealthMax = true;
         services.AddSingleton(config);
 
         services.AddSingleton<IMainThreadDispatcher, ConsoleDispatcher>();

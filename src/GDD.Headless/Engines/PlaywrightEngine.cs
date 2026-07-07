@@ -47,6 +47,10 @@ public sealed class PlaywrightEngine : IBrowserEngine
             IsMobile = _initialDevice.IsMobile,
             HasTouch = _initialDevice.HasTouch,
             UserAgent = _initialDevice.UserAgent,
+            // A UTC timezone and unset locale are datacenter tells — give a coherent default
+            // under stealth-max (gdd_set_location still overrides these per player at runtime).
+            TimezoneId = _config.StealthMax ? "America/New_York" : null,
+            Locale = _config.StealthMax ? "en-US" : null,
             Permissions = ["notifications"]
         });
 
@@ -96,6 +100,22 @@ public sealed class PlaywrightEngine : IBrowserEngine
 
         if (_config.Stealth)
             await _page.AddInitScriptAsync(StealthScript.Js);
+
+        if (_config.StealthMax)
+        {
+            // Coherent UA-CH metadata via CDP propagates to workers too — this is what fixes
+            // both the HeadlessChrome UA leak and the navigator.platform/Client-Hints mismatch.
+            var meta = UaMetadata.Build(_initialDevice.UserAgent, _initialDevice.IsMobile);
+            if (meta is not null)
+            {
+                await _cdpSession.SendAsync("Emulation.setUserAgentOverride", new Dictionary<string, object>
+                {
+                    ["userAgent"] = _initialDevice.UserAgent,
+                    ["userAgentMetadata"] = meta
+                });
+            }
+            await _page.AddInitScriptAsync(StealthMaxScript.Js);
+        }
 
         _page.Load += async (_, _) =>
         {

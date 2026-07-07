@@ -20,6 +20,15 @@ public sealed class AppConfig
     /// </summary>
     public bool Stealth { get; set; }
 
+    /// <summary>
+    /// Maximum stealth (default off, implies <see cref="Stealth"/>). Adds the headless/
+    /// datacenter evasions the base script skips: coherent UA-CH metadata via CDP (fixes the
+    /// worker HeadlessChrome leak + navigator.platform mismatch), spoofed WebGL vendor/renderer,
+    /// realistic hardwareConcurrency/deviceMemory, faked media devices, a non-UTC default
+    /// timezone, WebRTC non-proxied-UDP blocking, and removal of the --enable-automation switch.
+    /// </summary>
+    public bool StealthMax { get; set; }
+
     public string? LicenseKey { get; set; }
 
     public string GetDataFolderRoot()
