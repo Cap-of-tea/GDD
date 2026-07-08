@@ -23,6 +23,7 @@ jobs:
         with:
           name: GDD-Desktop-Windows
           path: publish/win-gui/
+          retention-days: 1
 
       - name: Create update artifact (without browsers)
         shell: pwsh
@@ -33,6 +34,7 @@ jobs:
         with:
           name: GDD-Desktop-Windows-Update
           path: publish/win-gui-update/
+          retention-days: 1
 
   build-headless:
     strategy:
@@ -118,6 +120,7 @@ jobs:
           name: ${{ matrix.artifact }}
           path: publish/${{ matrix.rid }}/
           include-hidden-files: true
+          retention-days: 1
 
       - name: Remove full Chromium.app from macOS artifacts (keep only headless shell)
         if: startsWith(matrix.rid, 'osx-')
@@ -136,6 +139,7 @@ jobs:
         with:
           name: ${{ matrix.artifact }}-update
           path: publish/${{ matrix.rid }}-update/
+          retention-days: 1
 
   build-desktop:
     strategy:
@@ -206,6 +210,7 @@ jobs:
           name: ${{ matrix.artifact }}
           path: publish/${{ matrix.rid }}/
           include-hidden-files: true
+          retention-days: 1
 
       - name: Create update artifact (without browsers)
         shell: bash
@@ -218,6 +223,7 @@ jobs:
         with:
           name: ${{ matrix.artifact }}-update
           path: publish/${{ matrix.rid }}-update/
+          retention-days: 1
 
   release:
     if: startsWith(github.ref, 'refs/tags/v')
