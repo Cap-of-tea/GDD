@@ -2,6 +2,23 @@
 
 All notable changes to GDD are documented here.
 
+## [1.8.0] - 2026-07-10
+
+### Added
+
+- **`gdd_set_headers` — response header rewriting (38th tool)** — `allow_framing=true` strips `X-Frame-Options` and the CSP `frame-ancestors` directive, so a site that refuses to be embedded can be loaded in an iframe (the rest of its CSP is left alone). Also takes `strip_response` / `set_response` for arbitrary header edits, scoped by `url_pattern`. Only document responses are intercepted, so media and XHR are untouched; a failure lets the request through rather than leaving it hanging. Works on all three editions
+- **`--stealth-max` / `GDD_STEALTH_MAX`** — everything `--stealth` does plus the headless/datacenter evasions: coherent UA client-hints metadata over CDP (which also fixes the `HeadlessChrome` user-agent leaking from worker contexts), a plausible WebGL vendor/renderer instead of SwiftShader, realistic core/memory counts, non-empty media devices, WebRTC non-proxied-UDP blocking, and no `--enable-automation` switch. On a headless container this halved CreepJS's headless score (67% → 33%)
+- **`--stealth` flag and `GDD_STEALTH` env** — stealth was config-file-only before, which containers can't set
+- **`GDD_PROXY`** (+ `GDD_PROXY_USER` / `GDD_PROXY_PASS`) — route every player through an upstream proxy
+- **`GDD_CHROME_CHANNEL`** — launch a real Chrome build instead of bundled Chromium when one is installed
+- **Railway deployment recipe** — `Dockerfile.railway` runs GDD.Headless behind a Caddy bearer-token proxy so it can be hosted as a remote MCP server; see [DEPLOY-RAILWAY.md](DEPLOY-RAILWAY.md)
+
+### Fixed
+
+- **`gdd_set_location` failed under `--stealth-max`** — the stealth context set a timezone of its own, and Chromium rejects a second timezone override with "already in effect", so matching a player's geo to a proxy exit silently errored
+- **CDP events outside the built-in list never fired on the Playwright engines** — `SubscribeToCdpEvent` only mapped six hand-picked names onto Playwright's own page events; everything else returned a subscription that stayed silent forever. Unmapped events now reach the real CDP session, so any domain is usable
+- **`ICdpEventSubscription.Dispose()` did nothing on the Playwright engines** — it now detaches the handler
+
 ## [1.7.5] - 2026-07-04
 
 ### Added

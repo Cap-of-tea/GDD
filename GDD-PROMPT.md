@@ -2,7 +2,7 @@
 
 ## What is GDD
 
-GDD is a cross-platform application that manages multiple isolated Chromium browser instances ("players") and exposes 37 MCP tools for browser automation, device/network/location emulation, and diagnostics. The server and Windows app listen on `http://localhost:9700/mcp`; the Linux/macOS desktop app uses `http://localhost:9800/mcp`.
+GDD is a cross-platform application that manages multiple isolated Chromium browser instances ("players") and exposes 38 MCP tools for browser automation, device/network/location emulation, and diagnostics. The server and Windows app listen on `http://localhost:9700/mcp`; the Linux/macOS desktop app uses `http://localhost:9800/mcp`.
 
 Three apps, one set of tools: the **Windows GUI** (BrowserXn — WebView2), the **Linux/macOS GUI** (GDD.Desktop — Avalonia), and the **Server** (GDD.Headless — visible Chromium windows by default, `--headless` for CI/CD). All expose identical MCP tools.
 
@@ -12,7 +12,7 @@ You have access to GDD tools via the `gdd` MCP server. Use them to test web appl
 
 The `.mcp.json` in this project connects you to GDD. GDD auto-launches when you first call any tool. If tools return connection errors, wait 5-6 seconds and retry — GDD is starting up.
 
-## Available Tools (37)
+## Available Tools (38)
 
 ### Player Management
 
@@ -59,6 +59,7 @@ The `.mcp.json` in this project connects you to GDD. GDD auto-launches when you 
 - `gdd_set_location(player_id, preset, latitude?, longitude?, timezone?, locale?)` — Set geolocation. Presets: Moscow, Saint Petersburg, New York, London, Tokyo, custom.
 - `gdd_set_network(player_id, preset)` — Set network conditions: Online, 4G, Fast 3G, Slow 3G, Offline.
 - `gdd_set_language(player_id, locale)` — Set browser language (e.g. "ru", "en-US", "ja-JP"). Changes navigator.language and Accept-Language header.
+- `gdd_set_headers(player_id, allow_framing?, strip_response?, set_response?, url_pattern?)` — Rewrite response headers. `allow_framing=true` strips X-Frame-Options and the CSP frame-ancestors directive so a site that refuses embedding loads in an iframe. Applies to later navigations — reload after enabling. Call with no rules to turn off.
 
 ### Diagnostics
 

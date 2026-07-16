@@ -2,7 +2,7 @@
 
 ## 1. What is GDD
 
-GDD (Giggly-Dazzling-Duckling) — a cross-platform multi-browser testing tool. Manages N isolated Chromium instances and exposes 37 MCP tools. Works as an HTTP API server — controlled via AI agents (Claude Code, etc.), scripts, curl, or any HTTP client.
+GDD (Giggly-Dazzling-Duckling) — a cross-platform multi-browser testing tool. Manages N isolated Chromium instances and exposes 38 MCP tools. Works as an HTTP API server — controlled via AI agents (Claude Code, etc.), scripts, curl, or any HTTP client.
 
 GDD ships as three apps over one shared core: the **Windows GUI** (BrowserXn — WPF + WebView2, with a live thumbnail grid), the **Linux/macOS GUI** (GDD.Desktop — Avalonia, also with a live thumbnail grid), and the **Server** (GDD.Headless — headless or headed, all platforms, for AI/CI use). All three expose an identical set of MCP tools; the two GUIs differ only in the desktop toolkit.
 
@@ -146,7 +146,7 @@ For headless mode, add `"--headless"` to the `args` array.
 
 Open a **new chat** in Claude Code (or Reload Window). The MCP client reads `.mcp.json` only at session start.
 
-37 tools should appear with the `mcp__gdd__` prefix.
+38 tools should appear with the `mcp__gdd__` prefix.
 
 ### Troubleshooting
 
@@ -400,6 +400,30 @@ Network condition emulation via CDP.
 Set browser language. Changes `navigator.language`, `Accept-Language` header, and locale override.
 
 Examples: `"ru"`, `"en-US"`, `"ja-JP"`, `"de-DE"`
+
+#### `gdd_set_headers(player_id, allow_framing?, strip_response?, set_response?, url_pattern?)`
+
+Rewrite response headers for a player. Intercepts **document** responses only (via CDP Fetch), so media and XHR are untouched.
+
+| Param | Type | Default | Description |
+| ----- | ---- | ------- | ----------- |
+| `allow_framing` | boolean | false | Strip `X-Frame-Options` and the CSP `frame-ancestors` directive so a site that refuses embedding can be loaded in an iframe. The rest of its CSP is preserved |
+| `strip_response` | string[] | — | Response header names to remove (case-insensitive) |
+| `set_response` | object | — | Response headers to add/replace, as `{"name": "value"}` |
+| `url_pattern` | string | `*` | URL glob to intercept |
+
+```text
+gdd_set_headers(1, allow_framing=true)   → strips X-Frame-Options for player 1
+gdd_navigate(1, "https://example.com/wrapper")
+gdd_set_headers(1)                       → no rules = interception off
+```
+
+**Notes:**
+
+- Applies to **subsequent** navigations — call `gdd_navigate` or `gdd_reload` after enabling.
+- `content-encoding` / `content-length` are always dropped on rewritten responses: the body is re-sent decoded, so keeping them would corrupt it.
+- Redirects (3xx) are passed through untouched.
+- If anything fails, the request is let through unmodified rather than left hanging.
 
 ---
 
@@ -754,7 +778,7 @@ Report: "All 3 players have isolated sessions. Each sees their own profile name.
 ```text
 Client (AI agent / curl / script) ──HTTP POST──→ GDD (port 9700/mcp)
                                                       │
-                                            McpToolRegistry (37 tools)
+                                            McpToolRegistry (38 tools)
                                                       │
                                               IPlayerManager
                                             ┌────┬────┬────┐
