@@ -16,6 +16,7 @@ public sealed class HeadlessPlayerManager : IPlayerManager, IAsyncDisposable
     private readonly NotificationInterceptionService _notificationService;
     private readonly ConsoleInterceptionService _consoleService;
     private readonly NetworkMonitoringService _networkMonitorService;
+    private readonly RequestInterceptionService _interceptionService;
     private readonly object _sync = new();
     private readonly List<HeadlessPlayerContext> _players = new();
     private readonly SemaphoreSlim _browserLock = new(1, 1);
@@ -27,12 +28,14 @@ public sealed class HeadlessPlayerManager : IPlayerManager, IAsyncDisposable
         AppConfig config,
         NotificationInterceptionService notificationService,
         ConsoleInterceptionService consoleService,
-        NetworkMonitoringService networkMonitorService)
+        NetworkMonitoringService networkMonitorService,
+        RequestInterceptionService interceptionService)
     {
         _config = config;
         _notificationService = notificationService;
         _consoleService = consoleService;
         _networkMonitorService = networkMonitorService;
+        _interceptionService = interceptionService;
     }
 
     public IReadOnlyList<IPlayerContext> GetPlayers()
@@ -106,6 +109,7 @@ public sealed class HeadlessPlayerManager : IPlayerManager, IAsyncDisposable
 
         _consoleService.Remove(playerId);
         _networkMonitorService.Remove(playerId);
+        _interceptionService.Remove(playerId);
 
         if (player.Engine is not null)
             _ = player.Engine.DisposeAsync();

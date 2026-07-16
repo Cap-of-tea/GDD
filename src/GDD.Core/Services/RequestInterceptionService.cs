@@ -101,7 +101,13 @@ public sealed class RequestInterceptionService
         Logger.Information("Interception disabled for Player {Id}", playerId);
     }
 
-    public void Remove(int playerId) => _byPlayer.TryRemove(playerId, out _);
+    /// <summary>Drops state for a player that is going away. No CDP calls — the engine is
+    /// being disposed — but the subscription still has to be detached.</summary>
+    public void Remove(int playerId)
+    {
+        if (_byPlayer.TryRemove(playerId, out var state))
+            state.Subscription?.Dispose();
+    }
 
     private static object BuildEnableParams(InterceptionRules rules) => new
     {

@@ -127,6 +127,7 @@ var host = Host.CreateDefaultBuilder(args)
         services.AddSingleton<NotificationInterceptionService>();
         services.AddSingleton<ConsoleInterceptionService>();
         services.AddSingleton<NetworkMonitoringService>();
+        services.AddSingleton<RequestInterceptionService>();
 
         services.AddSingleton<HeadlessPlayerManager>();
         services.AddSingleton<IPlayerManager>(sp => sp.GetRequiredService<HeadlessPlayerManager>());
@@ -185,6 +186,7 @@ var networkService = host.Services.GetRequiredService<NetworkEmulationService>()
 var notificationService = host.Services.GetRequiredService<NotificationInterceptionService>();
 var consoleService = host.Services.GetRequiredService<ConsoleInterceptionService>();
 var networkMonitorService = host.Services.GetRequiredService<NetworkMonitoringService>();
+var interceptionService = host.Services.GetRequiredService<RequestInterceptionService>();
 var cdpService = host.Services.GetRequiredService<CdpService>();
 
 registry.SetPlayerManager(playerManager);
@@ -201,6 +203,7 @@ AuthTools.Register(registry, playerManager, authService, tokenService, dispatche
 EmulationTools.Register(registry, playerManager, deviceService, locationService, networkService, cdpService);
 StateTools.Register(registry, playerManager, notificationService);
 DiagnosticsTools.Register(registry, playerManager, consoleService, networkMonitorService, cdpService);
+InterceptionTools.Register(registry, playerManager, interceptionService);
 HelpTools.Register(registry);
 
 var updateService = host.Services.GetRequiredService<UpdateService>();

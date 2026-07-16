@@ -126,6 +126,7 @@ public partial class App : Application
         services.AddSingleton<NotificationInterceptionService>();
         services.AddSingleton<ConsoleInterceptionService>();
         services.AddSingleton<NetworkMonitoringService>();
+        services.AddSingleton<RequestInterceptionService>();
 
         services.AddSingleton<DesktopPlayerManager>();
         services.AddSingleton<IPlayerManager>(sp => sp.GetRequiredService<DesktopPlayerManager>());
@@ -168,6 +169,7 @@ public partial class App : Application
         var notificationService = provider.GetRequiredService<NotificationInterceptionService>();
         var consoleService = provider.GetRequiredService<ConsoleInterceptionService>();
         var networkMonitorService = provider.GetRequiredService<NetworkMonitoringService>();
+        var interceptionService = provider.GetRequiredService<RequestInterceptionService>();
         var cdpService = provider.GetRequiredService<CdpService>();
 
         registry.SetPlayerManager(playerManager);
@@ -184,6 +186,7 @@ public partial class App : Application
         EmulationTools.Register(registry, playerManager, deviceService, locationService, networkService, cdpService);
         StateTools.Register(registry, playerManager, notificationService);
         DiagnosticsTools.Register(registry, playerManager, consoleService, networkMonitorService, cdpService);
+        InterceptionTools.Register(registry, playerManager, interceptionService);
         HelpTools.Register(registry);
 
         var updateService = provider.GetRequiredService<UpdateService>();
