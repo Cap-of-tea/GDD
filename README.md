@@ -94,7 +94,7 @@ The Docker image runs in headless mode with all Chromium dependencies pre-instal
 
 </details>
 
-By default, browsers launch in **headed** mode (visible windows). Add `--headless` for CI/CD.
+By default, browsers launch in **headed** mode (visible windows). Add `--headless` for CI/CD. Other flags: `--stealth` and `--stealth-max` for anti-bot masking, `--update` to self-update, `--version` and `--help`. The **Configuration** section below lists every flag and environment variable.
 
 ---
 
@@ -195,7 +195,7 @@ By default, Claude Code asks for confirmation on every MCP tool call. To allow G
 }
 ```
 
-This single wildcard covers all 37 GDD tools. Restart Claude Code after editing.
+This single wildcard covers all 39 GDD tools. Restart Claude Code after editing.
 
 </details>
 
@@ -288,9 +288,12 @@ GDD uses standard JSON-RPC 2.0 — works with `curl`, Python, Node.js, or any HT
 - **Multi-device** — Run N isolated Chromium instances with 22 device presets (phones, tablets, desktops)
 - **AI-native** — 39 MCP tools for Claude Code, Cursor, or any MCP-compatible client
 - **Cross-platform** — Native GUI with a live video wall on Windows, Linux & macOS, plus a headless server for CI/CD
-- **Full interaction** — Navigate, tap, type, drag, swipe, scroll, hover, handle dialogs, take screenshots
+- **Full interaction** — Navigate, tap, type, press keys and shortcuts, drag, swipe, scroll, hover, handle dialogs, take screenshots
+- **Real keyboard** — Typing sends genuine, trusted keystrokes (the full keydown→input chain), so input masks, autocomplete and `maxlength` behave exactly as they do for a real user, and rich-text (`contenteditable`) editors work; `gdd_press` handles single keys and shortcuts like Enter, Tab, Escape and Ctrl+A
 - **Human-like input** — `humanize=true` drives a continuous cursor path (cubic Bézier with easing and micro-jitter) that carries over between clicks, hovers and drags; taps fire a single device-appropriate input (touch *or* mouse), never both
-- **Anti-bot stealth** — opt-in `Stealth` mode masks the usual automation tells (`navigator.webdriver`, etc.) on top of real headed Chromium with trusted input events
+- **Anti-bot stealth** — opt-in `--stealth` masks the usual automation tells (`navigator.webdriver`, etc.); `--stealth-max` adds headless/datacenter evasions (coherent user-agent client hints, a plausible WebGL vendor, realistic device metrics) — on a headless container this halved CreepJS's headless score
+- **Proxy support** — Route every browser through an upstream proxy with `GDD_PROXY` (with optional auth)
+- **Header rewriting** — `gdd_set_headers` can strip `X-Frame-Options`/CSP `frame-ancestors` to load a site in an iframe, or add/replace response headers
 - **Device emulation** — Screen size, DPR, touch, user agent, geolocation, timezone, language
 - **Network control** — Simulate 4G, Fast 3G, Slow 3G, or offline per browser
 - **Diagnostics** — Console errors, network traffic, performance metrics, push notifications
@@ -541,6 +544,31 @@ BrowserXn.sln
 | `DataFolderRoot` | Browser profile storage root | `%LOCALAPPDATA%\GDD\Profiles` (Win), `~/.local/share/GDD/Profiles` (Linux/macOS) |
 | `Headed` | Visible browser windows | `true` (override with `--headless`) |
 | `Stealth` | Opt-in anti-bot masking — launches Chromium with AutomationControlled disabled and hides the usual automation tells (`navigator.webdriver`, etc.). Playwright engines (GDD.Desktop, GDD Server) only | `false` |
+
+### Command-line flags
+
+| Flag | Description |
+|------|-------------|
+| `--headed` | Visible browser windows (default) |
+| `--headless` | No UI — for CI/CD |
+| `--stealth` | Enable anti-bot masking (same as `GDD_STEALTH=true`) |
+| `--stealth-max` | Full stealth — client-hints UA metadata, WebGL/device/timezone spoofing; implies `--stealth` (same as `GDD_STEALTH_MAX=true`) |
+| `--update` | Check for a newer version and install it if available |
+| `--version` | Print the version and exit |
+| `--help` | Show usage and exit |
+
+### Environment variables
+
+Handy for Docker and CI, where an `appsettings.json` file is awkward:
+
+| Variable | Description |
+|----------|-------------|
+| `GDD_STEALTH` | `true`/`1` to enable anti-bot masking (same as `--stealth`) |
+| `GDD_STEALTH_MAX` | `true`/`1` for full stealth (same as `--stealth-max`) |
+| `GDD_PROXY` | Upstream proxy for every browser, e.g. `http://host:3128` or `socks5://host:1080` (Server / Playwright engines) |
+| `GDD_PROXY_USER` / `GDD_PROXY_PASS` | Credentials for an authenticated proxy |
+| `GDD_CHROME_CHANNEL` | Launch an installed Chrome build (e.g. `chrome`, `chrome-beta`) instead of bundled Chromium |
+| `GDD_TRACE` | `true`/`1` for verbose trace logging |
 
 </details>
 

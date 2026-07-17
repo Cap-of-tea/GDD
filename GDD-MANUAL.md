@@ -74,6 +74,8 @@ docker run -p 9700:9700 ghcr.io/cap-of-tea/gdd:latest
 
 Runs headless with all Chromium dependencies pre-installed. No setup needed.
 
+**Remote / hosted (Railway):** to run GDD as a remote MCP server behind a bearer-token proxy, see [DEPLOY-RAILWAY.md](DEPLOY-RAILWAY.md) — it ships a `Dockerfile.railway` and a Caddy config that gate the public endpoint.
+
 ### Claude Code Setup
 
 Two connection methods — choose one:
@@ -652,7 +654,7 @@ Agent:
 4. gdd_type(1, "input[name='email']", "test@example.com")
 5. gdd_type(1, "input[name='password']", "password123")
 6. gdd_screenshot(1)                         → [fields filled]
-7. gdd_tap(1, "button[type='submit']")
+7. gdd_press(1, "Enter")                      → submit from the keyboard (or gdd_tap the submit button)
 8. gdd_wait(1, ".dashboard", timeout=10000)
 9. gdd_screenshot(1)                         → [dashboard loaded]
 10. gdd_read(1, ".user-name")                → "Test User"
@@ -846,6 +848,33 @@ Client (AI agent / curl / script) ──HTTP POST──→ GDD (port 9700/mcp)
 | `Headed` | Launch visible browser windows (Headless binary only) | `true` (use `--headless` CLI flag to disable) |
 | `CheckForUpdates` | Check GitHub for new versions (GUIs check at startup + hourly; request throttled to 24h) | `true` |
 | `Stealth` | Opt-in anti-bot masking — launches Chromium with `AutomationControlled` disabled and injects a script that hides the usual automation tells (`navigator.webdriver`, `chrome.runtime`, `permissions`, `plugins`). Applies to the Playwright engines (GDD Server, GDD.Desktop); GDD already runs real headed Chromium with trusted input events | `false` |
+
+### Command-line flags
+
+Pass these to `GDD.Headless` (Server) or the GUI executables:
+
+| Flag | Description |
+| ---- | ----------- |
+| `--headed` | Launch with visible Chromium windows (default) |
+| `--headless` | Launch without UI — for CI/CD |
+| `--stealth` | Enable anti-bot masking (same as `Stealth: true` or `GDD_STEALTH=true`) |
+| `--stealth-max` | Full stealth on top of `--stealth`: coherent user-agent client-hints metadata, a plausible WebGL vendor/renderer, realistic core/memory counts, non-empty media devices, WebRTC leak blocking, and no `--enable-automation` switch. On a headless container this roughly halved CreepJS's headless score. Implies `--stealth` |
+| `--update` | Check for a newer version, download and apply it, then restart |
+| `--version` | Print the version and exit |
+| `--help` | Show usage and exit |
+
+### Environment variables
+
+Convenient for Docker and CI, where editing `appsettings.json` is awkward. All are optional.
+
+| Variable | Description |
+| -------- | ----------- |
+| `GDD_STEALTH` | `true`/`1` to enable anti-bot masking (same as `--stealth`) |
+| `GDD_STEALTH_MAX` | `true`/`1` for full stealth (same as `--stealth-max`) |
+| `GDD_PROXY` | Route every browser through an upstream proxy, e.g. `http://host:3128` or `socks5://host:1080`. Applies to the Playwright engines (Server, GDD.Desktop) |
+| `GDD_PROXY_USER` / `GDD_PROXY_PASS` | Username / password for an authenticated proxy |
+| `GDD_CHROME_CHANNEL` | Launch an installed Chrome build (e.g. `chrome`, `chrome-beta`) instead of the bundled Chromium |
+| `GDD_TRACE` | `true`/`1` for verbose trace-level logging |
 
 ### Logs
 

@@ -46,7 +46,8 @@ GDD ships as three apps over one shared core: the **Windows GUI** (BrowserXn —
 │              McpToolRegistry (39 tools)               │
 │  PlayerTools · NavigationTools · InteractionTools     │
 │  ReadTools · ExecutionTools · EmulationTools          │
-│  AuthTools · StateTools · DiagnosticsTools · HelpTools│
+│  InterceptionTools · AuthTools · StateTools           │
+│  DiagnosticsTools · HelpTools · UpdateTools           │
 └─────────────────────┬────────────────────────────────┘
                       │  Dispatcher.InvokeAsync
 ┌─────────────────────▼────────────────────────────────┐
@@ -106,7 +107,7 @@ Client → POST /mcp {"method":"tools/call","params":{"name":"gdd_navigate",...}
 BrowserXn.sln
 ├── src/
 │   ├── GDD.Core/                          ← Shared library (net8.0)
-│   │   ├── GddVersion.cs                    Version constant (e.g. "1.4.1")
+│   │   ├── GddVersion.cs                    Version constant (e.g. "1.8.0")
 │   │   ├── Abstractions/
 │   │   │   ├── IBrowserEngine.cs              Browser engine interface
 │   │   │   ├── IBrowserEngineFactory.cs       Factory interface
@@ -125,11 +126,12 @@ BrowserXn.sln
 │   │   │   └── Tools/
 │   │   │       ├── PlayerTools.cs             add_players, remove_player, list_windows
 │   │   │       ├── NavigationTools.cs         navigate, wait, reload, back, forward
-│   │   │       ├── InteractionTools.cs        tap, drag, swipe, scroll, type, hover, select, dialog
+│   │   │       ├── InteractionTools.cs        tap, drag, swipe, scroll, type, press, hover, select, dialog
 │   │   │       ├── ReadTools.cs               read, read_all, screenshot
 │   │   │       ├── ExecutionTools.cs          execute_js
 │   │   │       ├── AuthTools.cs               quick_auth
 │   │   │       ├── EmulationTools.cs          set_device/viewport/location/network/language
+│   │   │       ├── InterceptionTools.cs       set_headers (CDP Fetch response rewriting)
 │   │   │       ├── StateTools.cs              get_state, get_notifications
 │   │   │       ├── DiagnosticsTools.cs        get_console, get_network, get_performance, clear_logs, storage, cookies
 │   │   │       ├── HelpTools.cs               get_manual
@@ -148,9 +150,12 @@ BrowserXn.sln
 │   │   │   └── ApiEnvelope.cs                 Backend API response wrapper
 │   │   └── Services/
 │   │       ├── CdpService.cs                  CDP method caller wrapper
+│   │       ├── KeyboardInputService.cs        Real keystrokes via CDP Input.dispatchKeyEvent
+│   │       ├── MouseMovementService.cs        Human-like cursor paths (cubic Bézier)
 │   │       ├── DeviceEmulationService.cs      Device metrics + UA via CDP
 │   │       ├── LocationEmulationService.cs    Geolocation + timezone + locale via CDP
 │   │       ├── NetworkEmulationService.cs     Network throttling via CDP
+│   │       ├── RequestInterceptionService.cs  Response header rewriting via CDP Fetch
 │   │       ├── QuickAuthService.cs            Auto-register/login via backend API
 │   │       ├── TokenInjectionService.cs       localStorage injection of auth tokens
 │   │       ├── TelegramInitDataService.cs     HMAC-SHA256 signed initData
@@ -158,6 +163,11 @@ BrowserXn.sln
 │   │       ├── ConsoleInterceptionService.cs  CDP Runtime.consoleAPICalled listener
 │   │       ├── NetworkMonitoringService.cs    CDP Network.* event listener
 │   │       ├── NotificationInterceptionService.cs  Push notification capture
+│   │       ├── StealthScript.cs               Anti-bot masking (--stealth)
+│   │       ├── StealthMaxScript.cs            Full stealth: UA-CH / WebGL / device spoofing (--stealth-max)
+│   │       ├── UaMetadata.cs                  User-agent client-hints metadata
+│   │       ├── LicenseService.cs              Offline ECDSA license-key verification
+│   │       ├── McpConfigService.cs            Auto-registers GDD in client mcp.json files
 │   │       └── UpdateService.cs               Version check + download + apply via GitHub API
 │   │
 │   ├── BrowserXn/                         ← Windows GUI (net8.0-windows, WPF)
@@ -332,10 +342,10 @@ All operate via CDP (Chrome DevTools Protocol):
 
 | Component | Files | Notes |
 | --------- | ----- | ----- |
-| Services (CDP, auth, emulation) | 11 | Pure C#, operate via CDP JSON commands |
+| Services (CDP, input, auth, emulation, stealth) | 20 | Pure C#, operate via CDP JSON commands |
 | Models (presets, DTOs) | 11 | POCOs |
 | MCP Server + Protocol | 4 | HTTP/JSON-RPC, no OS dependencies |
-| MCP Tools | 10 | Business logic → IPlayerManager calls |
+| MCP Tools | 12 | Business logic → IPlayerManager calls |
 | Collections (RingBuffer) | 1 | Thread-safe generic collection |
 | Abstractions (interfaces) | 6 | IBrowserEngine, IBrowserEngineFactory, IPlayerManager, IPlayerContext, IMainThreadDispatcher, ICdpEventSubscription |
 
