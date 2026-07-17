@@ -48,6 +48,9 @@ appsettings.*.json
 ## Local MCP config
 .mcp.json
 
+## Session planning notes — local only, never publish
+.claude/plans/
+
 ## Downloaded tools
 mcp-publisher.exe
 
