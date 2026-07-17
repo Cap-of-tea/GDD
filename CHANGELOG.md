@@ -2,23 +2,23 @@
 
 All notable changes to GDD are documented here.
 
-## [1.8.0] - 2026-07-10
+## [1.8.0] - 2026-07-17
 
 ### Added
 
 - **Real keyboard input — `gdd_type` now presses actual keys** — typing goes through CDP `Input.dispatchKeyEvent` instead of the native `value` setter, so every character produces a trusted event (`isTrusted: true`) and the full `keydown → keypress → beforeinput → input → keyup` chain. Input masks (phone/card/date), autocomplete/combobox widgets (react-select, downshift, MUI) and `maxlength` now behave exactly as they do for a real user, and `contenteditable` editors (ProseMirror, Slate, Quill, TipTap) — which the old path silently never typed into — work. New options: `humanize` (per-key jitter), `delay` (fixed per-key ms), and `paste` (one-shot `Input.insertText` for bulk text or emoji). Clearing an already-empty field is now a no-op, so no spurious delete event fires
 - **`gdd_press` — single key & keyboard shortcuts (39th tool)** — press a named key (`Enter`, `Tab`, `Escape`, `Backspace`, `Delete`, `ArrowUp`/`Down`/`Left`/`Right`, `Home`, `End`, `PageUp`, `PageDown`, `Insert`, `Space`, `F1`–`F12`) or a single character, optionally with modifiers (`Control`, `Alt`, `Shift`, `Meta`) and a repeat `count`. For submitting forms, triggering shortcuts (e.g. `Ctrl+A`), tab navigation and dismissing dialogs. Real trusted keystrokes on all three editions
 - **`gdd_set_headers` — response header rewriting (38th tool)** — `allow_framing=true` strips `X-Frame-Options` and the CSP `frame-ancestors` directive, so a site that refuses to be embedded can be loaded in an iframe (the rest of its CSP is left alone). Also takes `strip_response` / `set_response` for arbitrary header edits, scoped by `url_pattern`. Only document responses are intercepted, so media and XHR are untouched; a failure lets the request through rather than leaving it hanging. Works on all three editions
-
-### Breaking
-
-- **`gdd_type` no longer dispatches a manual `change` event.** The old path fired `change` inline right after `input`; real keystrokes let the browser fire `change` on blur, as it does for a human. Code that relied on `change` firing without the field losing focus must now move focus away (e.g. `gdd_press(Tab)` or focusing another element) to trigger it
-- **`maxlength` is now enforced.** Because typing presses real keys, a field with `maxlength="5"` accepts at most 5 characters — the old native-setter path bypassed the limit and could leave a longer string in the field. Tests that asserted on an over-length value were passing on state a real user could never produce and will now see the truncated value
 - **`--stealth-max` / `GDD_STEALTH_MAX`** — everything `--stealth` does plus the headless/datacenter evasions: coherent UA client-hints metadata over CDP (which also fixes the `HeadlessChrome` user-agent leaking from worker contexts), a plausible WebGL vendor/renderer instead of SwiftShader, realistic core/memory counts, non-empty media devices, WebRTC non-proxied-UDP blocking, and no `--enable-automation` switch. On a headless container this halved CreepJS's headless score (67% → 33%)
 - **`--stealth` flag and `GDD_STEALTH` env** — stealth was config-file-only before, which containers can't set
 - **`GDD_PROXY`** (+ `GDD_PROXY_USER` / `GDD_PROXY_PASS`) — route every player through an upstream proxy
 - **`GDD_CHROME_CHANNEL`** — launch a real Chrome build instead of bundled Chromium when one is installed
 - **Railway deployment recipe** — `Dockerfile.railway` runs GDD.Headless behind a Caddy bearer-token proxy so it can be hosted as a remote MCP server; see [DEPLOY-RAILWAY.md](DEPLOY-RAILWAY.md)
+
+### Breaking
+
+- **`gdd_type` no longer dispatches a manual `change` event.** The old path fired `change` inline right after `input`; real keystrokes let the browser fire `change` on blur, as it does for a human. Code that relied on `change` firing without the field losing focus must now move focus away (e.g. `gdd_press(Tab)` or focusing another element) to trigger it
+- **`maxlength` is now enforced.** Because typing presses real keys, a field with `maxlength="5"` accepts at most 5 characters — the old native-setter path bypassed the limit and could leave a longer string in the field. Tests that asserted on an over-length value were passing on state a real user could never produce and will now see the truncated value
 
 ### Fixed
 
