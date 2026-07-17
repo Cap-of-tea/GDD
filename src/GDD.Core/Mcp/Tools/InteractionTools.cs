@@ -392,7 +392,8 @@ public static class InteractionTools
                         clear = new { type = "boolean", description = "Clear field before typing (default true)", @default = true },
                         humanize = new { type = "boolean", description = "Add natural per-key jitter (~40-120ms). Default: false" },
                         delay = new { type = "integer", description = "Fixed per-key delay in ms (ignored when humanize is set). Default: 0" },
-                        paste = new { type = "boolean", description = "Insert the whole string at once via Input.insertText (trusted, but no key events). Use for bulk text or emoji. Default: false" }
+                        paste = new { type = "boolean", description = "Insert the whole string at once via Input.insertText (trusted, but no key events). Use for bulk text or emoji. Default: false" },
+                        layout = new { type = "string", description = "Keyboard layout for physical key-code fidelity: 'us', 'ru' (ЙЦУКЕН), 'de' (QWERTZ), 'fr' (AZERTY). Default: derived from the player's language (gdd_set_language), else US." }
                     },
                     required = new[] { "player_id", "selector", "text" }
                 },
@@ -408,6 +409,7 @@ public static class InteractionTools
                 var paste = args?.TryGetProperty("paste", out var pEl) == true && pEl.ValueKind == JsonValueKind.True;
                 var delay = args?.TryGetProperty("delay", out var dEl) == true && dEl.ValueKind == JsonValueKind.Number
                     ? dEl.GetInt32() : 0;
+                var layoutArg = args?.TryGetProperty("layout", out var lEl) == true ? lEl.GetString() : null;
 
                 var player = await playerManager.GetReadyPlayerAsync(playerId);
                 if (player?.Engine is null)
@@ -445,7 +447,12 @@ public static class InteractionTools
                 if (paste)
                     await KeyboardInputService.InsertTextAsync(player.Engine, text);
                 else
-                    await KeyboardInputService.TypeAsync(player.Engine, text, humanize, delay);
+                {
+                    var layout = layoutArg is { Length: > 0 }
+                        ? KeyboardLayout.FromId(layoutArg)
+                        : KeyboardLayout.FromLocale(player.Language);
+                    await KeyboardInputService.TypeAsync(player.Engine, text, humanize, delay, layout);
+                }
 
                 return McpResult.Text($"Typed into '{selector}' on player {playerId}");
             });
@@ -464,7 +471,8 @@ public static class InteractionTools
                         key = new { type = "string", description = "Key to press: a named key (Enter, Tab, Escape, Backspace, Delete, ArrowUp, F5, ...) or a single character" },
                         modifiers = new { type = "array", items = new { type = "string" }, description = "Modifier keys held during the press: any of Control, Alt, Shift, Meta" },
                         selector = new { type = "string", description = "Optional CSS selector to focus before pressing" },
-                        count = new { type = "integer", description = "Number of times to press the key (default 1)", @default = 1 }
+                        count = new { type = "integer", description = "Number of times to press the key (default 1)", @default = 1 },
+                        layout = new { type = "string", description = "Keyboard layout for a single character key: 'us', 'ru', 'de', 'fr'. Default: derived from the player's language, else US. Ignored for named keys and shortcuts." }
                     },
                     required = new[] { "player_id", "key" }
                 },
@@ -498,7 +506,11 @@ public static class InteractionTools
                         return await McpResult.ElementNotFound(player, selector);
                 }
 
-                var ok = await KeyboardInputService.PressAsync(player.Engine, key, modifiers, count);
+                var layoutArg = args?.TryGetProperty("layout", out var lEl) == true ? lEl.GetString() : null;
+                var layout = layoutArg is { Length: > 0 }
+                    ? KeyboardLayout.FromId(layoutArg)
+                    : KeyboardLayout.FromLocale(player.Language);
+                var ok = await KeyboardInputService.PressAsync(player.Engine, key, modifiers, count, layout);
                 if (!ok)
                     return McpResult.Error($"Unknown key '{key}' or unknown modifier. Use a named key (Enter, Tab, Escape, Arrow*, F1-F12, ...) or a single character, and modifiers from Control/Alt/Shift/Meta.");
 
