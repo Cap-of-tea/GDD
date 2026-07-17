@@ -87,13 +87,15 @@ public static class KeyboardInputService
         var text = c.ToString();
         var unmod = key.Unmodified ?? text;
 
-        // Dead-key composed char (e.g. ^ then e -> ê): press the dead key, then compose.
+        // Dead-key composed char (e.g. ^ then e -> ê): first press the dead key, which a real
+        // browser reports as key="Dead" with no committed text. Then fall through to press the
+        // base letter's physical key carrying the composed character — so the accent lands on
+        // its real key (ê on KeyE) with the full trusted chain. (We deliberately don't route
+        // this through imeSetComposition: that path emits an untrusted compositionend.)
         if (key.DeadCode is not null)
         {
-            await DispatchRawAsync(engine, "rawKeyDown", key.DeadKey ?? "Dead", key.DeadCode, key.DeadVk, 0);
-            await DispatchRawAsync(engine, "keyUp", key.DeadKey ?? "Dead", key.DeadCode, key.DeadVk, 0);
-            await ComposeAsync(engine, text);
-            return;
+            await DispatchRawAsync(engine, "rawKeyDown", "Dead", key.DeadCode, key.DeadVk, 0);
+            await DispatchRawAsync(engine, "keyUp", "Dead", key.DeadCode, key.DeadVk, 0);
         }
 
         // AltGr characters (@, €, é on DE/FR): real AltGr is the right-Alt key held, which
@@ -142,22 +144,6 @@ public static class KeyboardInputService
         };
         if (location is not null) p["location"] = location.Value;
         return engine.CallCdpMethodAsync("Input.dispatchKeyEvent", JsonSerializer.Serialize(p));
-    }
-
-    /// <summary>
-    /// Commit a composed character through the IME path, firing real composition events
-    /// (compositionstart → compositionupdate → compositionend) plus an
-    /// <c>inputType="insertCompositionText"</c> input event — how a dead-key accent lands.
-    /// </summary>
-    private static async Task ComposeAsync(IBrowserEngine engine, string text)
-    {
-        await engine.CallCdpMethodAsync("Input.imeSetComposition", JsonSerializer.Serialize(new
-        {
-            text,
-            selectionStart = text.Length,
-            selectionEnd = text.Length,
-        }));
-        await engine.CallCdpMethodAsync("Input.insertText", JsonSerializer.Serialize(new { text }));
     }
 
     private static async Task DispatchAsync(IBrowserEngine engine, string type, KeyDef def, int modifiers)
