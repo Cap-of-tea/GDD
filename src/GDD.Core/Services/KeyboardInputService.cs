@@ -64,48 +64,100 @@ public static class KeyboardInputService
         ["Shift"] = ModShift,
     };
 
-    // US-layout punctuation: char -> (code, virtual key, needs shift, unshifted char).
-    private static readonly Dictionary<char, (string Code, int Vk, bool Shift, string Unmodified)> Punctuation = new()
-    {
-        ['`'] = ("Backquote", 192, false, "`"), ['~'] = ("Backquote", 192, true, "`"),
-        ['-'] = ("Minus", 189, false, "-"), ['_'] = ("Minus", 189, true, "-"),
-        ['='] = ("Equal", 187, false, "="), ['+'] = ("Equal", 187, true, "="),
-        ['['] = ("BracketLeft", 219, false, "["), ['{'] = ("BracketLeft", 219, true, "["),
-        [']'] = ("BracketRight", 221, false, "]"), ['}'] = ("BracketRight", 221, true, "]"),
-        ['\\'] = ("Backslash", 220, false, "\\"), ['|'] = ("Backslash", 220, true, "\\"),
-        [';'] = ("Semicolon", 186, false, ";"), [':'] = ("Semicolon", 186, true, ";"),
-        ['\''] = ("Quote", 222, false, "'"), ['"'] = ("Quote", 222, true, "'"),
-        [','] = ("Comma", 188, false, ","), ['<'] = ("Comma", 188, true, ","),
-        ['.'] = ("Period", 190, false, "."), ['>'] = ("Period", 190, true, "."),
-        ['/'] = ("Slash", 191, false, "/"), ['?'] = ("Slash", 191, true, "/"),
-        ['!'] = ("Digit1", 49, true, "1"), ['@'] = ("Digit2", 50, true, "2"),
-        ['#'] = ("Digit3", 51, true, "3"), ['$'] = ("Digit4", 52, true, "4"),
-        ['%'] = ("Digit5", 53, true, "5"), ['^'] = ("Digit6", 54, true, "6"),
-        ['&'] = ("Digit7", 55, true, "7"), ['*'] = ("Digit8", 56, true, "8"),
-        ['('] = ("Digit9", 57, true, "9"), [')'] = ("Digit0", 48, true, "0"),
-        [' '] = ("Space", 32, false, " "),
-    };
+    // Windows virtual-key for the right Alt (AltGr) key.
+    private const int VkAltRight = 165;
 
     /// <summary>
-    /// Map one character to a US-layout key. Characters outside the layout (Cyrillic,
-    /// accents, CJK) return a text-only definition, which still types correctly.
+    /// Type one character using the active layout. If the layout resolves the char to a
+    /// physical key, we dispatch the exact code/keyCode/modifiers a real keyboard of that
+    /// layout reports (incl. Shift, AltGr, and dead-key composition). Characters the layout
+    /// can't produce fall back to a layout-agnostic text-only keystroke, which still types
+    /// and still fires the full trusted chain.
     /// </summary>
-    private static KeyDef MapChar(char c)
+    private static async Task PressCharAsync(IBrowserEngine engine, char c, KeyboardLayout layout)
     {
-        var s = c.ToString();
+        var key = layout.Resolve(c);
+        if (key is null)
+        {
+            // Off-layout (other scripts): plain keyDown carrying only text.
+            await PressKeyAsync(engine, new KeyDef(c.ToString(), null, 0, c.ToString(), false), 0);
+            return;
+        }
 
-        if (c is >= 'a' and <= 'z')
-            return new KeyDef(s, $"Key{char.ToUpperInvariant(c)}", char.ToUpperInvariant(c), s, false, s);
-        if (c is >= 'A' and <= 'Z')
-            return new KeyDef(s, $"Key{c}", c, s, true, char.ToLowerInvariant(c).ToString());
-        if (c is >= '0' and <= '9')
-            return new KeyDef(s, $"Digit{c}", c, s, false, s);
-        if (Punctuation.TryGetValue(c, out var p))
-            return new KeyDef(s, p.Code, p.Vk, s, p.Shift, p.Unmodified);
+        var text = c.ToString();
+        var unmod = key.Unmodified ?? text;
 
-        // Off-layout: no code/keycode, but a plain keyDown with text still fires the
-        // complete trusted chain.
-        return new KeyDef(s, null, 0, s, false);
+        // Dead-key composed char (e.g. ^ then e -> ê): press the dead key, then compose.
+        if (key.DeadCode is not null)
+        {
+            await DispatchRawAsync(engine, "rawKeyDown", key.DeadKey ?? "Dead", key.DeadCode, key.DeadVk, 0);
+            await DispatchRawAsync(engine, "keyUp", key.DeadKey ?? "Dead", key.DeadCode, key.DeadVk, 0);
+            await ComposeAsync(engine, text);
+            return;
+        }
+
+        // AltGr characters (@, €, é on DE/FR): real AltGr is the right-Alt key held, which
+        // Windows exposes as Ctrl+Alt. We surround the char with a real AltGraph key press and
+        // set Ctrl|Alt on the char. (getModifierState('AltGraph') itself is unreachable via
+        // CDP — see stealth-max for the shim that closes that last signal.)
+        var altGr = key.AltGr;
+        if (altGr)
+            await DispatchRawAsync(engine, "rawKeyDown", "AltGraph", "AltRight", VkAltRight, ModAlt, location: 2);
+
+        var mods = (key.Shift ? ModShift : 0) | (altGr ? ModCtrl | ModAlt : 0);
+
+        var down = new Dictionary<string, object>
+        {
+            ["type"] = "keyDown",
+            ["key"] = text,
+            ["code"] = key.Code,
+            ["windowsVirtualKeyCode"] = key.Vk,
+            ["nativeVirtualKeyCode"] = key.Vk,
+            ["modifiers"] = mods,
+            ["text"] = text,          // carried even under AltGr's Ctrl|Alt so the char is produced
+            ["unmodifiedText"] = unmod,
+        };
+        await engine.CallCdpMethodAsync("Input.dispatchKeyEvent", JsonSerializer.Serialize(down));
+        await engine.CallCdpMethodAsync("Input.dispatchKeyEvent", JsonSerializer.Serialize(new
+        {
+            type = "keyUp",
+            key = text,
+            code = key.Code,
+            windowsVirtualKeyCode = key.Vk,
+            nativeVirtualKeyCode = key.Vk,
+            modifiers = mods,
+        }));
+
+        if (altGr)
+            await DispatchRawAsync(engine, "keyUp", "AltGraph", "AltRight", VkAltRight, 0, location: 2);
+    }
+
+    private static Task DispatchRawAsync(
+        IBrowserEngine engine, string type, string key, string code, int vk, int modifiers, int? location = null)
+    {
+        var p = new Dictionary<string, object>
+        {
+            ["type"] = type, ["key"] = key, ["code"] = code,
+            ["windowsVirtualKeyCode"] = vk, ["nativeVirtualKeyCode"] = vk, ["modifiers"] = modifiers,
+        };
+        if (location is not null) p["location"] = location.Value;
+        return engine.CallCdpMethodAsync("Input.dispatchKeyEvent", JsonSerializer.Serialize(p));
+    }
+
+    /// <summary>
+    /// Commit a composed character through the IME path, firing real composition events
+    /// (compositionstart → compositionupdate → compositionend) plus an
+    /// <c>inputType="insertCompositionText"</c> input event — how a dead-key accent lands.
+    /// </summary>
+    private static async Task ComposeAsync(IBrowserEngine engine, string text)
+    {
+        await engine.CallCdpMethodAsync("Input.imeSetComposition", JsonSerializer.Serialize(new
+        {
+            text,
+            selectionStart = text.Length,
+            selectionEnd = text.Length,
+        }));
+        await engine.CallCdpMethodAsync("Input.insertText", JsonSerializer.Serialize(new { text }));
     }
 
     private static async Task DispatchAsync(IBrowserEngine engine, string type, KeyDef def, int modifiers)
@@ -151,9 +203,11 @@ public static class KeyboardInputService
     /// </summary>
     /// <param name="humanize">Add per-character jitter (~40-120ms) instead of typing flat out.</param>
     /// <param name="delayMs">Fixed per-character delay; ignored when humanize is set.</param>
+    /// <param name="layout">Keyboard layout for physical code/keyCode fidelity (default US QWERTY).</param>
     public static async Task TypeAsync(
-        IBrowserEngine engine, string text, bool humanize = false, int delayMs = 0)
+        IBrowserEngine engine, string text, bool humanize = false, int delayMs = 0, KeyboardLayout? layout = null)
     {
+        layout ??= KeyboardLayout.Us;
         var rng = Random.Shared;
 
         for (int i = 0; i < text.Length; i++)
@@ -179,7 +233,7 @@ public static class KeyboardInputService
             }
             else
             {
-                await PressKeyAsync(engine, MapChar(c), 0);
+                await PressCharAsync(engine, c, layout);
             }
 
             if (humanize)
@@ -195,8 +249,10 @@ public static class KeyboardInputService
     /// </summary>
     /// <returns>false if the key name is not recognised.</returns>
     public static async Task<bool> PressAsync(
-        IBrowserEngine engine, string key, IReadOnlyList<string>? modifiers = null, int count = 1)
+        IBrowserEngine engine, string key, IReadOnlyList<string>? modifiers = null, int count = 1,
+        KeyboardLayout? layout = null)
     {
+        layout ??= KeyboardLayout.Us;
         var mods = 0;
         foreach (var m in modifiers ?? [])
         {
@@ -204,9 +260,26 @@ public static class KeyboardInputService
             mods |= bit;
         }
 
+        // A single character with no explicit modifiers goes through the layout, so a bare
+        // gdd_press("а") on a Russian layout still reports KeyF/70.
+        if (mods == 0 && count >= 1 && key.Length == 1 && !NamedKeys.ContainsKey(key))
+        {
+            for (int i = 0; i < Math.Max(1, count); i++)
+                await PressCharAsync(engine, key[0], layout);
+            return true;
+        }
+
         KeyDef def;
         if (NamedKeys.TryGetValue(key, out var named)) def = named;
-        else if (key.Length == 1) def = MapChar(key[0]);
+        else if (key.Length == 1)
+        {
+            var s = key;
+            // With modifiers (a shortcut) the character rides US positions.
+            var resolved = KeyboardLayout.Us.Resolve(key[0]);
+            def = resolved is null
+                ? new KeyDef(s, null, 0, s, false)
+                : new KeyDef(s, resolved.Code, resolved.Vk, s, resolved.Shift, resolved.Unmodified);
+        }
         else if (key.Length is 2 or 3 && (key[0] is 'F' or 'f') && int.TryParse(key[1..], out var fn) && fn is >= 1 and <= 12)
             def = new KeyDef($"F{fn}", $"F{fn}", 111 + fn, null, false);
         else return false;
