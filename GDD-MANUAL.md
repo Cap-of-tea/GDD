@@ -2,7 +2,7 @@
 
 ## 1. What is GDD
 
-GDD (Giggly-Dazzling-Duckling) — a cross-platform multi-browser testing tool. Manages N isolated Chromium instances and exposes 38 MCP tools. Works as an HTTP API server — controlled via AI agents (Claude Code, etc.), scripts, curl, or any HTTP client.
+GDD (Giggly-Dazzling-Duckling) — a cross-platform multi-browser testing tool. Manages N isolated Chromium instances and exposes 39 MCP tools. Works as an HTTP API server — controlled via AI agents (Claude Code, etc.), scripts, curl, or any HTTP client.
 
 GDD ships as three apps over one shared core: the **Windows GUI** (BrowserXn — WPF + WebView2, with a live thumbnail grid), the **Linux/macOS GUI** (GDD.Desktop — Avalonia, also with a live thumbnail grid), and the **Server** (GDD.Headless — headless or headed, all platforms, for AI/CI use). All three expose an identical set of MCP tools; the two GUIs differ only in the desktop toolkit.
 
@@ -146,7 +146,7 @@ For headless mode, add `"--headless"` to the `args` array.
 
 Open a **new chat** in Claude Code (or Reload Window). The MCP client reads `.mcp.json` only at session start.
 
-38 tools should appear with the `mcp__gdd__` prefix.
+39 tools should appear with the `mcp__gdd__` prefix.
 
 ### Troubleshooting
 
@@ -275,15 +275,31 @@ Two modes:
 - **Selector mode:** `scrollIntoView({ behavior: 'smooth' })` — scroll until element is visible
 - **Direction mode:** `window.scrollBy()` — scroll up/down by N pixels
 
-#### `gdd_type(player_id, selector, text, clear?)`
+#### `gdd_type(player_id, selector, text, clear?, humanize?, delay?, paste?)`
 
-Type text into input/textarea.
+Type text into an input, textarea or contenteditable element using **real, trusted keystrokes** (CDP `Input.dispatchKeyEvent`). Each character fires the full `keydown → keypress → beforeinput → input → keyup` chain with `isTrusted: true`, so input masks, autocomplete and `maxlength` behave exactly as they do for a real user, and `contenteditable` editors (ProseMirror, Slate, Quill, TipTap) receive text. Newlines are typed as Enter.
 
-| Param | Type | Default |
-| ----- | ---- | ------- |
-| `clear` | boolean | true |
+| Param | Type | Default | Notes |
+| ----- | ---- | ------- | ----- |
+| `clear` | boolean | true | Clear the field first (real select-all + Delete). A no-op on an already-empty field. `clear=false` appends. |
+| `humanize` | boolean | false | Natural per-key jitter (~40–120 ms). |
+| `delay` | integer | 0 | Fixed per-key delay in ms (ignored when `humanize` is set). |
+| `paste` | boolean | false | Insert the whole string in one shot via `Input.insertText` (trusted, but no key events). Use for bulk text or emoji. |
 
-Uses native value setter + dispatches `input` and `change` events. Set `clear=false` to append.
+> **Changed in 1.8.0:** typing now presses real keys instead of setting `.value`. `maxlength` is enforced and no manual `change` event is dispatched — the browser fires `change` on blur, as for a real user. See the CHANGELOG for migration notes.
+
+#### `gdd_press(player_id, key, modifiers?, selector?, count?)`
+
+Press a single key on the focused element (or on `selector`, if given) with real, trusted keystrokes. Supports named keys — `Enter`, `Tab`, `Escape`, `Backspace`, `Delete`, `ArrowUp`/`Down`/`Left`/`Right`, `Home`, `End`, `PageUp`, `PageDown`, `Insert`, `Space`, `F1`–`F12` — and single characters, optionally with modifiers.
+
+| Param | Type | Default | Notes |
+| ----- | ---- | ------- | ----- |
+| `key` | string | — | A named key or a single character. |
+| `modifiers` | string[] | — | Any of `Control`, `Alt`, `Shift`, `Meta` held during the press. |
+| `selector` | string | — | Optional CSS selector to focus before pressing. |
+| `count` | integer | 1 | Repeat the press N times. |
+
+Use it to submit forms (`Enter`), trigger shortcuts (`key="a"`, `modifiers=["Control"]` to select all), navigate with Tab, or dismiss dialogs (`Escape`).
 
 #### `gdd_hover(player_id, selector, humanize?)`
 
@@ -778,7 +794,7 @@ Report: "All 3 players have isolated sessions. Each sees their own profile name.
 ```text
 Client (AI agent / curl / script) ──HTTP POST──→ GDD (port 9700/mcp)
                                                       │
-                                            McpToolRegistry (38 tools)
+                                            McpToolRegistry (39 tools)
                                                       │
                                               IPlayerManager
                                             ┌────┬────┬────┐

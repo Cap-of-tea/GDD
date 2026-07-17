@@ -38,7 +38,7 @@ gdd_screenshot(1)                             → captures the result
 gdd_get_console(1, level="error")             → checks for JS errors
 ```
 
-GDD runs N isolated Chromium instances, each with its own profile, cookies, device emulation, geolocation, and network conditions. It exposes **38 MCP tools** via HTTP on `localhost:9700`.
+GDD runs N isolated Chromium instances, each with its own profile, cookies, device emulation, geolocation, and network conditions. It exposes **39 MCP tools** via HTTP on `localhost:9700`.
 
 <p align="center">
   <img src="Design/gdd-video-wall.png" alt="GDD Video Wall — 3 devices testing simultaneously" width="900" />
@@ -286,7 +286,7 @@ GDD uses standard JSON-RPC 2.0 — works with `curl`, Python, Node.js, or any HT
 ## Features
 
 - **Multi-device** — Run N isolated Chromium instances with 22 device presets (phones, tablets, desktops)
-- **AI-native** — 38 MCP tools for Claude Code, Cursor, or any MCP-compatible client
+- **AI-native** — 39 MCP tools for Claude Code, Cursor, or any MCP-compatible client
 - **Cross-platform** — Native GUI with a live video wall on Windows, Linux & macOS, plus a headless server for CI/CD
 - **Full interaction** — Navigate, tap, type, drag, swipe, scroll, hover, handle dialogs, take screenshots
 - **Human-like input** — `humanize=true` drives a continuous cursor path (cubic Bézier with easing and micro-jitter) that carries over between clicks, hovers and drags; taps fire a single device-appropriate input (touch *or* mouse), never both
@@ -300,7 +300,7 @@ GDD uses standard JSON-RPC 2.0 — works with `curl`, Python, Node.js, or any HT
 
 ---
 
-## MCP Tools (38)
+## MCP Tools (39)
 
 ### Player Management
 
@@ -328,7 +328,8 @@ GDD uses standard JSON-RPC 2.0 — works with `curl`, Python, Node.js, or any HT
 | `gdd_swipe` | Swipe gesture (up/down/left/right) |
 | `gdd_drag` | Drag an element to (x, y) or onto another element via real pointer events (drives dnd-kit & HTML5 drag-and-drop) |
 | `gdd_scroll` | Scroll page or element |
-| `gdd_type` | Type text into input fields |
+| `gdd_type` | Type text with real, trusted keystrokes (CDP dispatchKeyEvent — masks, autocomplete and maxlength behave as for a real user; works on contenteditable). `humanize=true` adds per-key jitter; `paste=true` inserts in one shot |
+| `gdd_press` | Press a single key or shortcut (Enter, Tab, Escape, Arrow keys, F1–F12, or a character) with optional modifiers (Control/Alt/Shift/Meta) |
 | `gdd_hover` | Hover over element. `humanize=true` adds a continuous human-like cursor path |
 | `gdd_select` | Select option from `<select>` dropdown |
 | `gdd_dialog` | Handle JS alert/confirm/prompt dialogs |
@@ -441,7 +442,7 @@ Client (AI agent / curl / script)
     Streamable HTTP + SSE
          │
          ▼
-    McpToolRegistry (38 tools)
+    McpToolRegistry (39 tools)
     Player · Navigation · Interaction · Read
     Emulation · Auth · State · Diagnostics
          │
@@ -457,7 +458,7 @@ Client (AI agent / curl / script)
 
 ### Editions
 
-GDD ships as three apps over one shared core. The two GUIs differ only in the desktop toolkit (WebView2 on Windows, Avalonia on Linux/macOS); all three expose the same 38 MCP tools.
+GDD ships as three apps over one shared core. The two GUIs differ only in the desktop toolkit (WebView2 on Windows, Avalonia on Linux/macOS); all three expose the same 39 MCP tools.
 
 | | Windows GUI | Desktop GUI | Server |
 |---|---|---|---|

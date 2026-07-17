@@ -110,8 +110,8 @@ jobs:
           TOOLS=$(echo "$RESPONSE" | python3 -c "import sys,json; print(len(json.loads(sys.stdin.read())['result']['tools']))")
           echo "Tools found: $TOOLS"
           kill $PID 2>/dev/null || true
-          if [ "$TOOLS" -ne 38 ]; then
-            echo "Expected 38 tools, got $TOOLS"
+          if [ "$TOOLS" -ne 39 ]; then
+            echo "Expected 39 tools, got $TOOLS"
             exit 1
           fi
 
@@ -315,4 +315,4 @@ jobs:
           labels: |
             org.opencontainers.image.source=https://github.com/Cap-of-tea/GDD
             org.opencontainers.image.version=${{ steps.ver.outputs.version }}
-            org.opencontainers.image.description=GDD — AI-controlled browser farm (38 MCP tools)
+            org.opencontainers.image.description=GDD — AI-controlled browser farm (39 MCP tools)

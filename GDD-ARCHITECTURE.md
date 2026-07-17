@@ -2,9 +2,9 @@
 
 ## 1. What is GDD
 
-GDD (Giggly-Dazzling-Duckling) — a cross-platform application for multi-browser testing of web applications. Manages N isolated Chromium instances ("players") via Chrome DevTools Protocol and provides 38 MCP tools for automation through Claude Code or any MCP client.
+GDD (Giggly-Dazzling-Duckling) — a cross-platform application for multi-browser testing of web applications. Manages N isolated Chromium instances ("players") via Chrome DevTools Protocol and provides 39 MCP tools for automation through Claude Code or any MCP client.
 
-GDD ships as three apps over one shared core: the **Windows GUI** (BrowserXn — WPF + WebView2), the **Linux/macOS GUI** (GDD.Desktop — Avalonia + Playwright), and the **Server** (GDD.Headless — Playwright on all platforms; headed by default, `--headless` for CI/CD). The shared GDD.Core library contains all services and MCP tools, operating through `IBrowserEngine` and `IPlayerManager` abstractions, so the 38 tools behave identically everywhere.
+GDD ships as three apps over one shared core: the **Windows GUI** (BrowserXn — WPF + WebView2), the **Linux/macOS GUI** (GDD.Desktop — Avalonia + Playwright), and the **Server** (GDD.Headless — Playwright on all platforms; headed by default, `--headless` for CI/CD). The shared GDD.Core library contains all services and MCP tools, operating through `IBrowserEngine` and `IPlayerManager` abstractions, so the 39 tools behave identically everywhere.
 
 **Key idea:** a single AI agent (Claude) sees and controls multiple browsers simultaneously — navigation, clicks, screenshots, device/network/geolocation emulation, console and network request monitoring.
 
@@ -43,7 +43,7 @@ GDD ships as three apps over one shared core: the **Windows GUI** (BrowserXn —
 └─────────────────────┬────────────────────────────────┘
                       │
 ┌─────────────────────▼────────────────────────────────┐
-│              McpToolRegistry (38 tools)               │
+│              McpToolRegistry (39 tools)               │
 │  PlayerTools · NavigationTools · InteractionTools     │
 │  ReadTools · ExecutionTools · EmulationTools          │
 │  AuthTools · StateTools · DiagnosticsTools · HelpTools│
@@ -79,7 +79,7 @@ App.OnStartup()
   → LoadConfig("appsettings.json") → AppConfig
   → ConfigureSerilog()
   → RegisterServices(DI container)
-  → RegisterMcpTools() — 38 tools → McpToolRegistry
+  → RegisterMcpTools() — 39 tools → McpToolRegistry
   → StartMcpServer() — HttpListener on :9700
   → new MainWindow { DataContext = MainViewModel }
 ```
@@ -454,7 +454,7 @@ GitHub Actions builds 8 targets on every push to master (jobs `build-windows-gui
 | `GDD-Server-macOS-ARM` | macos-14 | Server, Apple Silicon (M1/M2/M3/M4) |
 | `GDD-Server-macOS-Intel` | macos-14 | Server, Intel Mac (cross-compiled on ARM, Chromium from CDN) |
 
-Each headless build runs a smoke test: starts GDD.Headless, queries `tools/list` via HTTP, verifies 38 tools are registered. Each desktop build verifies the bundled Playwright Node driver is present for its platform (building on native runners is what guarantees the correct driver — cross-compiling on Windows omitted the macOS one). The osx-x64 targets are cross-compiled on an ARM runner (macos-14) and fetch the x64 Chromium from the CDN.
+Each headless build runs a smoke test: starts GDD.Headless, queries `tools/list` via HTTP, verifies 39 tools are registered. Each desktop build verifies the bundled Playwright Node driver is present for its platform (building on native runners is what guarantees the correct driver — cross-compiling on Windows omitted the macOS one). The osx-x64 targets are cross-compiled on an ARM runner (macos-14) and fetch the x64 Chromium from the CDN.
 
 Tags matching `v*` trigger GitHub Releases with `.zip` (Windows) and `.tar.gz` (Linux/macOS) archives for all targets.
 
@@ -464,7 +464,7 @@ Tags matching `v*` trigger GitHub Releases with `.zip` (Windows) and `.tar.gz` (
 
 **Current state:** GDD.Core contains all platform-independent logic (~75% of the codebase). BrowserXn (Windows GUI), GDD.Desktop (Linux/macOS GUI) and GDD.Headless (cross-platform server) implement the platform-specific abstractions.
 
-**Headless mode** via Playwright .NET works on Windows, Linux, and macOS with an identical set of 38 MCP tools.
+**Headless mode** via Playwright .NET works on Windows, Linux, and macOS with an identical set of 39 MCP tools.
 
 **Windows GUI** provides visual preview with DWM thumbnails and live WebView2 windows.
 

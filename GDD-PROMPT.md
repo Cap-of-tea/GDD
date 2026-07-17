@@ -2,7 +2,7 @@
 
 ## What is GDD
 
-GDD is a cross-platform application that manages multiple isolated Chromium browser instances ("players") and exposes 38 MCP tools for browser automation, device/network/location emulation, and diagnostics. The server and Windows app listen on `http://localhost:9700/mcp`; the Linux/macOS desktop app uses `http://localhost:9800/mcp`.
+GDD is a cross-platform application that manages multiple isolated Chromium browser instances ("players") and exposes 39 MCP tools for browser automation, device/network/location emulation, and diagnostics. The server and Windows app listen on `http://localhost:9700/mcp`; the Linux/macOS desktop app uses `http://localhost:9800/mcp`.
 
 Three apps, one set of tools: the **Windows GUI** (BrowserXn — WebView2), the **Linux/macOS GUI** (GDD.Desktop — Avalonia), and the **Server** (GDD.Headless — visible Chromium windows by default, `--headless` for CI/CD). All expose identical MCP tools.
 
@@ -12,7 +12,7 @@ You have access to GDD tools via the `gdd` MCP server. Use them to test web appl
 
 The `.mcp.json` in this project connects you to GDD. GDD auto-launches when you first call any tool. If tools return connection errors, wait 5-6 seconds and retry — GDD is starting up.
 
-## Available Tools (38)
+## Available Tools (39)
 
 ### Player Management
 
@@ -34,7 +34,8 @@ The `.mcp.json` in this project connects you to GDD. GDD auto-launches when you 
 - `gdd_swipe(player_id, direction, distance?)` — Swipe gesture (up/down/left/right, default 300px).
 - `gdd_drag(player_id, selector, x?, y?, target_selector?, hold_ms?)` — Drag an element and drop it at coordinates or onto another element. Uses a real press→move→release mouse sequence, so it drives pointer-based drag-and-drop libraries (e.g. dnd-kit) that `gdd_swipe`'s touch events can't. Raise `hold_ms` for handles with a press-and-hold delay.
 - `gdd_scroll(player_id, selector?, direction?, amount?)` — Scroll into view or by direction.
-- `gdd_type(player_id, selector, text, clear?)` — Type text into an input field.
+- `gdd_type(player_id, selector, text, clear?, humanize?, delay?, paste?)` — Type text with real, trusted keystrokes (full keydown/input chain per char). Masks, autocomplete and maxlength behave as for a real user; works on contenteditable. `humanize` adds per-key jitter; `paste=true` inserts in one shot (for bulk text/emoji).
+- `gdd_press(player_id, key, modifiers?, selector?, count?)` — Press a single key or shortcut: named keys (Enter, Tab, Escape, Arrow*, F1–F12) or a character, with optional modifiers (Control/Alt/Shift/Meta). For form submit, shortcuts, tab navigation, dismissing dialogs.
 - `gdd_hover(player_id, selector)` — Hover over element (triggers mouseover/mouseenter, for tooltips/dropdowns).
 - `gdd_select(player_id, selector, value?, text?)` — Select option from `<select>` dropdown by value or visible text.
 - `gdd_dialog(player_id, accept?, text?)` — Handle JS alert/confirm/prompt dialogs.
