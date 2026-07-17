@@ -32,6 +32,7 @@ public static class IServiceCollectionExtensions
         services.AddSingleton<NotificationInterceptionService>();
         services.AddSingleton<ConsoleInterceptionService>();
         services.AddSingleton<NetworkMonitoringService>();
+        services.AddSingleton<RequestInterceptionService>();
 
         services.AddSingleton<MainViewModel>(sp => new MainViewModel(
             sp.GetRequiredService<AppConfig>(),
@@ -44,7 +45,8 @@ public static class IServiceCollectionExtensions
             sp.GetRequiredService<TokenInjectionService>(),
             sp.GetRequiredService<NotificationInterceptionService>(),
             sp.GetRequiredService<ConsoleInterceptionService>(),
-            sp.GetRequiredService<NetworkMonitoringService>()));
+            sp.GetRequiredService<NetworkMonitoringService>(),
+            sp.GetRequiredService<RequestInterceptionService>()));
         services.AddSingleton<IPlayerManager>(sp => sp.GetRequiredService<MainViewModel>());
 
         services.AddSingleton<McpToolRegistry>();

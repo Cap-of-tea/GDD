@@ -23,6 +23,10 @@ public sealed class LocationEmulationService
             accuracy = preset.Accuracy
         });
 
+        // A stealth-max context already sets a default timezone override; Chrome rejects a
+        // second setTimezoneOverride with "already in effect". Clear first, then apply.
+        try { await _cdp.CallAsync(engine, "Emulation.setTimezoneOverride", new { timezoneId = "" }); }
+        catch { /* no override active — fine */ }
         await _cdp.CallAsync(engine, "Emulation.setTimezoneOverride", new
         {
             timezoneId = preset.TimezoneId

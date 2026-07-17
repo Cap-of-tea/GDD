@@ -7,9 +7,11 @@ here so it isn't lost.
 
 The high-leverage pieces are done: opt-in stealth (`AppConfig.Stealth` — disables
 AutomationControlled + masks navigator.webdriver/chrome.runtime/permissions/plugins on
-the Playwright engines) and a continuous, per-player mouse trajectory across
-tap/hover/drag. Tier 3 is the long tail and is **out of scope for a testing tool** —
-record only:
+the Playwright engines), a continuous, per-player mouse trajectory across
+tap/hover/drag, and — as of 1.8.0 — real, trusted keyboard input (`gdd_type` /
+`gdd_press` press actual keys via CDP `Input.dispatchKeyEvent`, so the keyboard is no
+longer synthetic while the mouse is genuine). Tier 3 is the long tail and is **out of
+scope for a testing tool** — record only:
 
 - **Scroll with inertia / momentum** instead of fixed-step scrolling.
 - **Randomized think-time** between actions (variable pauses, occasional idle

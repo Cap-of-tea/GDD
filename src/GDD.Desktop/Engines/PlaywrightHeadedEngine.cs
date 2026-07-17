@@ -434,7 +434,20 @@ public sealed class PlaywrightHeadedEngine : IBrowserEngine
                 break;
 
             default:
-                Logger.Debug("CDP event {Event} not mapped for Playwright", eventName);
+                // Anything not hand-mapped above falls through to the real CDP session, so
+                // every CDP domain (Fetch, Target, ...) is reachable — not just the handful
+                // synthesized from Playwright's high-level events. On page re-creation this
+                // is re-wired against the new session; the old handler dies with it.
+                if (_cdpSession is null)
+                {
+                    Logger.Debug("CDP event {Event}: no CDP session yet", eventName);
+                    break;
+                }
+
+                var cdpEvent = _cdpSession.Event(eventName);
+                EventHandler<JsonElement?> handler = (_, json) => sub.Fire(json?.GetRawText() ?? "{}");
+                cdpEvent.OnEvent += handler;
+                sub.OnDispose(() => cdpEvent.OnEvent -= handler);
                 break;
         }
     }

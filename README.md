@@ -38,7 +38,7 @@ gdd_screenshot(1)                             → captures the result
 gdd_get_console(1, level="error")             → checks for JS errors
 ```
 
-GDD runs N isolated Chromium instances, each with its own profile, cookies, device emulation, geolocation, and network conditions. It exposes **37 MCP tools** via HTTP on `localhost:9700`.
+GDD runs N isolated Chromium instances, each with its own profile, cookies, device emulation, geolocation, and network conditions. It exposes **39 MCP tools** via HTTP on `localhost:9700`.
 
 <p align="center">
   <img src="Design/gdd-video-wall.png" alt="GDD Video Wall — 3 devices testing simultaneously" width="900" />
@@ -94,7 +94,7 @@ The Docker image runs in headless mode with all Chromium dependencies pre-instal
 
 </details>
 
-By default, browsers launch in **headed** mode (visible windows). Add `--headless` for CI/CD.
+By default, browsers launch in **headed** mode (visible windows). Add `--headless` for CI/CD. Other flags: `--stealth` and `--stealth-max` for anti-bot masking, `--update` to self-update, `--version` and `--help`. The **Configuration** section below lists every flag and environment variable.
 
 ---
 
@@ -195,7 +195,7 @@ By default, Claude Code asks for confirmation on every MCP tool call. To allow G
 }
 ```
 
-This single wildcard covers all 37 GDD tools. Restart Claude Code after editing.
+This single wildcard covers all 39 GDD tools. Restart Claude Code after editing.
 
 </details>
 
@@ -286,11 +286,14 @@ GDD uses standard JSON-RPC 2.0 — works with `curl`, Python, Node.js, or any HT
 ## Features
 
 - **Multi-device** — Run N isolated Chromium instances with 22 device presets (phones, tablets, desktops)
-- **AI-native** — 37 MCP tools for Claude Code, Cursor, or any MCP-compatible client
+- **AI-native** — 39 MCP tools for Claude Code, Cursor, or any MCP-compatible client
 - **Cross-platform** — Native GUI with a live video wall on Windows, Linux & macOS, plus a headless server for CI/CD
-- **Full interaction** — Navigate, tap, type, drag, swipe, scroll, hover, handle dialogs, take screenshots
+- **Full interaction** — Navigate, tap, type, press keys and shortcuts, drag, swipe, scroll, hover, handle dialogs, take screenshots
+- **Real keyboard** — Typing sends genuine, trusted keystrokes (the full keydown→input chain), so input masks, autocomplete and `maxlength` behave exactly as they do for a real user, and rich-text (`contenteditable`) editors work; `gdd_press` handles single keys and shortcuts like Enter, Tab, Escape and Ctrl+A
 - **Human-like input** — `humanize=true` drives a continuous cursor path (cubic Bézier with easing and micro-jitter) that carries over between clicks, hovers and drags; taps fire a single device-appropriate input (touch *or* mouse), never both
-- **Anti-bot stealth** — opt-in `Stealth` mode masks the usual automation tells (`navigator.webdriver`, etc.) on top of real headed Chromium with trusted input events
+- **Anti-bot stealth** — opt-in `--stealth` masks the usual automation tells (`navigator.webdriver`, etc.); `--stealth-max` adds headless/datacenter evasions (coherent user-agent client hints, a plausible WebGL vendor, realistic device metrics) — on a headless container this halved CreepJS's headless score
+- **Proxy support** — Route every browser through an upstream proxy with `GDD_PROXY` (with optional auth)
+- **Header rewriting** — `gdd_set_headers` can strip `X-Frame-Options`/CSP `frame-ancestors` to load a site in an iframe, or add/replace response headers
 - **Device emulation** — Screen size, DPR, touch, user agent, geolocation, timezone, language
 - **Network control** — Simulate 4G, Fast 3G, Slow 3G, or offline per browser
 - **Diagnostics** — Console errors, network traffic, performance metrics, push notifications
@@ -300,7 +303,7 @@ GDD uses standard JSON-RPC 2.0 — works with `curl`, Python, Node.js, or any HT
 
 ---
 
-## MCP Tools (37)
+## MCP Tools (39)
 
 ### Player Management
 
@@ -328,7 +331,8 @@ GDD uses standard JSON-RPC 2.0 — works with `curl`, Python, Node.js, or any HT
 | `gdd_swipe` | Swipe gesture (up/down/left/right) |
 | `gdd_drag` | Drag an element to (x, y) or onto another element via real pointer events (drives dnd-kit & HTML5 drag-and-drop) |
 | `gdd_scroll` | Scroll page or element |
-| `gdd_type` | Type text into input fields |
+| `gdd_type` | Type text with real, trusted keystrokes (CDP dispatchKeyEvent — masks, autocomplete and maxlength behave as for a real user; works on contenteditable). `humanize=true` adds per-key jitter; `paste=true` inserts in one shot |
+| `gdd_press` | Press a single key or shortcut (Enter, Tab, Escape, Arrow keys, F1–F12, or a character) with optional modifiers (Control/Alt/Shift/Meta) |
 | `gdd_hover` | Hover over element. `humanize=true` adds a continuous human-like cursor path |
 | `gdd_select` | Select option from `<select>` dropdown |
 | `gdd_dialog` | Handle JS alert/confirm/prompt dialogs |
@@ -350,6 +354,7 @@ GDD uses standard JSON-RPC 2.0 — works with `curl`, Python, Node.js, or any HT
 | `gdd_set_location` | Set geolocation, timezone, and locale |
 | `gdd_set_network` | Set network conditions (4G, 3G, offline) |
 | `gdd_set_language` | Set browser language |
+| `gdd_set_headers` | Rewrite response headers — strip X-Frame-Options/CSP to allow framing |
 
 ### State & Diagnostics
 
@@ -440,7 +445,7 @@ Client (AI agent / curl / script)
     Streamable HTTP + SSE
          │
          ▼
-    McpToolRegistry (37 tools)
+    McpToolRegistry (39 tools)
     Player · Navigation · Interaction · Read
     Emulation · Auth · State · Diagnostics
          │
@@ -456,7 +461,7 @@ Client (AI agent / curl / script)
 
 ### Editions
 
-GDD ships as three apps over one shared core. The two GUIs differ only in the desktop toolkit (WebView2 on Windows, Avalonia on Linux/macOS); all three expose the same 37 MCP tools.
+GDD ships as three apps over one shared core. The two GUIs differ only in the desktop toolkit (WebView2 on Windows, Avalonia on Linux/macOS); all three expose the same 39 MCP tools.
 
 | | Windows GUI | Desktop GUI | Server |
 |---|---|---|---|
@@ -540,6 +545,31 @@ BrowserXn.sln
 | `Headed` | Visible browser windows | `true` (override with `--headless`) |
 | `Stealth` | Opt-in anti-bot masking — launches Chromium with AutomationControlled disabled and hides the usual automation tells (`navigator.webdriver`, etc.). Playwright engines (GDD.Desktop, GDD Server) only | `false` |
 
+### Command-line flags
+
+| Flag | Description |
+|------|-------------|
+| `--headed` | Visible browser windows (default) |
+| `--headless` | No UI — for CI/CD |
+| `--stealth` | Enable anti-bot masking (same as `GDD_STEALTH=true`) |
+| `--stealth-max` | Full stealth — client-hints UA metadata, WebGL/device/timezone spoofing; implies `--stealth` (same as `GDD_STEALTH_MAX=true`) |
+| `--update` | Check for a newer version and install it if available |
+| `--version` | Print the version and exit |
+| `--help` | Show usage and exit |
+
+### Environment variables
+
+Handy for Docker and CI, where an `appsettings.json` file is awkward:
+
+| Variable | Description |
+|----------|-------------|
+| `GDD_STEALTH` | `true`/`1` to enable anti-bot masking (same as `--stealth`) |
+| `GDD_STEALTH_MAX` | `true`/`1` for full stealth (same as `--stealth-max`) |
+| `GDD_PROXY` | Upstream proxy for every browser, e.g. `http://host:3128` or `socks5://host:1080` (Server / Playwright engines) |
+| `GDD_PROXY_USER` / `GDD_PROXY_PASS` | Credentials for an authenticated proxy |
+| `GDD_CHROME_CHANNEL` | Launch an installed Chrome build (e.g. `chrome`, `chrome-beta`) instead of bundled Chromium |
+| `GDD_TRACE` | `true`/`1` for verbose trace logging |
+
 </details>
 
 <details>
@@ -568,6 +598,7 @@ Chromium installs automatically on first run.
 - [GDD-MANUAL.md](GDD-MANUAL.md) — Full usage manual with workflow examples
 - [GDD-ARCHITECTURE.md](GDD-ARCHITECTURE.md) — Architecture deep-dive
 - [GDD-PROMPT.md](GDD-PROMPT.md) — Claude agent instructions for MCP integration
+- [DEPLOY-RAILWAY.md](DEPLOY-RAILWAY.md) — Host GDD as a remote MCP server on Railway (behind a token-auth proxy)
 - [CONTRIBUTING.md](CONTRIBUTING.md) — Contribution guidelines
 
 ## Privacy

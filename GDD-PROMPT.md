@@ -2,7 +2,7 @@
 
 ## What is GDD
 
-GDD is a cross-platform application that manages multiple isolated Chromium browser instances ("players") and exposes 37 MCP tools for browser automation, device/network/location emulation, and diagnostics. The server and Windows app listen on `http://localhost:9700/mcp`; the Linux/macOS desktop app uses `http://localhost:9800/mcp`.
+GDD is a cross-platform application that manages multiple isolated Chromium browser instances ("players") and exposes 39 MCP tools for browser automation, device/network/location emulation, and diagnostics. The server and Windows app listen on `http://localhost:9700/mcp`; the Linux/macOS desktop app uses `http://localhost:9800/mcp`.
 
 Three apps, one set of tools: the **Windows GUI** (BrowserXn — WebView2), the **Linux/macOS GUI** (GDD.Desktop — Avalonia), and the **Server** (GDD.Headless — visible Chromium windows by default, `--headless` for CI/CD). All expose identical MCP tools.
 
@@ -12,7 +12,7 @@ You have access to GDD tools via the `gdd` MCP server. Use them to test web appl
 
 The `.mcp.json` in this project connects you to GDD. GDD auto-launches when you first call any tool. If tools return connection errors, wait 5-6 seconds and retry — GDD is starting up.
 
-## Available Tools (37)
+## Available Tools (39)
 
 ### Player Management
 
@@ -34,7 +34,8 @@ The `.mcp.json` in this project connects you to GDD. GDD auto-launches when you 
 - `gdd_swipe(player_id, direction, distance?)` — Swipe gesture (up/down/left/right, default 300px).
 - `gdd_drag(player_id, selector, x?, y?, target_selector?, hold_ms?)` — Drag an element and drop it at coordinates or onto another element. Uses a real press→move→release mouse sequence, so it drives pointer-based drag-and-drop libraries (e.g. dnd-kit) that `gdd_swipe`'s touch events can't. Raise `hold_ms` for handles with a press-and-hold delay.
 - `gdd_scroll(player_id, selector?, direction?, amount?)` — Scroll into view or by direction.
-- `gdd_type(player_id, selector, text, clear?)` — Type text into an input field.
+- `gdd_type(player_id, selector, text, clear?, humanize?, delay?, paste?)` — Type text with real, trusted keystrokes (full keydown/input chain per char). Masks, autocomplete and maxlength behave as for a real user; works on contenteditable. `humanize` adds per-key jitter; `paste=true` inserts in one shot (for bulk text/emoji).
+- `gdd_press(player_id, key, modifiers?, selector?, count?)` — Press a single key or shortcut: named keys (Enter, Tab, Escape, Arrow*, F1–F12) or a character, with optional modifiers (Control/Alt/Shift/Meta). For form submit, shortcuts, tab navigation, dismissing dialogs.
 - `gdd_hover(player_id, selector)` — Hover over element (triggers mouseover/mouseenter, for tooltips/dropdowns).
 - `gdd_select(player_id, selector, value?, text?)` — Select option from `<select>` dropdown by value or visible text.
 - `gdd_dialog(player_id, accept?, text?)` — Handle JS alert/confirm/prompt dialogs.
@@ -59,6 +60,7 @@ The `.mcp.json` in this project connects you to GDD. GDD auto-launches when you 
 - `gdd_set_location(player_id, preset, latitude?, longitude?, timezone?, locale?)` — Set geolocation. Presets: Moscow, Saint Petersburg, New York, London, Tokyo, custom.
 - `gdd_set_network(player_id, preset)` — Set network conditions: Online, 4G, Fast 3G, Slow 3G, Offline.
 - `gdd_set_language(player_id, locale)` — Set browser language (e.g. "ru", "en-US", "ja-JP"). Changes navigator.language and Accept-Language header.
+- `gdd_set_headers(player_id, allow_framing?, strip_response?, set_response?, url_pattern?)` — Rewrite response headers. `allow_framing=true` strips X-Frame-Options and the CSP frame-ancestors directive so a site that refuses embedding loads in an iframe. Applies to later navigations — reload after enabling. Call with no rules to turn off.
 
 ### Diagnostics
 

@@ -28,6 +28,7 @@ public sealed class DesktopPlayerManager : IPlayerManager, IAsyncDisposable
     private readonly NotificationInterceptionService _notificationService;
     private readonly ConsoleInterceptionService _consoleService;
     private readonly NetworkMonitoringService _networkMonitorService;
+    private readonly RequestInterceptionService _interceptionService;
 
     private readonly object _sync = new();
     private readonly List<DesktopPlayerContext> _players = new();
@@ -45,7 +46,8 @@ public sealed class DesktopPlayerManager : IPlayerManager, IAsyncDisposable
         IThumbnailService thumbnailService,
         NotificationInterceptionService notificationService,
         ConsoleInterceptionService consoleService,
-        NetworkMonitoringService networkMonitorService)
+        NetworkMonitoringService networkMonitorService,
+        RequestInterceptionService interceptionService)
     {
         _config = config;
         _dispatcher = dispatcher;
@@ -53,6 +55,7 @@ public sealed class DesktopPlayerManager : IPlayerManager, IAsyncDisposable
         _notificationService = notificationService;
         _consoleService = consoleService;
         _networkMonitorService = networkMonitorService;
+        _interceptionService = interceptionService;
     }
 
     public IReadOnlyList<IPlayerContext> GetPlayers()
@@ -129,6 +132,7 @@ public sealed class DesktopPlayerManager : IPlayerManager, IAsyncDisposable
         _thumbnailService.Stop(playerId);
         _consoleService.Remove(playerId);
         _networkMonitorService.Remove(playerId);
+        _interceptionService.Remove(playerId);
         _ = _dispatcher.InvokeAsync(() => Players.Remove(player));
 
         if (player.Engine is not null)

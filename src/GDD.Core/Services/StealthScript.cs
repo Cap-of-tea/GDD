@@ -12,8 +12,8 @@ public static class StealthScript
     public const string Js = @"
 (function () {
     // navigator.webdriver — belt-and-suspenders (the launch flag also clears it).
-    try { Object.defineProperty(Navigator.prototype, 'webdriver', { get: () => undefined }); } catch (e) {}
-    try { Object.defineProperty(navigator, 'webdriver', { get: () => undefined }); } catch (e) {}
+    try { Object.defineProperty(Navigator.prototype, 'webdriver', { get: () => undefined, configurable: true }); } catch (e) {}
+    try { Object.defineProperty(navigator, 'webdriver', { get: () => undefined, configurable: true }); } catch (e) {}
 
     // chrome.runtime — present in a real Chrome, absent under bare automation.
     try {

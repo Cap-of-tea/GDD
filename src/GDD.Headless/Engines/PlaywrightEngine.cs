@@ -47,6 +47,10 @@ public sealed class PlaywrightEngine : IBrowserEngine
             IsMobile = _initialDevice.IsMobile,
             HasTouch = _initialDevice.HasTouch,
             UserAgent = _initialDevice.UserAgent,
+            // Locale default under stealth-max (timezone is left to gdd_set_location so it can
+            // be matched to the proxy/exit — a context-level TimezoneId would lock the CDP
+            // override and make set_location fail with "already in effect").
+            Locale = _config.StealthMax ? "en-US" : null,
             Permissions = ["notifications"]
         });
 
@@ -96,6 +100,22 @@ public sealed class PlaywrightEngine : IBrowserEngine
 
         if (_config.Stealth)
             await _page.AddInitScriptAsync(StealthScript.Js);
+
+        if (_config.StealthMax)
+        {
+            // Coherent UA-CH metadata via CDP propagates to workers too — this is what fixes
+            // both the HeadlessChrome UA leak and the navigator.platform/Client-Hints mismatch.
+            var meta = UaMetadata.Build(_initialDevice.UserAgent, _initialDevice.IsMobile);
+            if (meta is not null)
+            {
+                await _cdpSession.SendAsync("Emulation.setUserAgentOverride", new Dictionary<string, object>
+                {
+                    ["userAgent"] = _initialDevice.UserAgent,
+                    ["userAgentMetadata"] = meta
+                });
+            }
+            await _page.AddInitScriptAsync(StealthMaxScript.Js);
+        }
 
         _page.Load += async (_, _) =>
         {
@@ -262,7 +282,19 @@ public sealed class PlaywrightEngine : IBrowserEngine
                 break;
 
             default:
-                Logger.Debug("CDP event {Event} not mapped for Playwright", eventName);
+                // Anything not hand-mapped above falls through to the real CDP session, so
+                // every CDP domain (Fetch, Target, ...) is reachable — not just the handful
+                // synthesized from Playwright's high-level events.
+                if (_cdpSession is null)
+                {
+                    Logger.Debug("CDP event {Event}: no CDP session yet", eventName);
+                    break;
+                }
+
+                var cdpEvent = _cdpSession.Event(eventName);
+                EventHandler<JsonElement?> handler = (_, json) => sub.Fire(json?.GetRawText() ?? "{}");
+                cdpEvent.OnEvent += handler;
+                sub.OnDispose(() => cdpEvent.OnEvent -= handler);
                 break;
         }
 

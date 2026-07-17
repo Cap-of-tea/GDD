@@ -110,6 +110,7 @@ public partial class App : Application
         var notificationService = _host.Services.GetRequiredService<NotificationInterceptionService>();
         var consoleService = _host.Services.GetRequiredService<ConsoleInterceptionService>();
         var networkMonitorService = _host.Services.GetRequiredService<NetworkMonitoringService>();
+        var interceptionService = _host.Services.GetRequiredService<RequestInterceptionService>();
         var cdpService = _host.Services.GetRequiredService<CdpService>();
 
         registry.SetPlayerManager(playerManager);
@@ -126,6 +127,7 @@ public partial class App : Application
         EmulationTools.Register(registry, playerManager, deviceService, locationService, networkService, cdpService);
         StateTools.Register(registry, playerManager, notificationService);
         DiagnosticsTools.Register(registry, playerManager, consoleService, networkMonitorService, cdpService);
+        InterceptionTools.Register(registry, playerManager, interceptionService);
         HelpTools.Register(registry);
 
         var updateService = _host.Services.GetRequiredService<UpdateService>();

@@ -16,6 +16,7 @@ public sealed class HeadlessPlayerManager : IPlayerManager, IAsyncDisposable
     private readonly NotificationInterceptionService _notificationService;
     private readonly ConsoleInterceptionService _consoleService;
     private readonly NetworkMonitoringService _networkMonitorService;
+    private readonly RequestInterceptionService _interceptionService;
     private readonly object _sync = new();
     private readonly List<HeadlessPlayerContext> _players = new();
     private readonly SemaphoreSlim _browserLock = new(1, 1);
@@ -27,12 +28,14 @@ public sealed class HeadlessPlayerManager : IPlayerManager, IAsyncDisposable
         AppConfig config,
         NotificationInterceptionService notificationService,
         ConsoleInterceptionService consoleService,
-        NetworkMonitoringService networkMonitorService)
+        NetworkMonitoringService networkMonitorService,
+        RequestInterceptionService interceptionService)
     {
         _config = config;
         _notificationService = notificationService;
         _consoleService = consoleService;
         _networkMonitorService = networkMonitorService;
+        _interceptionService = interceptionService;
     }
 
     public IReadOnlyList<IPlayerContext> GetPlayers()
@@ -106,6 +109,7 @@ public sealed class HeadlessPlayerManager : IPlayerManager, IAsyncDisposable
 
         _consoleService.Remove(playerId);
         _networkMonitorService.Remove(playerId);
+        _interceptionService.Remove(playerId);
 
         if (player.Engine is not null)
             _ = player.Engine.DisposeAsync();
@@ -171,10 +175,41 @@ public sealed class HeadlessPlayerManager : IPlayerManager, IAsyncDisposable
             _playwright = await Playwright.CreateAsync();
             var launchOptions = new BrowserTypeLaunchOptions { Headless = !_config.Headed };
             if (_config.Stealth)
-                launchOptions.Args = new[] { "--disable-blink-features=AutomationControlled" };
+            {
+                var args = new List<string> { "--disable-blink-features=AutomationControlled" };
+                if (_config.StealthMax)
+                {
+                    // Stop WebRTC from revealing the real/host IP outside the proxy path.
+                    args.Add("--force-webrtc-ip-handling-policy=disable_non_proxied_udp");
+                    // Drop the automation switch Playwright adds by default.
+                    launchOptions.IgnoreDefaultArgs = new[] { "--enable-automation" };
+                    // Workers inherit the *launch* UA, not the per-context override — so a clean
+                    // desktop Chrome UA here removes the "HeadlessChrome" leak CreepJS reads from
+                    // the worker context (the per-context UserAgent still governs the main thread).
+                    args.Add("--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36");
+                }
+                launchOptions.Args = args;
+            }
+            // Optional: use a real Chrome build (proprietary codecs/fonts) when available.
+            var channel = Environment.GetEnvironmentVariable("GDD_CHROME_CHANNEL");
+            if (!string.IsNullOrWhiteSpace(channel))
+                launchOptions.Channel = channel;
+            // Optional upstream proxy for all players. GDD_PROXY=scheme://host:port
+            // (+ GDD_PROXY_USER / GDD_PROXY_PASS for authenticated proxies).
+            var proxyServer = Environment.GetEnvironmentVariable("GDD_PROXY");
+            if (!string.IsNullOrWhiteSpace(proxyServer))
+            {
+                launchOptions.Proxy = new Proxy { Server = proxyServer };
+                var pUser = Environment.GetEnvironmentVariable("GDD_PROXY_USER");
+                var pPass = Environment.GetEnvironmentVariable("GDD_PROXY_PASS");
+                if (!string.IsNullOrWhiteSpace(pUser)) launchOptions.Proxy.Username = pUser;
+                if (!string.IsNullOrWhiteSpace(pPass)) launchOptions.Proxy.Password = pPass;
+            }
             _browser = await _playwright.Chromium.LaunchAsync(launchOptions);
-            Logger.Information("Chromium launched ({Mode}{Stealth})",
-                _config.Headed ? "headed" : "headless", _config.Stealth ? ", stealth" : "");
+            Logger.Information("Chromium launched ({Mode}{Stealth}{Channel})",
+                _config.Headed ? "headed" : "headless",
+                _config.StealthMax ? ", stealth-max" : _config.Stealth ? ", stealth" : "",
+                string.IsNullOrWhiteSpace(channel) ? "" : $", channel={channel}");
         }
         finally
         {

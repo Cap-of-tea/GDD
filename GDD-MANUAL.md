@@ -2,7 +2,7 @@
 
 ## 1. What is GDD
 
-GDD (Giggly-Dazzling-Duckling) — a cross-platform multi-browser testing tool. Manages N isolated Chromium instances and exposes 37 MCP tools. Works as an HTTP API server — controlled via AI agents (Claude Code, etc.), scripts, curl, or any HTTP client.
+GDD (Giggly-Dazzling-Duckling) — a cross-platform multi-browser testing tool. Manages N isolated Chromium instances and exposes 39 MCP tools. Works as an HTTP API server — controlled via AI agents (Claude Code, etc.), scripts, curl, or any HTTP client.
 
 GDD ships as three apps over one shared core: the **Windows GUI** (BrowserXn — WPF + WebView2, with a live thumbnail grid), the **Linux/macOS GUI** (GDD.Desktop — Avalonia, also with a live thumbnail grid), and the **Server** (GDD.Headless — headless or headed, all platforms, for AI/CI use). All three expose an identical set of MCP tools; the two GUIs differ only in the desktop toolkit.
 
@@ -73,6 +73,8 @@ docker run -p 9700:9700 ghcr.io/cap-of-tea/gdd:latest
 ```
 
 Runs headless with all Chromium dependencies pre-installed. No setup needed.
+
+**Remote / hosted (Railway):** to run GDD as a remote MCP server behind a bearer-token proxy, see [DEPLOY-RAILWAY.md](DEPLOY-RAILWAY.md) — it ships a `Dockerfile.railway` and a Caddy config that gate the public endpoint.
 
 ### Claude Code Setup
 
@@ -146,7 +148,7 @@ For headless mode, add `"--headless"` to the `args` array.
 
 Open a **new chat** in Claude Code (or Reload Window). The MCP client reads `.mcp.json` only at session start.
 
-37 tools should appear with the `mcp__gdd__` prefix.
+39 tools should appear with the `mcp__gdd__` prefix.
 
 ### Troubleshooting
 
@@ -275,15 +277,31 @@ Two modes:
 - **Selector mode:** `scrollIntoView({ behavior: 'smooth' })` — scroll until element is visible
 - **Direction mode:** `window.scrollBy()` — scroll up/down by N pixels
 
-#### `gdd_type(player_id, selector, text, clear?)`
+#### `gdd_type(player_id, selector, text, clear?, humanize?, delay?, paste?)`
 
-Type text into input/textarea.
+Type text into an input, textarea or contenteditable element using **real, trusted keystrokes** (CDP `Input.dispatchKeyEvent`). Each character fires the full `keydown → keypress → beforeinput → input → keyup` chain with `isTrusted: true`, so input masks, autocomplete and `maxlength` behave exactly as they do for a real user, and `contenteditable` editors (ProseMirror, Slate, Quill, TipTap) receive text. Newlines are typed as Enter.
 
-| Param | Type | Default |
-| ----- | ---- | ------- |
-| `clear` | boolean | true |
+| Param | Type | Default | Notes |
+| ----- | ---- | ------- | ----- |
+| `clear` | boolean | true | Clear the field first (real select-all + Delete). A no-op on an already-empty field. `clear=false` appends. |
+| `humanize` | boolean | false | Natural per-key jitter (~40–120 ms). |
+| `delay` | integer | 0 | Fixed per-key delay in ms (ignored when `humanize` is set). |
+| `paste` | boolean | false | Insert the whole string in one shot via `Input.insertText` (trusted, but no key events). Use for bulk text or emoji. |
 
-Uses native value setter + dispatches `input` and `change` events. Set `clear=false` to append.
+> **Changed in 1.8.0:** typing now presses real keys instead of setting `.value`. `maxlength` is enforced and no manual `change` event is dispatched — the browser fires `change` on blur, as for a real user. See the CHANGELOG for migration notes.
+
+#### `gdd_press(player_id, key, modifiers?, selector?, count?)`
+
+Press a single key on the focused element (or on `selector`, if given) with real, trusted keystrokes. Supports named keys — `Enter`, `Tab`, `Escape`, `Backspace`, `Delete`, `ArrowUp`/`Down`/`Left`/`Right`, `Home`, `End`, `PageUp`, `PageDown`, `Insert`, `Space`, `F1`–`F12` — and single characters, optionally with modifiers.
+
+| Param | Type | Default | Notes |
+| ----- | ---- | ------- | ----- |
+| `key` | string | — | A named key or a single character. |
+| `modifiers` | string[] | — | Any of `Control`, `Alt`, `Shift`, `Meta` held during the press. |
+| `selector` | string | — | Optional CSS selector to focus before pressing. |
+| `count` | integer | 1 | Repeat the press N times. |
+
+Use it to submit forms (`Enter`), trigger shortcuts (`key="a"`, `modifiers=["Control"]` to select all), navigate with Tab, or dismiss dialogs (`Escape`).
 
 #### `gdd_hover(player_id, selector, humanize?)`
 
@@ -400,6 +418,30 @@ Network condition emulation via CDP.
 Set browser language. Changes `navigator.language`, `Accept-Language` header, and locale override.
 
 Examples: `"ru"`, `"en-US"`, `"ja-JP"`, `"de-DE"`
+
+#### `gdd_set_headers(player_id, allow_framing?, strip_response?, set_response?, url_pattern?)`
+
+Rewrite response headers for a player. Intercepts **document** responses only (via CDP Fetch), so media and XHR are untouched.
+
+| Param | Type | Default | Description |
+| ----- | ---- | ------- | ----------- |
+| `allow_framing` | boolean | false | Strip `X-Frame-Options` and the CSP `frame-ancestors` directive so a site that refuses embedding can be loaded in an iframe. The rest of its CSP is preserved |
+| `strip_response` | string[] | — | Response header names to remove (case-insensitive) |
+| `set_response` | object | — | Response headers to add/replace, as `{"name": "value"}` |
+| `url_pattern` | string | `*` | URL glob to intercept |
+
+```text
+gdd_set_headers(1, allow_framing=true)   → strips X-Frame-Options for player 1
+gdd_navigate(1, "https://example.com/wrapper")
+gdd_set_headers(1)                       → no rules = interception off
+```
+
+**Notes:**
+
+- Applies to **subsequent** navigations — call `gdd_navigate` or `gdd_reload` after enabling.
+- `content-encoding` / `content-length` are always dropped on rewritten responses: the body is re-sent decoded, so keeping them would corrupt it.
+- Redirects (3xx) are passed through untouched.
+- If anything fails, the request is let through unmodified rather than left hanging.
 
 ---
 
@@ -612,7 +654,7 @@ Agent:
 4. gdd_type(1, "input[name='email']", "test@example.com")
 5. gdd_type(1, "input[name='password']", "password123")
 6. gdd_screenshot(1)                         → [fields filled]
-7. gdd_tap(1, "button[type='submit']")
+7. gdd_press(1, "Enter")                      → submit from the keyboard (or gdd_tap the submit button)
 8. gdd_wait(1, ".dashboard", timeout=10000)
 9. gdd_screenshot(1)                         → [dashboard loaded]
 10. gdd_read(1, ".user-name")                → "Test User"
@@ -754,7 +796,7 @@ Report: "All 3 players have isolated sessions. Each sees their own profile name.
 ```text
 Client (AI agent / curl / script) ──HTTP POST──→ GDD (port 9700/mcp)
                                                       │
-                                            McpToolRegistry (37 tools)
+                                            McpToolRegistry (39 tools)
                                                       │
                                               IPlayerManager
                                             ┌────┬────┬────┐
@@ -806,6 +848,33 @@ Client (AI agent / curl / script) ──HTTP POST──→ GDD (port 9700/mcp)
 | `Headed` | Launch visible browser windows (Headless binary only) | `true` (use `--headless` CLI flag to disable) |
 | `CheckForUpdates` | Check GitHub for new versions (GUIs check at startup + hourly; request throttled to 24h) | `true` |
 | `Stealth` | Opt-in anti-bot masking — launches Chromium with `AutomationControlled` disabled and injects a script that hides the usual automation tells (`navigator.webdriver`, `chrome.runtime`, `permissions`, `plugins`). Applies to the Playwright engines (GDD Server, GDD.Desktop); GDD already runs real headed Chromium with trusted input events | `false` |
+
+### Command-line flags
+
+Pass these to `GDD.Headless` (Server) or the GUI executables:
+
+| Flag | Description |
+| ---- | ----------- |
+| `--headed` | Launch with visible Chromium windows (default) |
+| `--headless` | Launch without UI — for CI/CD |
+| `--stealth` | Enable anti-bot masking (same as `Stealth: true` or `GDD_STEALTH=true`) |
+| `--stealth-max` | Full stealth on top of `--stealth`: coherent user-agent client-hints metadata, a plausible WebGL vendor/renderer, realistic core/memory counts, non-empty media devices, WebRTC leak blocking, and no `--enable-automation` switch. On a headless container this roughly halved CreepJS's headless score. Implies `--stealth` |
+| `--update` | Check for a newer version, download and apply it, then restart |
+| `--version` | Print the version and exit |
+| `--help` | Show usage and exit |
+
+### Environment variables
+
+Convenient for Docker and CI, where editing `appsettings.json` is awkward. All are optional.
+
+| Variable | Description |
+| -------- | ----------- |
+| `GDD_STEALTH` | `true`/`1` to enable anti-bot masking (same as `--stealth`) |
+| `GDD_STEALTH_MAX` | `true`/`1` for full stealth (same as `--stealth-max`) |
+| `GDD_PROXY` | Route every browser through an upstream proxy, e.g. `http://host:3128` or `socks5://host:1080`. Applies to the Playwright engines (Server, GDD.Desktop) |
+| `GDD_PROXY_USER` / `GDD_PROXY_PASS` | Username / password for an authenticated proxy |
+| `GDD_CHROME_CHANNEL` | Launch an installed Chrome build (e.g. `chrome`, `chrome-beta`) instead of the bundled Chromium |
+| `GDD_TRACE` | `true`/`1` for verbose trace-level logging |
 
 ### Logs
 

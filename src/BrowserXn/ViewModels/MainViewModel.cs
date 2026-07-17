@@ -27,6 +27,7 @@ public partial class MainViewModel : ObservableObject, IPlayerManager
     private readonly NotificationInterceptionService _notificationService;
     private readonly ConsoleInterceptionService _consoleService;
     private readonly NetworkMonitoringService _networkMonitorService;
+    private readonly RequestInterceptionService _interceptionService;
     private int _nextPlayerId = 1;
 
     [ObservableProperty]
@@ -62,7 +63,8 @@ public partial class MainViewModel : ObservableObject, IPlayerManager
         TokenInjectionService tokenService,
         NotificationInterceptionService notificationService,
         ConsoleInterceptionService consoleService,
-        NetworkMonitoringService networkMonitorService)
+        NetworkMonitoringService networkMonitorService,
+        RequestInterceptionService interceptionService)
     {
         _config = config;
         _dispatcher = dispatcher;
@@ -75,6 +77,7 @@ public partial class MainViewModel : ObservableObject, IPlayerManager
         _notificationService = notificationService;
         _consoleService = consoleService;
         _networkMonitorService = networkMonitorService;
+        _interceptionService = interceptionService;
         _defaultUrl = config.FrontendUrl;
     }
 
@@ -188,6 +191,7 @@ public partial class MainViewModel : ObservableObject, IPlayerManager
 
         _consoleService.Remove(player.PlayerId);
         _networkMonitorService.Remove(player.PlayerId);
+        _interceptionService.Remove(player.PlayerId);
 
         if (player.OverlayWindow is OverlayWindow overlay)
             overlay.ForceClose();
@@ -249,6 +253,7 @@ public partial class MainViewModel : ObservableObject, IPlayerManager
         {
             _consoleService.Remove(player.PlayerId);
             _networkMonitorService.Remove(player.PlayerId);
+            _interceptionService.Remove(player.PlayerId);
 
             if (player.OverlayWindow is OverlayWindow overlay)
                 overlay.ForceClose();
