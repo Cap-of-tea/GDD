@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using System.Text.Json;
 using GDD.Abstractions;
 using GDD.Core.Services;
+using GDD.Services;
 
 namespace GDD.Mcp.Tools;
 
@@ -379,16 +380,19 @@ public static class InteractionTools
             new McpToolDefinition
             {
                 Name = "gdd_type",
-                Description = "Type text into an input or textarea element identified by CSS selector. Focuses the element and sets its value, firing input and change events. By default clears the field first; set clear=false to append.",
+                Description = "Type text into an element identified by CSS selector using real keystrokes (CDP dispatchKeyEvent — trusted input, full keydown/keypress/beforeinput/input/keyup chain per character). Works with inputs, textareas and contenteditable; input masks, autocomplete and maxlength behave as for a real user. Focuses the element and by default clears it first (set clear=false to append). Newlines are typed as Enter. Set humanize=true for natural per-key jitter, or paste=true to insert the whole string in one shot (Input.insertText — trusted, no key events; use for bulk text or emoji).",
                 InputSchema = new
                 {
                     type = "object",
                     properties = new
                     {
                         player_id = new { type = "integer", description = "Player ID" },
-                        selector = new { type = "string", description = "CSS selector of input element" },
+                        selector = new { type = "string", description = "CSS selector of the target element (input, textarea or contenteditable)" },
                         text = new { type = "string", description = "Text to type" },
-                        clear = new { type = "boolean", description = "Clear field before typing (default true)", @default = true }
+                        clear = new { type = "boolean", description = "Clear field before typing (default true)", @default = true },
+                        humanize = new { type = "boolean", description = "Add natural per-key jitter (~40-120ms). Default: false" },
+                        delay = new { type = "integer", description = "Fixed per-key delay in ms (ignored when humanize is set). Default: 0" },
+                        paste = new { type = "boolean", description = "Insert the whole string at once via Input.insertText (trusted, but no key events). Use for bulk text or emoji. Default: false" }
                     },
                     required = new[] { "player_id", "selector", "text" }
                 },
@@ -399,39 +403,107 @@ public static class InteractionTools
                 var playerId = args?.GetProperty("player_id").GetInt32() ?? 0;
                 var selector = args?.GetProperty("selector").GetString() ?? "";
                 var text = args?.GetProperty("text").GetString() ?? "";
-                var clear = true;
-                if (args?.TryGetProperty("clear", out var clearEl) == true)
-                    clear = clearEl.GetBoolean();
+                var clear = args?.TryGetProperty("clear", out var clearEl) != true || clearEl.GetBoolean();
+                var humanize = args?.TryGetProperty("humanize", out var hEl) == true && hEl.ValueKind == JsonValueKind.True;
+                var paste = args?.TryGetProperty("paste", out var pEl) == true && pEl.ValueKind == JsonValueKind.True;
+                var delay = args?.TryGetProperty("delay", out var dEl) == true && dEl.ValueKind == JsonValueKind.Number
+                    ? dEl.GetInt32() : 0;
 
                 var player = await playerManager.GetReadyPlayerAsync(playerId);
                 if (player?.Engine is null)
                     return McpResult.Error($"Player {playerId} not found or not initialized");
 
+                // Focus the element and put the caret at the end (so clear=false appends).
+                // Reports whether the field already holds text, so we can skip a no-op clear
+                // (select-all + Delete on an empty field would fire a spurious delete input event).
+                // Returns 'not_found' if the selector matches nothing.
                 var escapedSelector = selector.Replace("'", "\\'");
-                var escapedText = JsonSerializer.Serialize(text);
-
-                var script = $@"
+                var focusScript = $@"
                     (function() {{
                         var el = document.querySelector('{escapedSelector}');
                         if (!el) return 'not_found';
                         el.focus();
-                        var proto = el instanceof HTMLTextAreaElement ? window.HTMLTextAreaElement.prototype
-                                  : el instanceof HTMLInputElement ? window.HTMLInputElement.prototype
-                                  : null;
-                        var setter = proto ? Object.getOwnPropertyDescriptor(proto, 'value').set : null;
-                        var newValue = {(clear ? "" : "el.value + ")}{escapedText};
-                        if (setter) setter.call(el, newValue);
-                        else el.value = newValue;
-                        el.dispatchEvent(new Event('input', {{ bubbles: true }}));
-                        el.dispatchEvent(new Event('change', {{ bubbles: true }}));
-                        return 'ok';
+                        var content = el.isContentEditable ? el.textContent : (typeof el.value === 'string' ? el.value : '');
+                        try {{
+                            if (el.isContentEditable) {{
+                                var r = document.createRange(); r.selectNodeContents(el); r.collapse(false);
+                                var s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
+                            }} else if (typeof el.value === 'string') {{
+                                var n = el.value.length; el.setSelectionRange(n, n);
+                            }}
+                        }} catch (e) {{}}
+                        return (content && content.length) ? 'filled' : 'empty';
                     }})()";
 
-                var result = await player.Engine.ExecuteJavaScriptAsync(script);
-                if (result.Contains("not_found"))
+                var focus = await player.Engine.ExecuteJavaScriptAsync(focusScript);
+                if (focus.Contains("not_found"))
                     return await McpResult.ElementNotFound(player, selector);
 
+                if (clear && focus.Contains("filled"))
+                    await KeyboardInputService.ClearAsync(player.Engine);
+
+                if (paste)
+                    await KeyboardInputService.InsertTextAsync(player.Engine, text);
+                else
+                    await KeyboardInputService.TypeAsync(player.Engine, text, humanize, delay);
+
                 return McpResult.Text($"Typed into '{selector}' on player {playerId}");
+            });
+
+        registry.Register(
+            new McpToolDefinition
+            {
+                Name = "gdd_press",
+                Description = "Press a single key on the currently focused element (or on the element matched by selector, if given) using real, trusted keystrokes. Supports named keys (Enter, Tab, Escape, Backspace, Delete, ArrowUp/Down/Left/Right, Home, End, PageUp, PageDown, Insert, Space, F1-F12) and single characters, optionally with modifiers (Control, Alt, Shift, Meta). Use for submitting forms (Enter), keyboard shortcuts (e.g. key='a' modifiers=['Control'] to select all), tab navigation, or dismissing dialogs (Escape).",
+                InputSchema = new
+                {
+                    type = "object",
+                    properties = new
+                    {
+                        player_id = new { type = "integer", description = "Player ID" },
+                        key = new { type = "string", description = "Key to press: a named key (Enter, Tab, Escape, Backspace, Delete, ArrowUp, F5, ...) or a single character" },
+                        modifiers = new { type = "array", items = new { type = "string" }, description = "Modifier keys held during the press: any of Control, Alt, Shift, Meta" },
+                        selector = new { type = "string", description = "Optional CSS selector to focus before pressing" },
+                        count = new { type = "integer", description = "Number of times to press the key (default 1)", @default = 1 }
+                    },
+                    required = new[] { "player_id", "key" }
+                },
+                Annotations = new { readOnlyHint = false, destructiveHint = false, idempotentHint = false, openWorldHint = false }
+            },
+            async args =>
+            {
+                var playerId = args?.GetProperty("player_id").GetInt32() ?? 0;
+                var key = args?.GetProperty("key").GetString() ?? "";
+                if (string.IsNullOrEmpty(key))
+                    return McpResult.Error("key is required");
+
+                var modifiers = new List<string>();
+                if (args?.TryGetProperty("modifiers", out var modEl) == true && modEl.ValueKind == JsonValueKind.Array)
+                    foreach (var m in modEl.EnumerateArray())
+                        if (m.GetString() is { Length: > 0 } name) modifiers.Add(name);
+
+                var count = args?.TryGetProperty("count", out var cEl) == true && cEl.ValueKind == JsonValueKind.Number
+                    ? Math.Max(1, cEl.GetInt32()) : 1;
+
+                var player = await playerManager.GetReadyPlayerAsync(playerId);
+                if (player?.Engine is null)
+                    return McpResult.Error($"Player {playerId} not found or not initialized");
+
+                if (args?.TryGetProperty("selector", out var selEl) == true && selEl.GetString() is { Length: > 0 } selector)
+                {
+                    var escaped = selector.Replace("'", "\\'");
+                    var focus = await player.Engine.ExecuteJavaScriptAsync(
+                        $"(function() {{ var el = document.querySelector('{escaped}'); if (!el) return 'not_found'; el.focus(); return 'ok'; }})()");
+                    if (focus.Contains("not_found"))
+                        return await McpResult.ElementNotFound(player, selector);
+                }
+
+                var ok = await KeyboardInputService.PressAsync(player.Engine, key, modifiers, count);
+                if (!ok)
+                    return McpResult.Error($"Unknown key '{key}' or unknown modifier. Use a named key (Enter, Tab, Escape, Arrow*, F1-F12, ...) or a single character, and modifiers from Control/Alt/Shift/Meta.");
+
+                var withMods = modifiers.Count > 0 ? $"{string.Join("+", modifiers)}+{key}" : key;
+                return McpResult.Text($"Pressed {withMods}{(count > 1 ? $" x{count}" : "")} on player {playerId}");
             });
 
         registry.Register(
