@@ -290,6 +290,7 @@ GDD uses standard JSON-RPC 2.0 — works with `curl`, Python, Node.js, or any HT
 - **Cross-platform** — Native GUI with a live video wall on Windows, Linux & macOS, plus a headless server for CI/CD
 - **Full interaction** — Navigate, tap, type, press keys and shortcuts, drag, swipe, scroll, hover, handle dialogs, take screenshots
 - **Real keyboard** — Typing sends genuine, trusted keystrokes (the full keydown→input chain), so input masks, autocomplete and `maxlength` behave exactly as they do for a real user, and rich-text (`contenteditable`) editors work; `gdd_press` handles single keys and shortcuts like Enter, Tab, Escape and Ctrl+A
+- **Physical keyboard layouts** — Keystrokes carry the real `code`/`keyCode` of the emulated locale's keyboard: Russian ЙЦУКЕН puts «а» on the physical `KeyF`, French AZERTY and German QWERTZ remap their keys, dead-key accents and AltGr symbols work. The layout follows `gdd_set_language` automatically (US, RU, DE, FR)
 - **Human-like input** — `humanize=true` drives a continuous cursor path (cubic Bézier with easing and micro-jitter) that carries over between clicks, hovers and drags; taps fire a single device-appropriate input (touch *or* mouse), never both
 - **Anti-bot stealth** — opt-in `--stealth` masks the usual automation tells (`navigator.webdriver`, etc.); `--stealth-max` adds headless/datacenter evasions (coherent user-agent client hints, a plausible WebGL vendor, realistic device metrics) — on a headless container this halved CreepJS's headless score
 - **Proxy support** — Route every browser through an upstream proxy with `GDD_PROXY` (with optional auth)
@@ -331,8 +332,8 @@ GDD uses standard JSON-RPC 2.0 — works with `curl`, Python, Node.js, or any HT
 | `gdd_swipe` | Swipe gesture (up/down/left/right) |
 | `gdd_drag` | Drag an element to (x, y) or onto another element via real pointer events (drives dnd-kit & HTML5 drag-and-drop) |
 | `gdd_scroll` | Scroll page or element |
-| `gdd_type` | Type text with real, trusted keystrokes (CDP dispatchKeyEvent — masks, autocomplete and maxlength behave as for a real user; works on contenteditable). `humanize=true` adds per-key jitter; `paste=true` inserts in one shot |
-| `gdd_press` | Press a single key or shortcut (Enter, Tab, Escape, Arrow keys, F1–F12, or a character) with optional modifiers (Control/Alt/Shift/Meta) |
+| `gdd_type` | Type text with real, trusted keystrokes (CDP dispatchKeyEvent — masks, autocomplete and maxlength behave as for a real user; works on contenteditable). Physical key codes follow the emulated layout (US/RU/DE/FR); `humanize=true` adds per-key jitter; `paste=true` inserts in one shot |
+| `gdd_press` | Press a single key or shortcut (Enter, Tab, Escape, Arrow keys, F1–F12, or a character) with optional modifiers (Control/Alt/Shift/Meta); character keys follow the emulated layout |
 | `gdd_hover` | Hover over element. `humanize=true` adds a continuous human-like cursor path |
 | `gdd_select` | Select option from `<select>` dropdown |
 | `gdd_dialog` | Handle JS alert/confirm/prompt dialogs |

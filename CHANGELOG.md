@@ -2,6 +2,13 @@
 
 All notable changes to GDD are documented here.
 
+## [1.9.0] - 2026-07-17
+
+### Added
+
+- **Physical keyboard layouts — `gdd_type` / `gdd_press` match a real keyboard for the emulated locale.** Typing now reports the `code`/`keyCode` a genuine keyboard of the player's language produces, instead of hardwiring US QWERTY. A Russian ЙЦУКЕН keyboard puts «а» on the physical `KeyF` (keyCode 70), French AZERTY puts «a» on `KeyQ`, German QWERTZ swaps Y/Z — GDD now reproduces all of it, so the keystroke fingerprint stays coherent with `navigator.language`. Supported: **US**, **RU** (ЙЦУКЕН), **DE** (QWERTZ), **FR** (AZERTY), including Shift, AltGr symbols (`@ € { } # …`), dead-key accents (`ê`, `é`), and AZERTY's digits-need-Shift. The layout is chosen automatically from `gdd_set_language`, or set explicitly with a `layout` argument (`'us'|'ru'|'de'|'fr'`) on `gdd_type`/`gdd_press`. Characters a layout can't produce fall back to the previous layout-agnostic keystroke, and emoji still go through `Input.insertText`
+- **`--stealth-max` closes the last keyboard tell.** CDP can't set `getModifierState('AltGraph')`, so AltGr characters (`@`, `€`, `é` on DE/FR) would report it as false. Under `--stealth-max` GDD now tracks the AltGraph key it emits and answers `getModifierState('AltGraph')` correctly. The stealth patches also gained a `toString`-spoofing layer, so the shim — and the existing `navigator.webdriver`/`platform`/hardware/WebGL patches, which were `toString`-detectable before — now report as native code
+
 ## [1.8.0] - 2026-07-17
 
 ### Added

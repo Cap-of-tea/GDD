@@ -277,7 +277,7 @@ Two modes:
 - **Selector mode:** `scrollIntoView({ behavior: 'smooth' })` — scroll until element is visible
 - **Direction mode:** `window.scrollBy()` — scroll up/down by N pixels
 
-#### `gdd_type(player_id, selector, text, clear?, humanize?, delay?, paste?)`
+#### `gdd_type(player_id, selector, text, clear?, humanize?, delay?, paste?, layout?)`
 
 Type text into an input, textarea or contenteditable element using **real, trusted keystrokes** (CDP `Input.dispatchKeyEvent`). Each character fires the full `keydown → keypress → beforeinput → input → keyup` chain with `isTrusted: true`, so input masks, autocomplete and `maxlength` behave exactly as they do for a real user, and `contenteditable` editors (ProseMirror, Slate, Quill, TipTap) receive text. Newlines are typed as Enter.
 
@@ -287,10 +287,11 @@ Type text into an input, textarea or contenteditable element using **real, trust
 | `humanize` | boolean | false | Natural per-key jitter (~40–120 ms). |
 | `delay` | integer | 0 | Fixed per-key delay in ms (ignored when `humanize` is set). |
 | `paste` | boolean | false | Insert the whole string in one shot via `Input.insertText` (trusted, but no key events). Use for bulk text or emoji. |
+| `layout` | string | *from locale* | Keyboard layout for physical `code`/`keyCode` fidelity: `us`, `ru`, `de`, `fr`. Defaults to the layout matching the player's language (see [Keyboard layouts](#38-keyboard-layouts)). |
 
 > **Changed in 1.8.0:** typing now presses real keys instead of setting `.value`. `maxlength` is enforced and no manual `change` event is dispatched — the browser fires `change` on blur, as for a real user. See the CHANGELOG for migration notes.
 
-#### `gdd_press(player_id, key, modifiers?, selector?, count?)`
+#### `gdd_press(player_id, key, modifiers?, selector?, count?, layout?)`
 
 Press a single key on the focused element (or on `selector`, if given) with real, trusted keystrokes. Supports named keys — `Enter`, `Tab`, `Escape`, `Backspace`, `Delete`, `ArrowUp`/`Down`/`Left`/`Right`, `Home`, `End`, `PageUp`, `PageDown`, `Insert`, `Space`, `F1`–`F12` — and single characters, optionally with modifiers.
 
@@ -300,8 +301,18 @@ Press a single key on the focused element (or on `selector`, if given) with real
 | `modifiers` | string[] | — | Any of `Control`, `Alt`, `Shift`, `Meta` held during the press. |
 | `selector` | string | — | Optional CSS selector to focus before pressing. |
 | `count` | integer | 1 | Repeat the press N times. |
+| `layout` | string | *from locale* | Layout for a single-character key (`us`/`ru`/`de`/`fr`); ignored for named keys and shortcuts. |
 
 Use it to submit forms (`Enter`), trigger shortcuts (`key="a"`, `modifiers=["Control"]` to select all), navigate with Tab, or dismiss dialogs (`Escape`).
+
+#### 3.8 Keyboard layouts
+
+Real keyboards report each character's **physical key** (`event.code`/`keyCode`), which depends on the typist's layout — a Russian ЙЦУКЕН keyboard puts «а» on the physical `KeyF` (keyCode 70), French AZERTY puts «a» on `KeyQ`, German QWERTZ swaps Y and Z. `gdd_type` and `gdd_press` reproduce this so the keystroke fingerprint stays coherent with the emulated `navigator.language`.
+
+- **Supported:** `us` (QWERTY, default), `ru` (ЙЦУКЕН), `de` (QWERTZ), `fr` (AZERTY) — including Shift, AltGr symbols (`@ € { } # …`), dead-key accents (`ê`, `é`), and AZERTY's Shift-for-digits.
+- **Selection:** the layout follows `gdd_set_language` automatically (`ru*` → ЙЦУКЕН, `de*` → QWERTZ, `fr*` → AZERTY, else US). Pass `layout` to override per call.
+- **Fallback:** characters a layout can't produce (e.g. CJK, which is IME-composed) use a layout-agnostic keystroke; emoji go through `Input.insertText`.
+- **AltGr note:** CDP can't set `getModifierState('AltGraph')`, so AltGr symbols report it as `false` — except under `--stealth-max`, which reproduces the flag. The character itself always types correctly.
 
 #### `gdd_hover(player_id, selector, humanize?)`
 

@@ -151,6 +151,7 @@ BrowserXn.sln
 │   │   └── Services/
 │   │       ├── CdpService.cs                  CDP method caller wrapper
 │   │       ├── KeyboardInputService.cs        Real keystrokes via CDP Input.dispatchKeyEvent
+│   │       ├── KeyboardLayout.cs               Physical layouts (US/RU/DE/FR): char -> code/keyCode
 │   │       ├── MouseMovementService.cs        Human-like cursor paths (cubic Bézier)
 │   │       ├── DeviceEmulationService.cs      Device metrics + UA via CDP
 │   │       ├── LocationEmulationService.cs    Geolocation + timezone + locale via CDP
@@ -342,7 +343,7 @@ All operate via CDP (Chrome DevTools Protocol):
 
 | Component | Files | Notes |
 | --------- | ----- | ----- |
-| Services (CDP, input, auth, emulation, stealth) | 20 | Pure C#, operate via CDP JSON commands |
+| Services (CDP, input, auth, emulation, stealth) | 21 | Pure C#, operate via CDP JSON commands |
 | Models (presets, DTOs) | 11 | POCOs |
 | MCP Server + Protocol | 4 | HTTP/JSON-RPC, no OS dependencies |
 | MCP Tools | 12 | Business logic → IPlayerManager calls |
