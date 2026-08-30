@@ -3,9 +3,12 @@
 # If either process exits, stop the container so Railway restarts it cleanly.
 set -e
 
-export GDD__BindAddress=0.0.0.0
+# All interfaces by default: Caddy and GDD share this container, and the image is
+# also used where nothing else can reach 9700. A deployment that puts GDD on
+# loopback (compose on VSServer) presets the variable and it is kept.
+export GDD__BindAddress="${GDD__BindAddress:-0.0.0.0}"
 
-echo "[entrypoint] starting GDD.Headless on 127.0.0.1:9700 ..."
+echo "[entrypoint] starting GDD.Headless on ${GDD__BindAddress}:9700 ..."
 dotnet /app/GDD.Headless.dll --headless &
 GDD_PID=$!
 

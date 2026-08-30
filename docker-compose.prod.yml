@@ -1,0 +1,65 @@
+# GDD — production stack for the VSServer host (MINISFORUM MS-02).
+#
+# Self-contained on purpose: not an overlay over another compose file, so an edit
+# meant for development cannot silently change what runs in production.
+#
+# One container, two processes: GDD.Headless on 127.0.0.1:9700 and a Caddy proxy on
+# :8080 that demands `Authorization: Bearer $GDD_TOKEN`. GDD has no authentication of
+# its own and answers `Access-Control-Allow-Origin: *`, so that gate is the only thing
+# between a public hostname and full control of the browser farm. Keeping GDD on
+# loopback *inside* the container means a neighbour on net_gdd cannot walk around it
+# either.
+#
+# No `ports:`      — cloudflared joins net_gdd and reaches this container by name.
+# No `env_file:`   — Portainer creates no .env in the stack directory; values are set
+#                    in Portainer and substituted below.
+# No docker socket — `restart: unless-stopped` plus host monitoring replaces autoheal.
+
+services:
+  gdd:
+    build:
+      context: .
+      dockerfile: Dockerfile.railway
+    container_name: gdd_mcp
+    restart: unless-stopped
+
+    environment:
+      # Bearer token clients must send. Marked required: the stack must refuse to
+      # come up rather than start an open browser farm on a public hostname.
+      GDD_TOKEN: ${GDD_TOKEN:?not set in Portainer}
+      # Port Caddy binds inside the container; the tunnel routes the hostname here.
+      PORT: "8080"
+      # GDD itself never leaves loopback — only Caddy is reachable from the network.
+      GDD__BindAddress: "127.0.0.1"
+
+    networks:
+      - net_gdd
+
+    # Normal class: neither a database nor a user-facing API, but not a batch job.
+    cpu_shares: 1024
+    mem_reservation: 512m
+    mem_limit: 4g
+
+    # Chromium puts its shared buffers in /dev/shm. Docker's 64 MB default makes tabs
+    # die under load; each player is a browser, so give it room.
+    shm_size: 1gb
+
+    # Two processes, two things worth checking: the gate answers, and GDD behind it is
+    # listening. GDD serves no health route — any HTTP status proves the listener is
+    # alive, a refused connection proves it is not.
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8080/healthz >/dev/null && curl -s -o /dev/null http://127.0.0.1:9700/"]
+      interval: 30s
+      timeout: 10s
+      start_period: 90s
+      retries: 3
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  net_gdd:
+    external: true
