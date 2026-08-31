@@ -20,6 +20,12 @@
 		# flush_interval -1 disables buffering so SSE / streaming responses pass through
 		reverse_proxy 127.0.0.1:9700 {
 			flush_interval -1
+
+			# GDD's HttpListener is bound to the loopback prefix and matches on the
+			# Host header. Left untouched, the public host (e.g. gdd.icoon.kz) reaches
+			# GDD and is rejected 404. Present the upstream's own host so it matches.
+			# Harmless on Railway, where GDD binds "+" and accepts any Host anyway.
+			header_up Host 127.0.0.1:9700
 		}
 	}
 }
