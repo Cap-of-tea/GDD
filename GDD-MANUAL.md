@@ -74,7 +74,7 @@ docker run -p 9700:9700 ghcr.io/cap-of-tea/gdd:latest
 
 Runs headless with all Chromium dependencies pre-installed. No setup needed.
 
-**Remote / hosted (Railway):** to run GDD as a remote MCP server behind a bearer-token proxy, see [DEPLOY-RAILWAY.md](DEPLOY-RAILWAY.md) — it ships a `Dockerfile.railway` and a Caddy config that gate the public endpoint.
+**Remote / self-hosted:** to run GDD as a remote MCP server behind a bearer-token proxy, use [docker-compose.prod.yml](docker-compose.prod.yml) — it builds GDD.Headless with a Caddy config that gates the public endpoint with `Authorization: Bearer $GDD_TOKEN`. Put it behind any reverse proxy or tunnel.
 
 ### Claude Code Setup
 

@@ -2,11 +2,21 @@
 
 All notable changes to GDD are documented here.
 
-## [Unreleased]
+## [1.10.0] - 2026-10-14
+
+### Added
+
+- **Self-hosted remote deployment.** `docker-compose.prod.yml` runs GDD.Headless behind a Caddy reverse proxy that gates the public endpoint with `Authorization: Bearer $GDD_TOKEN` — GDD has no authentication of its own, so the proxy is the only thing between a public hostname and the browser farm. Self-contained compose: no published ports, no `env_file`, no docker socket. Put it behind any reverse proxy or tunnel
+- **`GDD_PLAYER_IDLE_TIMEOUT_MINUTES`** (headless server) — auto-remove a player untouched for this many minutes and reclaim its browser. Default `30`; `0` disables
 
 ### Fixed
 
-- **Headless server no longer leaks memory from abandoned players.** A streamable-HTTP client (`POST /mcp`) has no persistent connection and no disconnect event — it mints a session, may add players, then simply stops calling. Those players (and their ~1 GB Chromium renderer processes each) were never cleaned up, so on a long-running server they piled up until it ran out of memory. GDD now tracks per-player activity and an idle reaper removes any player untouched for `GDD_PLAYER_IDLE_TIMEOUT_MINUTES` (default 30; `0` disables). Also catches SSE clients that die without a clean close. Headless only — GDD.Desktop players are user windows and are left alone
+- **Headless server no longer leaks memory from abandoned players.** A streamable-HTTP client (`POST /mcp`) has no persistent connection and no disconnect event — it mints a session, may add players, then simply stops calling. Those players (and their ~1 GB Chromium renderer processes each) were never cleaned up, so on a long-running server they piled up until it ran out of memory. GDD now tracks per-player activity and an idle reaper removes any player untouched for `GDD_PLAYER_IDLE_TIMEOUT_MINUTES`. Also catches SSE clients that die without a clean close. Headless only — GDD.Desktop players are user windows and are left alone
+- **Authorized `POST /mcp` returned 404 behind a reverse proxy.** GDD.Headless binds its listener to the loopback prefix and matches on the `Host` header; a proxy forwarding the public host made it reject authorized requests while `/healthz` and the token gate looked fine. The bundled Caddy config now presents the loopback host to GDD
+
+### Removed
+
+- **Railway deployment retired.** GDD is no longer hosted on Railway; the Railway-specific deploy guide is gone. Self-host with `docker-compose.prod.yml` behind any reverse proxy or tunnel
 
 ## [1.9.0] - 2026-07-17
 
@@ -26,7 +36,7 @@ All notable changes to GDD are documented here.
 - **`--stealth` flag and `GDD_STEALTH` env** — stealth was config-file-only before, which containers can't set
 - **`GDD_PROXY`** (+ `GDD_PROXY_USER` / `GDD_PROXY_PASS`) — route every player through an upstream proxy
 - **`GDD_CHROME_CHANNEL`** — launch a real Chrome build instead of bundled Chromium when one is installed
-- **Railway deployment recipe** — `Dockerfile.railway` runs GDD.Headless behind a Caddy bearer-token proxy so it can be hosted as a remote MCP server; see [DEPLOY-RAILWAY.md](DEPLOY-RAILWAY.md)
+- **Railway deployment recipe** — `Dockerfile.railway` runs GDD.Headless behind a Caddy bearer-token proxy so it can be hosted as a remote MCP server (Railway support retired in 1.10.0; the same image now self-hosts via `docker-compose.prod.yml`)
 
 ### Breaking
 
