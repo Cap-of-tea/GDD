@@ -22,6 +22,14 @@ public sealed class HeadlessPlayerContext : IPlayerContext
     public string LastError { get; set; } = "";
     public string Language { get; set; } = "";
     public string? OwnerSessionId { get; set; }
+
+    /// <summary>
+    /// Last time a tool acted on this player (set on creation and whenever the player is
+    /// resolved for a tool). The idle reaper removes players untouched for too long, which is
+    /// the only cleanup streamable-HTTP sessions get — they have no disconnect event.
+    /// </summary>
+    public DateTime LastActivityUtc { get; set; } = DateTime.UtcNow;
+
     public IBrowserEngine? Engine { get; set; }
     public Task EngineReady => _engineTcs.Task;
 

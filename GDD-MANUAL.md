@@ -885,6 +885,7 @@ Convenient for Docker and CI, where editing `appsettings.json` is awkward. All a
 | `GDD_PROXY` | Route every browser through an upstream proxy, e.g. `http://host:3128` or `socks5://host:1080`. Applies to the Playwright engines (Server, GDD.Desktop) |
 | `GDD_PROXY_USER` / `GDD_PROXY_PASS` | Username / password for an authenticated proxy |
 | `GDD_CHROME_CHANNEL` | Launch an installed Chrome build (e.g. `chrome`, `chrome-beta`) instead of the bundled Chromium |
+| `GDD_PLAYER_IDLE_TIMEOUT_MINUTES` | Headless server only. Auto-remove a player untouched for this many minutes and reclaim its browser. Default `30`; `0` disables it. Guards against memory growth when a remote client disconnects without calling `gdd_remove_player` — streamable-HTTP sessions have no disconnect event, so this is their only cleanup |
 | `GDD_TRACE` | `true`/`1` for verbose trace-level logging |
 
 ### Logs

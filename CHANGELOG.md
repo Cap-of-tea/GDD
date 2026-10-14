@@ -2,6 +2,12 @@
 
 All notable changes to GDD are documented here.
 
+## [Unreleased]
+
+### Fixed
+
+- **Headless server no longer leaks memory from abandoned players.** A streamable-HTTP client (`POST /mcp`) has no persistent connection and no disconnect event — it mints a session, may add players, then simply stops calling. Those players (and their ~1 GB Chromium renderer processes each) were never cleaned up, so on a long-running server they piled up until it ran out of memory. GDD now tracks per-player activity and an idle reaper removes any player untouched for `GDD_PLAYER_IDLE_TIMEOUT_MINUTES` (default 30; `0` disables). Also catches SSE clients that die without a clean close. Headless only — GDD.Desktop players are user windows and are left alone
+
 ## [1.9.0] - 2026-07-17
 
 ### Added
