@@ -2,6 +2,12 @@
 
 All notable changes to GDD are documented here.
 
+## [Unreleased]
+
+### Fixed
+
+- **`gdd_set_device` on a live player now switches cleanly and survives a reload.** It applied only CDP overlays, but Playwright fixes per-context emulation (viewport, scale factor, mobile/touch, UA, `screen`) at context creation — so the screenshot kept the old size and a reload reverted the metrics while the UA override stuck, leaving a player that was a mix of two devices. The headless server now rebuilds the browser context on a device switch (verified: after switching iPhone 15 Pro → Galaxy S24 and reloading, `innerWidth`/`screen.width` and the screenshot are all 360). Because the context is new, the switch starts a fresh session — cookies, storage, and any location/network overrides are cleared. Desktop is unchanged
+
 ## [1.10.0] - 2026-10-14
 
 ### Added
