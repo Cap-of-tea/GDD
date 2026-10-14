@@ -569,6 +569,7 @@ Handy for Docker and CI, where an `appsettings.json` file is awkward:
 | `GDD_PROXY` | Upstream proxy for every browser, e.g. `http://host:3128` or `socks5://host:1080` (Server / Playwright engines) |
 | `GDD_PROXY_USER` / `GDD_PROXY_PASS` | Credentials for an authenticated proxy |
 | `GDD_CHROME_CHANNEL` | Launch an installed Chrome build (e.g. `chrome`, `chrome-beta`) instead of bundled Chromium |
+| `GDD_PLAYER_IDLE_TIMEOUT_MINUTES` | Headless server only. Auto-remove a player untouched for this many minutes, reclaiming its browser. Default `30`; set `0` to disable. Prevents memory piling up when remote clients disconnect without removing their players |
 | `GDD_TRACE` | `true`/`1` for verbose trace logging |
 
 </details>
@@ -599,7 +600,7 @@ Chromium installs automatically on first run.
 - [GDD-MANUAL.md](GDD-MANUAL.md) — Full usage manual with workflow examples
 - [GDD-ARCHITECTURE.md](GDD-ARCHITECTURE.md) — Architecture deep-dive
 - [GDD-PROMPT.md](GDD-PROMPT.md) — Claude agent instructions for MCP integration
-- [DEPLOY-RAILWAY.md](DEPLOY-RAILWAY.md) — Host GDD as a remote MCP server on Railway (behind a token-auth proxy)
+- [docker-compose.prod.yml](docker-compose.prod.yml) — Self-host GDD as a remote MCP server behind a Caddy bearer-token proxy
 - [CONTRIBUTING.md](CONTRIBUTING.md) — Contribution guidelines
 
 ## Privacy

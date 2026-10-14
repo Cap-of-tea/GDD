@@ -23,6 +23,8 @@ public sealed class HeadlessPlayerManager : IPlayerManager, IAsyncDisposable
     private IPlaywright? _playwright;
     private IBrowser? _browser;
     private int _nextPlayerId = 1;
+    private readonly TimeSpan _idleTimeout;
+    private readonly System.Threading.Timer? _idleReaper;
 
     public HeadlessPlayerManager(
         AppConfig config,
@@ -36,6 +38,31 @@ public sealed class HeadlessPlayerManager : IPlayerManager, IAsyncDisposable
         _consoleService = consoleService;
         _networkMonitorService = networkMonitorService;
         _interceptionService = interceptionService;
+
+        // A streamable-HTTP client (POST /mcp) has no persistent connection and no disconnect
+        // event: it mints a session, may add players, then simply stops calling. Nothing reaps
+        // those players, so their Chromium contexts (and ~1 GB renderer processes each) pile up
+        // until the container OOMs. The idle reaper is the only cleanup that covers this; it also
+        // catches SSE clients that die without a clean close. Set
+        // GDD_PLAYER_IDLE_TIMEOUT_MINUTES=0 to disable.
+        _idleTimeout = ParseIdleTimeout();
+        if (_idleTimeout > TimeSpan.Zero)
+        {
+            // Check at least twice per idle window, but never more often than every 30 s nor
+            // less often than every 5 min.
+            var interval = TimeSpan.FromSeconds(Math.Clamp(_idleTimeout.TotalSeconds / 2, 30, 300));
+            _idleReaper = new System.Threading.Timer(_ => ReapIdlePlayers(), null, interval, interval);
+            Logger.Information("Idle player reaper enabled: timeout {Minutes} min, checked every {Seconds} s",
+                _idleTimeout.TotalMinutes, interval.TotalSeconds);
+        }
+    }
+
+    private static TimeSpan ParseIdleTimeout()
+    {
+        var raw = Environment.GetEnvironmentVariable("GDD_PLAYER_IDLE_TIMEOUT_MINUTES");
+        if (int.TryParse(raw, out var minutes))
+            return minutes <= 0 ? TimeSpan.Zero : TimeSpan.FromMinutes(minutes);
+        return TimeSpan.FromMinutes(30);
     }
 
     public IReadOnlyList<IPlayerContext> GetPlayers()
@@ -62,6 +89,8 @@ public sealed class HeadlessPlayerManager : IPlayerManager, IAsyncDisposable
         if (sessionId is not null && player.OwnerSessionId is not null && player.OwnerSessionId != sessionId)
             return null;
 
+        // A tool is about to act on this player — keep it off the idle reaper's list.
+        player.LastActivityUtc = DateTime.UtcNow;
         return player;
     }
 
@@ -113,6 +142,37 @@ public sealed class HeadlessPlayerManager : IPlayerManager, IAsyncDisposable
 
         if (player.Engine is not null)
             _ = player.Engine.DisposeAsync();
+    }
+
+    /// <summary>
+    /// Removes players left untouched longer than the idle timeout. Runs regardless of owner —
+    /// headless has no GUI windows to preserve, so any abandoned player (from a disconnected or
+    /// silent session) is fair game. RemovePlayer disposes the engine, which closes the browser
+    /// context and tears down its renderer process.
+    /// </summary>
+    private void ReapIdlePlayers()
+    {
+        try
+        {
+            var cutoff = DateTime.UtcNow - _idleTimeout;
+            List<HeadlessPlayerContext> stale;
+            lock (_sync)
+                stale = _players.Where(p => p.LastActivityUtc < cutoff).ToList();
+
+            foreach (var p in stale)
+            {
+                Logger.Information("Reaping idle player {Id}: idle {Minutes:F0} min, owner {Owner}",
+                    p.PlayerId, (DateTime.UtcNow - p.LastActivityUtc).TotalMinutes, p.OwnerSessionId ?? "none");
+                RemovePlayer(p.PlayerId);
+            }
+
+            if (stale.Count > 0)
+                Logger.Information("Idle reaper removed {Count} player(s)", stale.Count);
+        }
+        catch (Exception ex)
+        {
+            Logger.Warning(ex, "Idle reaper pass failed");
+        }
     }
 
     private async Task InitializePlayerAsync(HeadlessPlayerContext ctx)
@@ -219,6 +279,9 @@ public sealed class HeadlessPlayerManager : IPlayerManager, IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
+        if (_idleReaper is not null)
+            await _idleReaper.DisposeAsync();
+
         List<HeadlessPlayerContext> snapshot;
         lock (_sync)
         {
