@@ -18,6 +18,12 @@ public static class DevicePresets
 
     private const string UaIOS = "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1";
     private const string UaAndroid = "Mozilla/5.0 (Linux; Android 15; Pixel 9) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Mobile Safari/537.36";
+    // Per-model UAs: a site that reads the device from the UA must see the right phone,
+    // not a Pixel 9 for every Android preset.
+    private const string UaPixel9Pro = "Mozilla/5.0 (Linux; Android 15; Pixel 9 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Mobile Safari/537.36";
+    private const string UaGalaxyS24 = "Mozilla/5.0 (Linux; Android 15; SM-S921B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Mobile Safari/537.36";
+    private const string UaGalaxyS24Ultra = "Mozilla/5.0 (Linux; Android 15; SM-S928B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Mobile Safari/537.36";
+    private const string UaOnePlus12 = "Mozilla/5.0 (Linux; Android 15; CPH2573) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Mobile Safari/537.36";
     private const string UaIPad = "Mozilla/5.0 (iPad; CPU OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Safari/604.1";
     private const string UaAndroidTab = "Mozilla/5.0 (Linux; Android 15; Pixel Tablet) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36";
     private const string UaDesktop = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36";
@@ -31,10 +37,10 @@ public static class DevicePresets
     public static readonly DevicePreset IPhone16Pro = new("iPhone 16 Pro", CatPhone, 402, 874, 3.0, UaIOS);
     public static readonly DevicePreset IPhone16ProMax = new("iPhone 16 Pro Max", CatPhone, 440, 956, 3.0, UaIOS);
     public static readonly DevicePreset Pixel9 = new("Pixel 9", CatPhone, 412, 915, 2.625, UaAndroid);
-    public static readonly DevicePreset Pixel9Pro = new("Pixel 9 Pro", CatPhone, 412, 915, 2.625, UaAndroid);
-    public static readonly DevicePreset GalaxyS24 = new("Galaxy S24", CatPhone, 360, 780, 3.0, UaAndroid);
-    public static readonly DevicePreset GalaxyS24Ultra = new("Galaxy S24 Ultra", CatPhone, 412, 915, 3.0, UaAndroid);
-    public static readonly DevicePreset OnePlus12 = new("OnePlus 12", CatPhone, 412, 915, 3.5, UaAndroid);
+    public static readonly DevicePreset Pixel9Pro = new("Pixel 9 Pro", CatPhone, 412, 915, 2.625, UaPixel9Pro);
+    public static readonly DevicePreset GalaxyS24 = new("Galaxy S24", CatPhone, 360, 780, 3.0, UaGalaxyS24);
+    public static readonly DevicePreset GalaxyS24Ultra = new("Galaxy S24 Ultra", CatPhone, 412, 915, 3.0, UaGalaxyS24Ultra);
+    public static readonly DevicePreset OnePlus12 = new("OnePlus 12", CatPhone, 412, 915, 3.5, UaOnePlus12);
 
     // --- Tablets ---
     public static readonly DevicePreset IPadMini = new("iPad Mini", CatTablet, 744, 1133, 2.0, UaIPad, IsMobile: false);
