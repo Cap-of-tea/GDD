@@ -19,7 +19,7 @@ public static class EmulationTools
             new McpToolDefinition
             {
                 Name = "gdd_set_device",
-                Description = "Switch a browser player to a device emulation preset. Applies viewport dimensions, device scale factor, user agent, and touch/mobile flags. The page reloads automatically after applying. Available presets include iPhone, iPad, Pixel, Galaxy, and desktop configurations (22 total).",
+                Description = "Switch a browser player to a device emulation preset. Applies viewport dimensions, device scale factor, user agent, and touch/mobile flags, then reloads the page. On the headless server this rebuilds the browser context so the switch is complete and survives reloads — which means it starts a fresh session: cookies, storage, and any location/network overrides are cleared. Available presets include iPhone, iPad, Pixel, Galaxy, and desktop configurations (22 total).",
                 InputSchema = new
                 {
                     type = "object",
@@ -51,8 +51,13 @@ public static class EmulationTools
                     return McpResult.Error($"Unknown device preset: {presetName}. Available: {string.Join(", ", DevicePresets.All.Select(d => d.Name))}");
 
                 player.SelectedDevice = preset;
-                await deviceService.ApplyAsync(player.Engine, preset);
-                await player.Engine.NavigateAsync(player.CurrentUrl);
+                // Prefer a real context rebuild (headless) so the switch is complete and survives a
+                // reload; fall back to the CDP-overlay path where rebuilding is not supported (desktop).
+                if (!await playerManager.TrySwitchDeviceAsync(playerId, preset.Name))
+                {
+                    await deviceService.ApplyAsync(player.Engine, preset);
+                    await player.Engine.NavigateAsync(player.CurrentUrl);
+                }
                 return McpResult.Text($"Device set to {preset.Name} ({preset.Width}x{preset.Height}) for player {playerId}");
             });
 

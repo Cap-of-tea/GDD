@@ -182,35 +182,11 @@ public sealed class HeadlessPlayerManager : IPlayerManager, IAsyncDisposable
             await EnsureBrowserAsync();
             var engine = new PlaywrightEngine(ctx.PlayerId, _browser!, _config, ctx.SelectedDevice);
             await engine.InitializeAsync(null, ctx.CurrentUrl);
-            ctx.Engine = engine;
 
-            engine.NavigationCompleted += (_, url) => ctx.CurrentUrl = url;
-            engine.TitleChanged += (_, title) => ctx.StatusText = title;
-
-            _notificationService.Attach(engine, ctx.PlayerId);
-            _notificationService.NotificationReceived += (_, n) =>
-            {
-                if (n.PlayerId == ctx.PlayerId)
-                    ctx.NotificationCount++;
-            };
-
-            await _consoleService.AttachAsync(engine, ctx.PlayerId);
-            _consoleService.EntryReceived += (_, entry) =>
-            {
-                if (entry.PlayerId != ctx.PlayerId) return;
-                if (entry.Level == "error")
-                {
-                    ctx.ConsoleErrorCount = _consoleService.GetErrorCount(ctx.PlayerId);
-                    ctx.LastError = entry.Message;
-                }
-            };
-
-            await _networkMonitorService.AttachAsync(engine, ctx.PlayerId);
-            _networkMonitorService.RequestFailed += (_, entry) =>
-            {
-                if (entry.PlayerId == ctx.PlayerId)
-                    ctx.NetworkErrorCount++;
-            };
+            // Counters subscribe to the shared services and filter by player id — wire them once
+            // per player. The engine-level attach can be redone when the context is rebuilt.
+            WireServiceCounters(ctx);
+            await AttachEngineAsync(ctx, engine);
 
             ctx.SetEngineReady();
             ctx.StatusText = "Ready";
@@ -222,6 +198,90 @@ public sealed class HeadlessPlayerManager : IPlayerManager, IAsyncDisposable
             ctx.StatusText = $"Init failed: {ex.Message}";
             Logger.Error(ex, "Failed to initialize Player {Id}", ctx.PlayerId);
         }
+    }
+
+    // Per-player counters that read from the shared services. Added once, at creation — re-adding
+    // them on a context rebuild would double-count every console error, failed request and push.
+    private void WireServiceCounters(HeadlessPlayerContext ctx)
+    {
+        _notificationService.NotificationReceived += (_, n) =>
+        {
+            if (n.PlayerId == ctx.PlayerId)
+                ctx.NotificationCount++;
+        };
+        _consoleService.EntryReceived += (_, entry) =>
+        {
+            if (entry.PlayerId != ctx.PlayerId) return;
+            if (entry.Level == "error")
+            {
+                ctx.ConsoleErrorCount = _consoleService.GetErrorCount(ctx.PlayerId);
+                ctx.LastError = entry.Message;
+            }
+        };
+        _networkMonitorService.RequestFailed += (_, entry) =>
+        {
+            if (entry.PlayerId == ctx.PlayerId)
+                ctx.NetworkErrorCount++;
+        };
+    }
+
+    // Bind engine events and the CDP-level interceptors to a (possibly new) engine, then publish
+    // it as the player's current engine. Safe to call again after rebuilding the context.
+    private async Task AttachEngineAsync(HeadlessPlayerContext ctx, PlaywrightEngine engine)
+    {
+        engine.NavigationCompleted += (_, url) => ctx.CurrentUrl = url;
+        engine.TitleChanged += (_, title) => ctx.StatusText = title;
+        _notificationService.Attach(engine, ctx.PlayerId);
+        await _consoleService.AttachAsync(engine, ctx.PlayerId);
+        await _networkMonitorService.AttachAsync(engine, ctx.PlayerId);
+        ctx.Engine = engine;
+    }
+
+    public async Task<bool> TrySwitchDeviceAsync(int playerId, string presetName)
+    {
+        HeadlessPlayerContext? ctx;
+        lock (_sync)
+            ctx = _players.FirstOrDefault(p => p.PlayerId == playerId);
+        if (ctx is null) return true; // nothing to switch; caller already validated existence
+
+        var preset = DevicePresets.All.FirstOrDefault(d =>
+            d.Name.Equals(presetName, StringComparison.OrdinalIgnoreCase)) ?? DevicePresets.Default;
+
+        var url = ctx.CurrentUrl;
+        ctx.SelectedDevice = preset;
+        ctx.StatusText = "Switching device...";
+
+        // Playwright fixes per-context emulation at creation, so a true device switch means a new
+        // context. Detach the interceptors from the old page, build the new context, re-attach,
+        // then close the old one. Cookies and storage do not carry over — a switch is a fresh
+        // session (as is any gdd_set_location / gdd_set_network override).
+        _consoleService.Remove(playerId);
+        _networkMonitorService.Remove(playerId);
+        _interceptionService.Remove(playerId);
+
+        var old = ctx.Engine;
+        try
+        {
+            var engine = new PlaywrightEngine(playerId, _browser!, _config, preset);
+            await engine.InitializeAsync(null, url);
+            await AttachEngineAsync(ctx, engine); // publishes the new engine as ctx.Engine
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Device switch failed for player {Id}", playerId);
+            ctx.StatusText = $"Device switch failed: {ex.Message}";
+        }
+
+        if (old is not null)
+        {
+            try { await old.DisposeAsync(); }
+            catch (Exception ex) { Logger.Warning(ex, "Disposing old context after device switch, player {Id}", playerId); }
+        }
+
+        ctx.StatusText = "Ready";
+        ctx.LastActivityUtc = DateTime.UtcNow;
+        Logger.Information("Player {Id} switched to {Device} (context rebuilt)", playerId, preset.Name);
+        return true;
     }
 
     private async Task EnsureBrowserAsync()
