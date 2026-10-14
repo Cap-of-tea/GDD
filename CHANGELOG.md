@@ -2,6 +2,13 @@
 
 All notable changes to GDD are documented here.
 
+## [Unreleased]
+
+### Fixed
+
+- **Android phone presets report the right device.** Galaxy S24, Galaxy S24 Ultra and OnePlus 12 all shared the Pixel 9 user agent, so a site that reads the model from the UA saw a Pixel. Each now carries its own model UA (`SM-S921B`, `SM-S928B`, `CPH2573`), and Pixel 9 Pro reports "Pixel 9 Pro"
+- **Color emoji render in headless screenshots.** The server image had no color-emoji font, so emoji drew as empty tofu squares; `fonts-noto-color-emoji` is now installed in the image
+
 ## [1.10.0] - 2026-10-14
 
 ### Added
