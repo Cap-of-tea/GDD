@@ -31,6 +31,10 @@ services:
       PORT: "8080"
       # GDD itself never leaves loopback — only Caddy is reachable from the network.
       GDD__BindAddress: "127.0.0.1"
+      # Full anti-bot stealth (UA client hints, WebGL, devices, no --enable-automation).
+      # Some sites behind Cloudflare return 403 to the plain headless browser; set
+      # GDD_STEALTH_MAX=false in Portainer to turn it off without a commit.
+      GDD_STEALTH_MAX: ${GDD_STEALTH_MAX:-true}
 
     networks:
       - net_gdd
